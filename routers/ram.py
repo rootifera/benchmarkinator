@@ -21,7 +21,7 @@ def create_ram(ram: RAM, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=list[RAM])
 def get_rams(db: Session = Depends(get_db)):
-    rams = db.execute(select(RAM)).scalars().all()
+    rams = db.exec(select(RAM)).all()
     return rams
 
 

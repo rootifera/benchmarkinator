@@ -21,7 +21,7 @@ def create_os(os: OS, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=list[OS])
 def get_oses(db: Session = Depends(get_db)):
-    oses = db.execute(select(OS)).scalars().all()
+    oses = db.exec(select(OS)).all()
     return oses
 
 

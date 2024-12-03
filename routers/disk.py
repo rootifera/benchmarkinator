@@ -21,7 +21,7 @@ def create_disk(disk: Disk, db: Session = Depends(get_db)):
 
 @router.get("/", response_model=list[Disk])
 def get_disks(db: Session = Depends(get_db)):
-    disks = db.execute(select(Disk)).scalars().all()
+    disks = db.exec(select(Disk)).all()
     return disks
 
 

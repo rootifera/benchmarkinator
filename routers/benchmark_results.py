@@ -2,8 +2,6 @@ from fastapi import APIRouter, HTTPException, Depends
 from models.benchmark_results import BenchmarkResult
 from models.config import Config
 from models.cpu import CPU
-from models.gpu import GPU
-from models.motherboard import Motherboard
 from sqlmodel import Session, select
 from database import engine
 
@@ -42,28 +40,6 @@ def get_results_by_cpu(cpu_id: int, db: Session = Depends(get_db)):
         .join(Config)
         .join(CPU)
         .where(CPU.id == cpu_id)
-    ).all()
-    return results
-
-
-@router.get("/gpu/{gpu_id}", response_model=list[BenchmarkResult])
-def get_results_by_gpu(gpu_id: int, db: Session = Depends(get_db)):
-    results = db.exec(
-        select(BenchmarkResult)
-        .join(Config)
-        .join(GPU)
-        .where(GPU.id == gpu_id)
-    ).all()
-    return results
-
-
-@router.get("/motherboard/{motherboard_id}", response_model=list[BenchmarkResult])
-def get_results_by_motherboard(motherboard_id: int, db: Session = Depends(get_db)):
-    results = db.exec(
-        select(BenchmarkResult)
-        .join(Config)
-        .join(Motherboard)
-        .where(Motherboard.id == motherboard_id)
     ).all()
     return results
 
