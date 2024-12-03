@@ -1,9 +1,9 @@
-from fastapi import HTTPException, Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import HTTPException, Request
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+API_KEY = "your_api_key_here"
 
-def authenticate(token: str = Depends(oauth2_scheme)):
-    if token != "your-secure-token":
+def authenticate(request: Request):
+    api_key = request.headers.get("X-API-Key")
+    if api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    return token
+    return True
