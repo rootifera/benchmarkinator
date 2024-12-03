@@ -11,7 +11,7 @@ def get_db():
         yield session
 
 
-@router.post("/disk/", response_model=Disk)
+@router.post("/", response_model=Disk)
 def create_disk(disk: Disk, db: Session = Depends(get_db)):
     db.add(disk)
     db.commit()
@@ -19,13 +19,13 @@ def create_disk(disk: Disk, db: Session = Depends(get_db)):
     return disk
 
 
-@router.get("/disk/", response_model=list[Disk])
+@router.get("/", response_model=list[Disk])
 def get_disks(db: Session = Depends(get_db)):
     disks = db.execute(select(Disk)).scalars().all()
     return disks
 
 
-@router.get("/disk/{disk_id}", response_model=Disk)
+@router.get("/{disk_id}", response_model=Disk)
 def get_disk(disk_id: int, db: Session = Depends(get_db)):
     disk = db.get(Disk, disk_id)
     if disk is None:
@@ -33,7 +33,7 @@ def get_disk(disk_id: int, db: Session = Depends(get_db)):
     return disk
 
 
-@router.put("/disk/{disk_id}", response_model=Disk)
+@router.put("/{disk_id}", response_model=Disk)
 def update_disk(disk_id: int, disk: Disk, db: Session = Depends(get_db)):
     db_disk = db.get(Disk, disk_id)
     if db_disk is None:
@@ -46,7 +46,7 @@ def update_disk(disk_id: int, disk: Disk, db: Session = Depends(get_db)):
     return db_disk
 
 
-@router.delete("/disk/{disk_id}")
+@router.delete("/{disk_id}")
 def delete_disk(disk_id: int, db: Session = Depends(get_db)):
     disk = db.get(Disk, disk_id)
     if disk is None:

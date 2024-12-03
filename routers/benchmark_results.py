@@ -15,7 +15,7 @@ def get_db():
         yield session
 
 
-@router.post("/benchmark_result/", response_model=BenchmarkResult)
+@router.post("/", response_model=BenchmarkResult)
 def create_benchmark_result(benchmark_result: BenchmarkResult, db: Session = Depends(get_db)):
     db.add(benchmark_result)
     db.commit()
@@ -23,19 +23,19 @@ def create_benchmark_result(benchmark_result: BenchmarkResult, db: Session = Dep
     return benchmark_result
 
 
-@router.get("/benchmark_result/", response_model=list[BenchmarkResult])
+@router.get("/", response_model=list[BenchmarkResult])
 def get_benchmark_results(db: Session = Depends(get_db)):
     results = db.exec(select(BenchmarkResult)).all()
     return results
 
 
-@router.get("/benchmark_result/config/{config_id}", response_model=list[BenchmarkResult])
+@router.get("/config/{config_id}", response_model=list[BenchmarkResult])
 def get_results_by_config(config_id: int, db: Session = Depends(get_db)):
     results = db.exec(select(BenchmarkResult).where(BenchmarkResult.config_id == config_id)).all()
     return results
 
 
-@router.get("/benchmark_result/cpu/{cpu_id}", response_model=list[BenchmarkResult])
+@router.get("/cpu/{cpu_id}", response_model=list[BenchmarkResult])
 def get_results_by_cpu(cpu_id: int, db: Session = Depends(get_db)):
     results = db.exec(
         select(BenchmarkResult)
@@ -46,7 +46,7 @@ def get_results_by_cpu(cpu_id: int, db: Session = Depends(get_db)):
     return results
 
 
-@router.get("/benchmark_result/gpu/{gpu_id}", response_model=list[BenchmarkResult])
+@router.get("/gpu/{gpu_id}", response_model=list[BenchmarkResult])
 def get_results_by_gpu(gpu_id: int, db: Session = Depends(get_db)):
     results = db.exec(
         select(BenchmarkResult)
@@ -57,7 +57,7 @@ def get_results_by_gpu(gpu_id: int, db: Session = Depends(get_db)):
     return results
 
 
-@router.get("/benchmark_result/motherboard/{motherboard_id}", response_model=list[BenchmarkResult])
+@router.get("/motherboard/{motherboard_id}", response_model=list[BenchmarkResult])
 def get_results_by_motherboard(motherboard_id: int, db: Session = Depends(get_db)):
     results = db.exec(
         select(BenchmarkResult)
@@ -68,7 +68,7 @@ def get_results_by_motherboard(motherboard_id: int, db: Session = Depends(get_db
     return results
 
 
-@router.get("/benchmark_result/{result_id}", response_model=BenchmarkResult)
+@router.get("/{result_id}", response_model=BenchmarkResult)
 def get_benchmark_result(result_id: int, db: Session = Depends(get_db)):
     result = db.get(BenchmarkResult, result_id)
     if result is None:
@@ -82,7 +82,7 @@ def calculate_percentage_change(old_value: float, new_value: float) -> float:
     return ((new_value - old_value) / old_value) * 100
 
 
-@router.get("/benchmark_result/compare/configs", response_model=dict)
+@router.get("/compare/configs", response_model=dict)
 def compare_configs(config_id_1: int, config_id_2: int, db: Session = Depends(get_db)):
     results_1 = db.exec(select(BenchmarkResult).where(BenchmarkResult.config_id == config_id_1)).all()
     results_2 = db.exec(select(BenchmarkResult).where(BenchmarkResult.config_id == config_id_2)).all()

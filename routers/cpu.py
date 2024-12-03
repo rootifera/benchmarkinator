@@ -11,7 +11,7 @@ def get_db():
         yield session
 
 
-@router.post("/cpu/", response_model=CPU)
+@router.post("/", response_model=CPU)
 def create_cpu(cpu: CPU, db: Session = Depends(get_db)):
     db.add(cpu)
     db.commit()
@@ -19,13 +19,13 @@ def create_cpu(cpu: CPU, db: Session = Depends(get_db)):
     return cpu
 
 
-@router.get("/cpu/", response_model=list[CPU])
+@router.get("/", response_model=list[CPU])
 def get_cpus(db: Session = Depends(get_db)):
     cpus = db.execute(select(CPU)).scalars().all()
     return cpus
 
 
-@router.get("/cpu/{cpu_id}", response_model=CPU)
+@router.get("/{cpu_id}", response_model=CPU)
 def get_cpu(cpu_id: int, db: Session = Depends(get_db)):
     cpu = db.get(CPU, cpu_id)
     if cpu is None:
@@ -33,7 +33,7 @@ def get_cpu(cpu_id: int, db: Session = Depends(get_db)):
     return cpu
 
 
-@router.put("/cpu/{cpu_id}", response_model=CPU)
+@router.put("/{cpu_id}", response_model=CPU)
 def update_cpu(cpu_id: int, cpu: CPU, db: Session = Depends(get_db)):
     db_cpu = db.get(CPU, cpu_id)
     if db_cpu is None:
@@ -51,7 +51,7 @@ def update_cpu(cpu_id: int, cpu: CPU, db: Session = Depends(get_db)):
     return db_cpu
 
 
-@router.delete("/cpu/{cpu_id}")
+@router.delete("/{cpu_id}")
 def delete_cpu(cpu_id: int, db: Session = Depends(get_db)):
     cpu = db.get(CPU, cpu_id)
     if cpu is None:

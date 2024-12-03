@@ -2,8 +2,8 @@ from sqlmodel import SQLModel, Field, Relationship
 from models.config import Config
 from models.benchmark import Benchmark
 
-class BenchmarkResult(SQLModel, table=True):
 
+class BenchmarkResult(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     benchmark_id: int = Field(foreign_key="benchmark.id")
     config_id: int = Field(foreign_key="config.id")

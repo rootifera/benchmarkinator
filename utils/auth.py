@@ -1,6 +1,10 @@
 from fastapi import HTTPException, Request
+import os
+from dotenv import load_dotenv
 
-API_KEY = "your_api_key_here"
+load_dotenv()
+
+API_KEY = os.getenv("API_KEY")
 
 def authenticate(request: Request):
     api_key = request.headers.get("X-API-Key")

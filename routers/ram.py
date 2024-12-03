@@ -11,7 +11,7 @@ def get_db():
         yield session
 
 
-@router.post("/ram/", response_model=RAM)
+@router.post("/", response_model=RAM)
 def create_ram(ram: RAM, db: Session = Depends(get_db)):
     db.add(ram)
     db.commit()
@@ -19,13 +19,13 @@ def create_ram(ram: RAM, db: Session = Depends(get_db)):
     return ram
 
 
-@router.get("/ram/", response_model=list[RAM])
+@router.get("/", response_model=list[RAM])
 def get_rams(db: Session = Depends(get_db)):
     rams = db.execute(select(RAM)).scalars().all()
     return rams
 
 
-@router.get("/ram/{ram_id}", response_model=RAM)
+@router.get("/{ram_id}", response_model=RAM)
 def get_ram(ram_id: int, db: Session = Depends(get_db)):
     ram = db.get(RAM, ram_id)
     if ram is None:
@@ -33,7 +33,7 @@ def get_ram(ram_id: int, db: Session = Depends(get_db)):
     return ram
 
 
-@router.put("/ram/{ram_id}", response_model=RAM)
+@router.put("/{ram_id}", response_model=RAM)
 def update_ram(ram_id: int, ram: RAM, db: Session = Depends(get_db)):
     db_ram = db.get(RAM, ram_id)
     if db_ram is None:
@@ -46,7 +46,7 @@ def update_ram(ram_id: int, ram: RAM, db: Session = Depends(get_db)):
     return db_ram
 
 
-@router.delete("/ram/{ram_id}")
+@router.delete("/{ram_id}")
 def delete_ram(ram_id: int, db: Session = Depends(get_db)):
     ram = db.get(RAM, ram_id)
     if ram is None:

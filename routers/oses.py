@@ -11,7 +11,7 @@ def get_db():
         yield session
 
 
-@router.post("/os/", response_model=OS)
+@router.post("/", response_model=OS)
 def create_os(os: OS, db: Session = Depends(get_db)):
     db.add(os)
     db.commit()
@@ -19,13 +19,13 @@ def create_os(os: OS, db: Session = Depends(get_db)):
     return os
 
 
-@router.get("/os/", response_model=list[OS])
+@router.get("/", response_model=list[OS])
 def get_oses(db: Session = Depends(get_db)):
     oses = db.execute(select(OS)).scalars().all()
     return oses
 
 
-@router.get("/os/{os_id}", response_model=OS)
+@router.get("/{os_id}", response_model=OS)
 def get_os(os_id: int, db: Session = Depends(get_db)):
     os = db.get(OS, os_id)
     if os is None:
@@ -33,7 +33,7 @@ def get_os(os_id: int, db: Session = Depends(get_db)):
     return os
 
 
-@router.put("/os/{os_id}", response_model=OS)
+@router.put("/{os_id}", response_model=OS)
 def update_os(os_id: int, os: OS, db: Session = Depends(get_db)):
     db_os = db.get(OS, os_id)
     if db_os is None:
@@ -46,7 +46,7 @@ def update_os(os_id: int, os: OS, db: Session = Depends(get_db)):
     return db_os
 
 
-@router.delete("/os/{os_id}")
+@router.delete("/{os_id}")
 def delete_os(os_id: int, db: Session = Depends(get_db)):
     os = db.get(OS, os_id)
     if os is None:

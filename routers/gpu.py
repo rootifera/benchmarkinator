@@ -5,11 +5,13 @@ from database import engine
 
 router = APIRouter()
 
+
 def get_db():
     with Session(engine) as session:
         yield session
 
-@router.post("/gpu/", response_model=GPU)
+
+@router.post("/", response_model=GPU)
 def create_gpu(gpu: GPU, db: Session = Depends(get_db)):
     db.add(gpu)
     db.commit()
@@ -17,13 +19,13 @@ def create_gpu(gpu: GPU, db: Session = Depends(get_db)):
     return gpu
 
 
-@router.get("/gpu/", response_model=list[GPU])
+@router.get("/", response_model=list[GPU])
 def get_gpus(db: Session = Depends(get_db)):
     gpus = db.execute(select(GPU)).scalars().all()
     return gpus
 
 
-@router.get("/gpu/{gpu_id}", response_model=GPU)
+@router.get("/{gpu_id}", response_model=GPU)
 def get_gpu(gpu_id: int, db: Session = Depends(get_db)):
     gpu = db.get(GPU, gpu_id)
     if gpu is None:
@@ -31,7 +33,7 @@ def get_gpu(gpu_id: int, db: Session = Depends(get_db)):
     return gpu
 
 
-@router.put("/gpu/{gpu_id}", response_model=GPU)
+@router.put("/{gpu_id}", response_model=GPU)
 def update_gpu(gpu_id: int, gpu: GPU, db: Session = Depends(get_db)):
     db_gpu = db.get(GPU, gpu_id)
     if db_gpu is None:
@@ -48,7 +50,7 @@ def update_gpu(gpu_id: int, gpu: GPU, db: Session = Depends(get_db)):
     return db_gpu
 
 
-@router.delete("/gpu/{gpu_id}")
+@router.delete("/{gpu_id}")
 def delete_gpu(gpu_id: int, db: Session = Depends(get_db)):
     gpu = db.get(GPU, gpu_id)
     if gpu is None:

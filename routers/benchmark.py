@@ -11,7 +11,7 @@ def get_db():
         yield session
 
 
-@router.post("/benchmark/", response_model=Benchmark)
+@router.post("/", response_model=Benchmark)
 def create_benchmark(benchmark: Benchmark, db: Session = Depends(get_db)):
     db.add(benchmark)
     db.commit()
@@ -19,13 +19,13 @@ def create_benchmark(benchmark: Benchmark, db: Session = Depends(get_db)):
     return benchmark
 
 
-@router.get("/benchmark/", response_model=list[Benchmark])
+@router.get("/", response_model=list[Benchmark])
 def get_benchmarks(db: Session = Depends(get_db)):
     benchmarks = db.execute(select(Benchmark)).scalars().all()
     return benchmarks
 
 
-@router.get("/benchmark/{benchmark_id}", response_model=Benchmark)
+@router.get("/{benchmark_id}", response_model=Benchmark)
 def get_benchmark(benchmark_id: int, db: Session = Depends(get_db)):
     benchmark = db.get(Benchmark, benchmark_id)
     if benchmark is None:
@@ -33,7 +33,7 @@ def get_benchmark(benchmark_id: int, db: Session = Depends(get_db)):
     return benchmark
 
 
-@router.put("/benchmark/{benchmark_id}", response_model=Benchmark)
+@router.put("/{benchmark_id}", response_model=Benchmark)
 def update_benchmark(benchmark_id: int, benchmark: Benchmark, db: Session = Depends(get_db)):
     db_benchmark = db.get(Benchmark, benchmark_id)
     if db_benchmark is None:
@@ -47,7 +47,7 @@ def update_benchmark(benchmark_id: int, benchmark: Benchmark, db: Session = Depe
     return db_benchmark
 
 
-@router.delete("/benchmark/{benchmark_id}")
+@router.delete("/{benchmark_id}")
 def delete_benchmark(benchmark_id: int, db: Session = Depends(get_db)):
     benchmark = db.get(Benchmark, benchmark_id)
     if benchmark is None:

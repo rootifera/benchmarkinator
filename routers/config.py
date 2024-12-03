@@ -5,35 +5,30 @@ from database import engine
 
 router = APIRouter()
 
-
 def get_db():
     with Session(engine) as session:
         yield session
 
-
-@router.post("/config/", response_model=Config)
+@router.post("/", response_model=Config)
 def create_config(config: Config, db: Session = Depends(get_db)):
     db.add(config)
     db.commit()
     db.refresh(config)
     return config
 
-
-@router.get("/config/", response_model=list[Config])
+@router.get("/", response_model=list[Config])
 def get_configs(db: Session = Depends(get_db)):
     configs = db.execute(select(Config)).scalars().all()
     return configs
 
-
-@router.get("/config/{config_id}", response_model=Config)
+@router.get("/{config_id}", response_model=Config)
 def get_config(config_id: int, db: Session = Depends(get_db)):
     config = db.get(Config, config_id)
     if config is None:
         raise HTTPException(status_code=404, detail="Config not found")
     return config
 
-
-@router.put("/config/{config_id}", response_model=Config)
+@router.put("/{config_id}", response_model=Config)
 def update_config(config_id: int, config: Config, db: Session = Depends(get_db)):
     db_config = db.get(Config, config_id)
     if db_config is None:
@@ -51,8 +46,7 @@ def update_config(config_id: int, config: Config, db: Session = Depends(get_db))
     db.refresh(db_config)
     return db_config
 
-
-@router.delete("/config/{config_id}")
+@router.delete("/{config_id}")
 def delete_config(config_id: int, db: Session = Depends(get_db)):
     config = db.get(Config, config_id)
     if config is None:
