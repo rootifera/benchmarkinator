@@ -11,7 +11,7 @@ class BenchmarkTarget(SQLModel, table=True):
 
 class Benchmark(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str  # e.g., 3DMark 99
+    name: str
 
     benchmark_target_id: Optional[int] = Field(default=None, foreign_key="benchmarktarget.id")
 

@@ -1,14 +1,16 @@
-from sqlmodel import SQLModel, create_engine, Session
+from sqlmodel import SQLModel, create_engine
+from models.cpu import CPU
+from models.gpu import GPU
+from models.motherboard import Motherboard
+from models.ram import RAM
+from models.disk import Disk
+from models.oses import OS
+from models.config import Config
+from models.benchmark import BenchmarkTarget, Benchmark, Benchmarks
 
-DATABASE_URL = "sqlite:///benchmarkinator.db"
+DATABASE_URL = "sqlite:///./benchmarkinator.db"
 
 engine = create_engine(DATABASE_URL, echo=True)
 
-
 def init_db():
-    SQLModel.metadata.create_all(engine)
-
-
-def get_session():
-    with Session(engine) as session:
-        yield session
+    SQLModel.metadata.create_all(bind=engine)
