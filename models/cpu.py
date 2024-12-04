@@ -3,6 +3,7 @@ from typing import List, Optional
 
 
 class CPUBrand(SQLModel, table=True):
+    """Represents the brand of the CPU (e.g., AMD, Intel)."""
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
 
@@ -10,6 +11,7 @@ class CPUBrand(SQLModel, table=True):
 
 
 class CPUFamily(SQLModel, table=True):
+    """Represents the family of the CPU (e.g., K6, Core i7)."""
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
 
@@ -17,6 +19,7 @@ class CPUFamily(SQLModel, table=True):
 
 
 class CPU(SQLModel, table=True):
+    """Represents the specific model of the CPU. 200MMX, 450Mhz"""
     id: Optional[int] = Field(default=None, primary_key=True)
     model: str
     speed: str

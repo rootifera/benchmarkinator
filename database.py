@@ -1,6 +1,6 @@
 from sqlmodel import SQLModel, create_engine
-from models.cpu import CPU
-from models.gpu import GPU
+from models.cpu import CPU, CPUBrand, CPUFamily
+from models.gpu import GPU, GPUManufacturer, GPUBrand, GPUModel, GPUVRAMType
 from models.motherboard import Motherboard
 from models.ram import RAM
 from models.disk import Disk
