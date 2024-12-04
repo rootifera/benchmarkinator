@@ -76,7 +76,7 @@ def compare_configs(config_id_1: int, config_id_2: int, db: Session = Depends(ge
                 "benchmark_id": result_1.benchmark_id,
                 "config_1_result": result_1.result,
                 "config_2_result": result_2.result,
-                "percentage_change": percentage_change,
+                "percentage_change": round(percentage_change, 2),
             }
 
     return comparison
