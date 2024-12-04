@@ -23,10 +23,8 @@ class CPU(SQLModel, table=True):
     core_count: int
     serial: Optional[str] = None
 
-    # Foreign Keys
     cpu_brand_id: Optional[int] = Field(default=None, foreign_key="cpubrand.id")
     cpu_family_id: Optional[int] = Field(default=None, foreign_key="cpufamily.id")
 
-    # Relationships
     brand: Optional[CPUBrand] = Relationship(back_populates="cpus")
     family: Optional[CPUFamily] = Relationship(back_populates="cpus")
