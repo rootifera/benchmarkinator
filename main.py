@@ -1,9 +1,18 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from routers import cpu, gpu, motherboard, ram, disk, oses, config, benchmark, benchmark_results
 from utils.auth import authenticate
 from database import init_db
 
 app = FastAPI(dependencies=[Depends(authenticate)])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(cpu.router, prefix="/api/cpu", tags=["CPU"])
 app.include_router(gpu.router, prefix="/api/gpu", tags=["GPU"])
