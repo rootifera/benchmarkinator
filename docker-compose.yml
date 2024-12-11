@@ -10,7 +10,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -25,7 +25,7 @@ services:
     depends_on:
       benchmarkinator-db:
         condition: service_healthy
-    entrypoint: ["/app/wait-for-it.sh", "benchmarkinator-db:3306", "--", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "12345"]
+    entrypoint: [ "/app/wait-for-it.sh", "benchmarkinator-db:3306", "--", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "12345" ]
 
 volumes:
   mysql_data:

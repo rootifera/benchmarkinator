@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
+
 def validate_and_normalize_name(name: str, db: Session, model_class):
     """
     Validates and normalizes the name field:

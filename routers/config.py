@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
+from sqlalchemy.exc import IntegrityError
 from utils.helper import validate_and_normalize_name
 from models.config import Config
 from models.ram import RAM
@@ -12,23 +13,25 @@ from database import get_db
 
 router = APIRouter()
 
+
 @router.post("/", response_model=Config)
 def create_config(config: Config, db: Session = Depends(get_db)):
-    ram_type = db.get(RAM, config.ram_type_id)
-    if ram_type is None:
-        raise HTTPException(status_code=400, detail="Invalid RAM type")
+    try:
+        config.name = validate_and_normalize_name(config.name, db, Config)
+        db.add(config)
+        db.commit()
+        db.refresh(config)
+        return config
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="A configuration with this name already exists")
 
-    config.name = validate_and_normalize_name(config.name, db, Config)
-
-    db.add(config)
-    db.commit()
-    db.refresh(config)
-    return config
 
 @router.get("/", response_model=list[Config])
 def get_configs(db: Session = Depends(get_db)):
     configs = db.exec(select(Config)).all()
     return configs
+
 
 @router.get("/{config_id}", response_model=Config)
 def get_config(config_id: int, db: Session = Depends(get_db)):
@@ -36,6 +39,10 @@ def get_config(config_id: int, db: Session = Depends(get_db)):
     if config is None:
         raise HTTPException(status_code=404, detail="Config not found")
     return config
+
+
+from sqlalchemy.exc import IntegrityError
+
 
 @router.put("/{config_id}", response_model=Config)
 def update_config(config_id: int, config: Config, db: Session = Depends(get_db)):
@@ -70,6 +77,10 @@ def update_config(config_id: int, config: Config, db: Session = Depends(get_db))
     if hasattr(config, "name"):
         config.name = validate_and_normalize_name(config.name, db, Config)
 
+    existing_config = db.exec(select(Config).where(Config.name == config.name, Config.id != config_id)).first()
+    if existing_config:
+        raise HTTPException(status_code=400, detail="A configuration with this name already exists")
+
     db_config.name = config.name
     db_config.cpu_id = config.cpu_id
     db_config.motherboard_id = config.motherboard_id
@@ -92,9 +103,14 @@ def update_config(config_id: int, config: Config, db: Session = Depends(get_db))
     db_config.gpu_vram_currentclock = config.gpu_vram_currentclock
     db_config.notes = config.notes
 
-    db.commit()
-    db.refresh(db_config)
-    return db_config
+    try:
+        db.commit()
+        db.refresh(db_config)
+        return db_config
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="A configuration with this name already exists")
+
 
 @router.delete("/{config_id}")
 def delete_config(config_id: int, db: Session = Depends(get_db)):
