@@ -1,21 +1,20 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
-from database import engine
+from utils.helper import validate_and_normalize_name
 from models.config import Config
 from models.ram import RAM
+from database import get_db
 
 router = APIRouter()
 
-def get_db():
-    with Session(engine) as session:
-        yield session
-
 @router.post("/config/", response_model=Config)
 def create_config(config: Config, db: Session = Depends(get_db)):
-    # Check if the ram_type_id exists in the RAM table
     ram_type = db.get(RAM, config.ram_type_id)
     if ram_type is None:
         raise HTTPException(status_code=400, detail="Invalid RAM type")
+
+    if hasattr(config, "name"):
+        config.name = validate_and_normalize_name(config.name, db, Config)
 
     db.add(config)
     db.commit()
@@ -24,7 +23,7 @@ def create_config(config: Config, db: Session = Depends(get_db)):
 
 @router.get("/config/", response_model=list[Config])
 def get_configs(db: Session = Depends(get_db)):
-    configs = db.execute(select(Config)).scalars().all()
+    configs = db.exec(select(Config)).all()
     return configs
 
 @router.get("/config/{config_id}", response_model=Config)
@@ -44,6 +43,9 @@ def update_config(config_id: int, config: Config, db: Session = Depends(get_db))
     db_config = db.get(Config, config_id)
     if db_config is None:
         raise HTTPException(status_code=404, detail="Config not found")
+
+    if hasattr(config, "name"):
+        config.name = validate_and_normalize_name(config.name, db, Config)
 
     db_config.cpu_id = config.cpu_id
     db_config.motherboard_id = config.motherboard_id
