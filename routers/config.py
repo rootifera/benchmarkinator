@@ -17,13 +17,42 @@ router = APIRouter()
 @router.post("/", response_model=Config)
 def create_config(config: Config, db: Session = Depends(get_db)):
     try:
+
         config.name = validate_and_normalize_name(config.name, db, Config)
+
+        ram_type = db.get(RAM, config.ram_type_id)
+        if ram_type is None:
+            raise HTTPException(status_code=400, detail="Invalid RAM type")
+
+        cpu = db.get(CPU, config.cpu_id)
+        if cpu is None:
+            raise HTTPException(status_code=400, detail="Invalid CPU")
+        else:
+            print(f"CPU found: {cpu}")
+
+        motherboard = db.get(Motherboard, config.motherboard_id)
+        if motherboard is None:
+            raise HTTPException(status_code=400, detail="Invalid Motherboard")
+
+        gpu = db.get(GPU, config.gpu_id)
+        if gpu is None:
+            raise HTTPException(status_code=400, detail="Invalid GPU")
+
+        disk = db.get(Disk, config.disk_id)
+        if disk is None:
+            raise HTTPException(status_code=400, detail="Invalid Disk")
+
+        os = db.get(OS, config.os_id)
+        if os is None:
+            raise HTTPException(status_code=400, detail="Invalid OS")
+
         db.add(config)
         db.commit()
         db.refresh(config)
         return config
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
+        print(f"IntegrityError: {e}")
         raise HTTPException(status_code=400, detail="A configuration with this name already exists")
 
 
