@@ -6,6 +6,7 @@ load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
 
+
 def authenticate(request: Request):
     api_key = request.headers.get("X-API-Key")
     if api_key != API_KEY:

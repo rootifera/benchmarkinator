@@ -26,6 +26,7 @@ app.include_router(benchmark_results.router, prefix="/api/benchmark_results", ta
 
 init_db()
 
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to The Benchmarkinator!"}

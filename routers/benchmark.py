@@ -6,6 +6,7 @@ from database import get_db
 
 router = APIRouter()
 
+
 # BenchmarkTarget CRUD Operations
 @router.post("/target/", response_model=BenchmarkTarget)
 def create_benchmark_target(benchmark_target: BenchmarkTarget, db: Session = Depends(get_db)):
@@ -16,10 +17,12 @@ def create_benchmark_target(benchmark_target: BenchmarkTarget, db: Session = Dep
     db.refresh(benchmark_target)
     return benchmark_target
 
+
 @router.get("/target/", response_model=list[BenchmarkTarget])
 def get_benchmark_targets(db: Session = Depends(get_db)):
     benchmark_targets = db.exec(select(BenchmarkTarget)).all()
     return benchmark_targets
+
 
 @router.get("/target/{target_id}", response_model=BenchmarkTarget)
 def get_benchmark_target(target_id: int, db: Session = Depends(get_db)):
@@ -27,6 +30,7 @@ def get_benchmark_target(target_id: int, db: Session = Depends(get_db)):
     if benchmark_target is None:
         raise HTTPException(status_code=404, detail="Benchmark target not found")
     return benchmark_target
+
 
 @router.put("/target/{target_id}", response_model=BenchmarkTarget)
 def update_benchmark_target(target_id: int, benchmark_target: BenchmarkTarget, db: Session = Depends(get_db)):
@@ -42,6 +46,7 @@ def update_benchmark_target(target_id: int, benchmark_target: BenchmarkTarget, d
     db.refresh(db_benchmark_target)
     return db_benchmark_target
 
+
 @router.delete("/target/{target_id}")
 def delete_benchmark_target(target_id: int, db: Session = Depends(get_db)):
     benchmark_target = db.get(BenchmarkTarget, target_id)
@@ -51,6 +56,7 @@ def delete_benchmark_target(target_id: int, db: Session = Depends(get_db)):
     db.delete(benchmark_target)
     db.commit()
     return {"message": "Benchmark target deleted successfully"}
+
 
 # Benchmark CRUD Operations
 @router.post("/", response_model=Benchmark)
@@ -62,10 +68,12 @@ def create_benchmark(benchmark: Benchmark, db: Session = Depends(get_db)):
     db.refresh(benchmark)
     return benchmark
 
+
 @router.get("/", response_model=list[Benchmark])
 def get_benchmarks(db: Session = Depends(get_db)):
     benchmarks = db.exec(select(Benchmark)).all()
     return benchmarks
+
 
 @router.get("/{benchmark_id}", response_model=Benchmark)
 def get_benchmark(benchmark_id: int, db: Session = Depends(get_db)):
@@ -73,6 +81,7 @@ def get_benchmark(benchmark_id: int, db: Session = Depends(get_db)):
     if benchmark is None:
         raise HTTPException(status_code=404, detail="Benchmark not found")
     return benchmark
+
 
 @router.put("/{benchmark_id}", response_model=Benchmark)
 def update_benchmark(benchmark_id: int, benchmark: Benchmark, db: Session = Depends(get_db)):
@@ -88,6 +97,7 @@ def update_benchmark(benchmark_id: int, benchmark: Benchmark, db: Session = Depe
     db.commit()
     db.refresh(db_benchmark)
     return db_benchmark
+
 
 @router.delete("/{benchmark_id}")
 def delete_benchmark(benchmark_id: int, db: Session = Depends(get_db)):
