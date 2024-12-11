@@ -1,19 +1,17 @@
 from fastapi import APIRouter, HTTPException, Depends
-from models.benchmark import Benchmark, BenchmarkTarget
 from sqlmodel import Session, select
-from database import engine
+from utils.helper import validate_and_normalize_name
+from models.benchmark import Benchmark, BenchmarkTarget
+from database import get_db
 
 router = APIRouter()
-
-
-def get_db():
-    with Session(engine) as session:
-        yield session
 
 
 # BenchmarkTarget CRUD Operations
 @router.post("/target/", response_model=BenchmarkTarget)
 def create_benchmark_target(benchmark_target: BenchmarkTarget, db: Session = Depends(get_db)):
+    benchmark_target.name = validate_and_normalize_name(benchmark_target.name, db, BenchmarkTarget)
+
     db.add(benchmark_target)
     db.commit()
     db.refresh(benchmark_target)
@@ -40,6 +38,8 @@ def update_benchmark_target(target_id: int, benchmark_target: BenchmarkTarget, d
     if db_benchmark_target is None:
         raise HTTPException(status_code=404, detail="Benchmark target not found")
 
+    benchmark_target.name = validate_and_normalize_name(benchmark_target.name, db, BenchmarkTarget)
+
     db_benchmark_target.name = benchmark_target.name
 
     db.commit()
@@ -61,6 +61,8 @@ def delete_benchmark_target(target_id: int, db: Session = Depends(get_db)):
 # Benchmark CRUD Operations
 @router.post("/", response_model=Benchmark)
 def create_benchmark(benchmark: Benchmark, db: Session = Depends(get_db)):
+    benchmark.name = validate_and_normalize_name(benchmark.name, db, Benchmark)
+
     db.add(benchmark)
     db.commit()
     db.refresh(benchmark)
@@ -86,6 +88,8 @@ def update_benchmark(benchmark_id: int, benchmark: Benchmark, db: Session = Depe
     db_benchmark = db.get(Benchmark, benchmark_id)
     if db_benchmark is None:
         raise HTTPException(status_code=404, detail="Benchmark not found")
+
+    benchmark.name = validate_and_normalize_name(benchmark.name, db, Benchmark)
 
     db_benchmark.name = benchmark.name
     db_benchmark.benchmark_target_id = benchmark.benchmark_target_id

@@ -1,19 +1,16 @@
 from fastapi import APIRouter, HTTPException, Depends
-from models.motherboard import Motherboard, MotherboardManufacturer, MotherboardChipset
 from sqlmodel import Session, select
-from database import engine
+from utils.helper import validate_and_normalize_name
+from models.motherboard import Motherboard, MotherboardManufacturer, MotherboardChipset
+from database import get_db
 
 router = APIRouter()
 
 
-def get_db():
-    with Session(engine) as session:
-        yield session
-
-
-# MotherboardManufacturer CRUD Operations
 @router.post("/manufacturer/", response_model=MotherboardManufacturer)
 def create_motherboard_manufacturer(motherboard_manufacturer: MotherboardManufacturer, db: Session = Depends(get_db)):
+    motherboard_manufacturer.name = validate_and_normalize_name(motherboard_manufacturer.name, db,
+                                                                MotherboardManufacturer)
     db.add(motherboard_manufacturer)
     db.commit()
     db.refresh(motherboard_manufacturer)
@@ -40,9 +37,9 @@ def update_motherboard_manufacturer(manufacturer_id: int, motherboard_manufactur
     db_motherboard_manufacturer = db.get(MotherboardManufacturer, manufacturer_id)
     if db_motherboard_manufacturer is None:
         raise HTTPException(status_code=404, detail="Motherboard manufacturer not found")
-
+    motherboard_manufacturer.name = validate_and_normalize_name(motherboard_manufacturer.name, db,
+                                                                MotherboardManufacturer)
     db_motherboard_manufacturer.name = motherboard_manufacturer.name
-
     db.commit()
     db.refresh(db_motherboard_manufacturer)
     return db_motherboard_manufacturer
@@ -53,15 +50,14 @@ def delete_motherboard_manufacturer(manufacturer_id: int, db: Session = Depends(
     motherboard_manufacturer = db.get(MotherboardManufacturer, manufacturer_id)
     if motherboard_manufacturer is None:
         raise HTTPException(status_code=404, detail="Motherboard manufacturer not found")
-
     db.delete(motherboard_manufacturer)
     db.commit()
     return {"message": "Motherboard manufacturer deleted successfully"}
 
 
-# MotherboardChipset CRUD Operations
 @router.post("/chipset/", response_model=MotherboardChipset)
 def create_motherboard_chipset(motherboard_chipset: MotherboardChipset, db: Session = Depends(get_db)):
+    motherboard_chipset.name = validate_and_normalize_name(motherboard_chipset.name, db, MotherboardChipset)
     db.add(motherboard_chipset)
     db.commit()
     db.refresh(motherboard_chipset)
@@ -87,9 +83,8 @@ def update_motherboard_chipset(chipset_id: int, motherboard_chipset: Motherboard
     db_motherboard_chipset = db.get(MotherboardChipset, chipset_id)
     if db_motherboard_chipset is None:
         raise HTTPException(status_code=404, detail="Motherboard chipset not found")
-
+    motherboard_chipset.name = validate_and_normalize_name(motherboard_chipset.name, db, MotherboardChipset)
     db_motherboard_chipset.name = motherboard_chipset.name
-
     db.commit()
     db.refresh(db_motherboard_chipset)
     return db_motherboard_chipset
@@ -100,15 +95,15 @@ def delete_motherboard_chipset(chipset_id: int, db: Session = Depends(get_db)):
     motherboard_chipset = db.get(MotherboardChipset, chipset_id)
     if motherboard_chipset is None:
         raise HTTPException(status_code=404, detail="Motherboard chipset not found")
-
     db.delete(motherboard_chipset)
     db.commit()
     return {"message": "Motherboard chipset deleted successfully"}
 
 
-# Motherboard CRUD Operations
 @router.post("/", response_model=Motherboard)
 def create_motherboard(motherboard: Motherboard, db: Session = Depends(get_db)):
+    if hasattr(motherboard, "name"):
+        motherboard.name = validate_and_normalize_name(motherboard.name, db, Motherboard)
     db.add(motherboard)
     db.commit()
     db.refresh(motherboard)
@@ -134,11 +129,11 @@ def update_motherboard(motherboard_id: int, motherboard: Motherboard, db: Sessio
     db_motherboard = db.get(Motherboard, motherboard_id)
     if db_motherboard is None:
         raise HTTPException(status_code=404, detail="Motherboard not found")
-
+    if hasattr(motherboard, "name"):
+        motherboard.name = validate_and_normalize_name(motherboard.name, db, Motherboard)
     db_motherboard.serial = motherboard.serial
     db_motherboard.motherboard_manufacturer_id = motherboard.motherboard_manufacturer_id
     db_motherboard.motherboard_chipset_id = motherboard.motherboard_chipset_id
-
     db.commit()
     db.refresh(db_motherboard)
     return db_motherboard
@@ -149,7 +144,6 @@ def delete_motherboard(motherboard_id: int, db: Session = Depends(get_db)):
     motherboard = db.get(Motherboard, motherboard_id)
     if motherboard is None:
         raise HTTPException(status_code=404, detail="Motherboard not found")
-
     db.delete(motherboard)
     db.commit()
     return {"message": "Motherboard deleted successfully"}

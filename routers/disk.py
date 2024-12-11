@@ -1,18 +1,17 @@
 from fastapi import APIRouter, HTTPException, Depends
-from models.disk import Disk
 from sqlmodel import Session, select
-from database import engine
+from utils.helper import validate_and_normalize_name
+from models.disk import Disk
+from database import get_db
 
 router = APIRouter()
 
 
-def get_db():
-    with Session(engine) as session:
-        yield session
-
-
 @router.post("/", response_model=Disk)
 def create_disk(disk: Disk, db: Session = Depends(get_db)):
+    if hasattr(disk, "name"):
+        disk.name = validate_and_normalize_name(disk.name, db, Disk)
+
     db.add(disk)
     db.commit()
     db.refresh(disk)
@@ -38,6 +37,9 @@ def update_disk(disk_id: int, disk: Disk, db: Session = Depends(get_db)):
     db_disk = db.get(Disk, disk_id)
     if db_disk is None:
         raise HTTPException(status_code=404, detail="Disk not found")
+
+    if hasattr(disk, "name"):
+        disk.name = validate_and_normalize_name(disk.name, db, Disk)
 
     db_disk.name = disk.name
 

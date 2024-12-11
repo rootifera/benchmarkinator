@@ -1,20 +1,19 @@
 from fastapi import APIRouter, HTTPException, Depends
+from sqlmodel import Session, select
+from utils.helper import validate_and_normalize_name
 from models.benchmark_results import BenchmarkResult
 from models.config import Config
 from models.cpu import CPU
-from sqlmodel import Session, select
-from database import engine
+from database import get_db
 
 router = APIRouter()
 
 
-def get_db():
-    with Session(engine) as session:
-        yield session
-
-
 @router.post("/", response_model=BenchmarkResult)
 def create_benchmark_result(benchmark_result: BenchmarkResult, db: Session = Depends(get_db)):
+    if hasattr(benchmark_result, "name"):
+        benchmark_result.name = validate_and_normalize_name(benchmark_result.name, db, BenchmarkResult)
+
     db.add(benchmark_result)
     db.commit()
     db.refresh(benchmark_result)
