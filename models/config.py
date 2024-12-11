@@ -10,9 +10,9 @@ class Config(SQLModel, table=True):
     gpu_id: Optional[int] = Field(default=None, foreign_key="gpu.id")
     disk_id: Optional[int] = Field(default=None, foreign_key="disk.id")
     os_id: Optional[int] = Field(default=None, foreign_key="os.id")
-    ram_type_id: Optional[int] = Field(default=None, foreign_key="ram.id")  # Use RAM model for ram_type
+    ram_type_id: Optional[int] = Field(default=None, foreign_key="ram.id")
 
-    ram_size: str  # Changed to string to accommodate different units
+    ram_size: str
     cpu_driver_version: Optional[str] = None
     mb_chipset_driver_version: Optional[str] = None
     gpu_driver_version: Optional[str] = None
@@ -32,5 +32,5 @@ class Config(SQLModel, table=True):
     gpu: Optional["GPU"] = Relationship()
     disk: Optional["Disk"] = Relationship()
     os: Optional["OS"] = Relationship()
-    ram_type: Optional["RAM"] = Relationship()  # Relationship to RAM model
-    benchmark_results: List["BenchmarkResult"] = Relationship(back_populates="config")  # Add this line
+    ram_type: Optional["RAM"] = Relationship()
+    benchmark_results: List["BenchmarkResult"] = Relationship(back_populates="config")
