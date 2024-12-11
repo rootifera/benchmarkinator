@@ -17,6 +17,7 @@ services:
 
   benchmarkinator-api:
     build: .
+    image: rootifera/benchmarkinator-api
     container_name: benchmarkinator-api
     environment:
       DATABASE_URL: mysql+pymysql://benchmarkinator:benchmarkinatorpassword@benchmarkinator-db:3306/benchmarkinator
