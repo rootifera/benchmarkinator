@@ -7,8 +7,7 @@ from database import get_db
 
 router = APIRouter()
 
-
-@router.post("/config/", response_model=Config)
+@router.post("/", response_model=Config)
 def create_config(config: Config, db: Session = Depends(get_db)):
     ram_type = db.get(RAM, config.ram_type_id)
     if ram_type is None:
@@ -22,24 +21,20 @@ def create_config(config: Config, db: Session = Depends(get_db)):
     db.refresh(config)
     return config
 
-
-@router.get("/config/", response_model=list[Config])
+@router.get("/", response_model=list[Config])
 def get_configs(db: Session = Depends(get_db)):
     configs = db.exec(select(Config)).all()
     return configs
 
-
-@router.get("/config/{config_id}", response_model=Config)
+@router.get("/{config_id}", response_model=Config)
 def get_config(config_id: int, db: Session = Depends(get_db)):
     config = db.get(Config, config_id)
     if config is None:
         raise HTTPException(status_code=404, detail="Config not found")
     return config
 
-
-@router.put("/config/{config_id}", response_model=Config)
+@router.put("/{config_id}", response_model=Config)
 def update_config(config_id: int, config: Config, db: Session = Depends(get_db)):
-    # Check if the ram_type_id exists in the RAM table
     ram_type = db.get(RAM, config.ram_type_id)
     if ram_type is None:
         raise HTTPException(status_code=400, detail="Invalid RAM type")
@@ -76,8 +71,7 @@ def update_config(config_id: int, config: Config, db: Session = Depends(get_db))
     db.refresh(db_config)
     return db_config
 
-
-@router.delete("/config/{config_id}")
+@router.delete("/{config_id}")
 def delete_config(config_id: int, db: Session = Depends(get_db)):
     config = db.get(Config, config_id)
     if config is None:
