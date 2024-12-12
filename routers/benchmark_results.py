@@ -4,6 +4,7 @@ from utils.helper import validate_and_normalize_name
 from models.benchmark_results import BenchmarkResult
 from models.config import Config
 from models.cpu import CPU
+from models.benchmark import Benchmark
 from database import get_db
 
 router = APIRouter()
@@ -11,6 +12,14 @@ router = APIRouter()
 
 @router.post("/", response_model=BenchmarkResult)
 def create_benchmark_result(benchmark_result: BenchmarkResult, db: Session = Depends(get_db)):
+    benchmark = db.get(Benchmark, benchmark_result.benchmark_id)
+    if benchmark is None:
+        raise HTTPException(status_code=400, detail="Invalid benchmark ID")
+
+    config = db.get(Config, benchmark_result.config_id)
+    if config is None:
+        raise HTTPException(status_code=400, detail="Invalid config ID")
+
     if hasattr(benchmark_result, "name"):
         benchmark_result.name = validate_and_normalize_name(benchmark_result.name, db, BenchmarkResult)
 
@@ -18,6 +27,45 @@ def create_benchmark_result(benchmark_result: BenchmarkResult, db: Session = Dep
     db.commit()
     db.refresh(benchmark_result)
     return benchmark_result
+
+
+@router.put("/{result_id}", response_model=BenchmarkResult)
+def update_benchmark_result(result_id: int, benchmark_result: BenchmarkResult, db: Session = Depends(get_db)):
+    db_result = db.get(BenchmarkResult, result_id)
+    if db_result is None:
+        raise HTTPException(status_code=404, detail="Benchmark result not found")
+
+    if benchmark_result.benchmark_id is not None:
+        benchmark = db.get(Benchmark, benchmark_result.benchmark_id)
+        if benchmark is None:
+            raise HTTPException(status_code=400, detail="Invalid benchmark ID")
+
+    if benchmark_result.config_id is not None:
+        config = db.get(Config, benchmark_result.config_id)
+        if config is None:
+            raise HTTPException(status_code=400, detail="Invalid config ID")
+
+    if hasattr(benchmark_result, "name"):
+        benchmark_result.name = validate_and_normalize_name(benchmark_result.name, db, BenchmarkResult)
+
+    for key, value in benchmark_result.dict(exclude_unset=True).items():
+        setattr(db_result, key, value)
+
+    db.add(db_result)
+    db.commit()
+    db.refresh(db_result)
+    return db_result
+
+
+@router.delete("/{result_id}", response_model=dict)
+def delete_benchmark_result(result_id: int, db: Session = Depends(get_db)):
+    db_result = db.get(BenchmarkResult, result_id)
+    if db_result is None:
+        raise HTTPException(status_code=404, detail="Benchmark result not found")
+
+    db.delete(db_result)
+    db.commit()
+    return {"message": "Benchmark result deleted successfully"}
 
 
 @router.get("/", response_model=list[BenchmarkResult])
