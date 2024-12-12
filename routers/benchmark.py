@@ -7,7 +7,6 @@ from database import get_db
 router = APIRouter()
 
 
-# BenchmarkTarget CRUD Operations
 @router.post("/target/", response_model=BenchmarkTarget)
 def create_benchmark_target(benchmark_target: BenchmarkTarget, db: Session = Depends(get_db)):
     benchmark_target.name = validate_and_normalize_name(benchmark_target.name, db, BenchmarkTarget)
@@ -58,7 +57,6 @@ def delete_benchmark_target(target_id: int, db: Session = Depends(get_db)):
     return {"message": "Benchmark target deleted successfully"}
 
 
-# Benchmark CRUD Operations
 @router.post("/", response_model=Benchmark)
 def create_benchmark(benchmark: Benchmark, db: Session = Depends(get_db)):
     benchmark.name = validate_and_normalize_name(benchmark.name, db, Benchmark)
