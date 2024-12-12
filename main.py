@@ -4,6 +4,7 @@ from routers import cpu, gpu, motherboard, ram, disk, oses, config, benchmark, b
 from utils.auth import authenticate
 from database import init_db
 
+
 app = FastAPI(dependencies=[Depends(authenticate)])
 
 app.add_middleware(
@@ -29,4 +30,9 @@ init_db()
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to The Benchmarkinator!"}
+    return {
+        "app": "benchmarkinator-api",
+        "version": "1.0.0",
+        "db": "mysql",
+        "build_no": "01"
+    }
