@@ -1,9 +1,12 @@
-from fastapi import FastAPI, Depends
+from io import BytesIO
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from routers import cpu, gpu, motherboard, ram, disk, oses, config, benchmark, benchmark_results
 from utils.auth import authenticate
-from database import init_db
-
+from database import init_db, get_db
+from fastapi import FastAPI, UploadFile, HTTPException, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import text
 
 app = FastAPI(dependencies=[Depends(authenticate)])
 
@@ -36,3 +39,63 @@ def read_root():
         "db": "mysql",
         "build_no": "01"
     }
+
+
+@app.post("/import_sql/")
+def import_sql(file: UploadFile, db: Session = Depends(get_db)):
+    """
+    Endpoint to import an SQL file for initializing or updating the database.
+    This is a generic function and can handle any valid SQL file.
+    """
+    try:
+        sql_content = file.file.read().decode("utf-8")
+
+        statements = sql_content.split(";")
+
+        for statement in statements:
+            statement = statement.strip()
+            if statement:
+                db.execute(text(statement))
+
+        db.commit()
+        return {"message": "SQL file imported successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Failed to import SQL file: {str(e)}")
+    finally:
+        file.file.close()
+
+
+@app.get("/backup_database")
+async def backup_database(db: Session = Depends(get_db)):
+    """
+    Endpoint to create a MySQL database backup by generating SQL statements
+    for the schema and data, and returning it as a downloadable file.
+    """
+    try:
+        sql_dump = BytesIO()
+
+        tables = db.execute(text("SHOW TABLES")).fetchall()
+        tables = [table[0] for table in tables]
+
+        for table in tables:
+            create_table_sql = db.execute(text(f"SHOW CREATE TABLE {table}")).fetchone()[1]
+            sql_dump.write(f"{create_table_sql};\n\n".encode('utf-8'))
+
+            rows = db.execute(text(f"SELECT * FROM {table}")).fetchall()
+            if rows:
+                for row in rows:
+                    insert_sql = f"INSERT INTO {table} ({', '.join([col[0] for col in db.execute(text(f'SHOW COLUMNS FROM {table}')).fetchall()])}) VALUES ({', '.join([repr(val) for val in row])});\n"
+                    sql_dump.write(insert_sql.encode('utf-8'))
+                sql_dump.write(b"\n")
+
+        sql_dump.seek(0)
+
+        return StreamingResponse(
+            sql_dump,
+            media_type="application/sql",
+            headers={"Content-Disposition": f"attachment; filename=backup.sql"}
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating backup: {str(e)}")
