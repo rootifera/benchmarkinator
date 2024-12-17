@@ -131,6 +131,8 @@ def update_motherboard(motherboard_id: int, motherboard: Motherboard, db: Sessio
         raise HTTPException(status_code=404, detail="Motherboard not found")
     if hasattr(motherboard, "name"):
         motherboard.name = validate_and_normalize_name(motherboard.name, db, Motherboard)
+
+    db_motherboard.model = motherboard.model
     db_motherboard.serial = motherboard.serial
     db_motherboard.motherboard_manufacturer_id = motherboard.motherboard_manufacturer_id
     db_motherboard.motherboard_chipset_id = motherboard.motherboard_chipset_id

@@ -18,7 +18,7 @@ class MotherboardChipset(SQLModel, table=True):
 
 class Motherboard(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    model: str  # Add the model field
+    model: str
     serial: Optional[str] = None
 
     motherboard_manufacturer_id: Optional[int] = Field(default=None, foreign_key="motherboardmanufacturer.id")
