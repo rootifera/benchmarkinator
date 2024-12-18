@@ -37,7 +37,7 @@ def update_benchmark_target(target_id: int, benchmark_target: BenchmarkTarget, d
     if db_benchmark_target is None:
         raise HTTPException(status_code=404, detail="Benchmark target not found")
 
-    benchmark_target.name = validate_and_normalize_name(benchmark_target.name, db, BenchmarkTarget)
+    benchmark_target.name = validate_and_normalize_name(benchmark_target.name, db, BenchmarkTarget, current_id=target_id)
 
     db_benchmark_target.name = benchmark_target.name
 
@@ -87,7 +87,7 @@ def update_benchmark(benchmark_id: int, benchmark: Benchmark, db: Session = Depe
     if db_benchmark is None:
         raise HTTPException(status_code=404, detail="Benchmark not found")
 
-    benchmark.name = validate_and_normalize_name(benchmark.name, db, Benchmark)
+    benchmark.name = validate_and_normalize_name(benchmark.name, db, Benchmark, current_id=benchmark_id)
 
     db_benchmark.name = benchmark.name
     db_benchmark.benchmark_target_id = benchmark.benchmark_target_id

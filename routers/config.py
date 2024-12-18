@@ -104,7 +104,7 @@ def update_config(config_id: int, config: Config, db: Session = Depends(get_db))
         raise HTTPException(status_code=404, detail="Config not found")
 
     if hasattr(config, "name"):
-        config.name = validate_and_normalize_name(config.name, db, Config)
+        config.name = validate_and_normalize_name(config.name, db, Config, current_id=config_id)
 
     existing_config = db.exec(select(Config).where(Config.name == config.name, Config.id != config_id)).first()
     if existing_config:

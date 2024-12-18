@@ -35,7 +35,7 @@ def update_ram(ram_id: int, ram: RAM, db: Session = Depends(get_db)):
     db_ram = db.get(RAM, ram_id)
     if db_ram is None:
         raise HTTPException(status_code=404, detail="RAM not found")
-    ram.name = validate_and_normalize_name(ram.name, db, RAM)
+    ram.name = validate_and_normalize_name(ram.name, db, RAM, current_id=ram_id)
     db_ram.name = ram.name
     db.commit()
     db.refresh(db_ram)

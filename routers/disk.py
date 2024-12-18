@@ -39,7 +39,7 @@ def update_disk(disk_id: int, disk: Disk, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Disk not found")
 
     if hasattr(disk, "name"):
-        disk.name = validate_and_normalize_name(disk.name, db, Disk)
+        disk.name = validate_and_normalize_name(disk.name, db, Disk, current_id=disk_id)
 
     db_disk.name = disk.name
 

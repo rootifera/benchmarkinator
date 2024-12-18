@@ -1,3 +1,5 @@
+from datetime import datetime
+import time
 from io import BytesIO
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,11 +35,13 @@ init_db()
 
 @app.get("/")
 def read_root():
+    version = datetime.now().strftime("%d%m%Y")
     return {
         "app": "benchmarkinator-api",
-        "version": "1.0.0",
+        "version": version,
         "db": "mysql",
-        "build_no": "01"
+        "build_no": int(time.time()),
+        "build_name": "Commander Boston Low"
     }
 
 

@@ -37,7 +37,7 @@ def update_gpu_manufacturer(manufacturer_id: int, gpu_manufacturer: GPUManufactu
     if db_gpu_manufacturer is None:
         raise HTTPException(status_code=404, detail="GPU manufacturer not found")
 
-    gpu_manufacturer.name = validate_and_normalize_name(gpu_manufacturer.name, db, GPUManufacturer)
+    gpu_manufacturer.name = validate_and_normalize_name(gpu_manufacturer.name, db, GPUManufacturer, current_id=manufacturer_id)
 
     db_gpu_manufacturer.name = gpu_manufacturer.name
 
@@ -88,7 +88,7 @@ def update_gpu_brand(brand_id: int, gpu_brand: GPUBrand, db: Session = Depends(g
     if db_gpu_brand is None:
         raise HTTPException(status_code=404, detail="GPU brand not found")
 
-    gpu_brand.name = validate_and_normalize_name(gpu_brand.name, db, GPUBrand)
+    gpu_brand.name = validate_and_normalize_name(gpu_brand.name, db, GPUBrand, current_id=brand_id)
 
     db_gpu_brand.name = gpu_brand.name
 
@@ -139,7 +139,7 @@ def update_gpu_model(model_id: int, gpu_model: GPUModel, db: Session = Depends(g
     if db_gpu_model is None:
         raise HTTPException(status_code=404, detail="GPU model not found")
 
-    gpu_model.name = validate_and_normalize_name(gpu_model.name, db, GPUModel)
+    gpu_model.name = validate_and_normalize_name(gpu_model.name, db, GPUModel, current_id=model_id)
 
     db_gpu_model.name = gpu_model.name
 
@@ -190,7 +190,7 @@ def update_gpu_vram_type(vram_type_id: int, gpu_vram_type: GPUVRAMType, db: Sess
     if db_gpu_vram_type is None:
         raise HTTPException(status_code=404, detail="GPU VRAM type not found")
 
-    gpu_vram_type.name = validate_and_normalize_name(gpu_vram_type.name, db, GPUVRAMType)
+    gpu_vram_type.name = validate_and_normalize_name(gpu_vram_type.name, db, GPUVRAMType, current_id=vram_type_id)
 
     db_gpu_vram_type.name = gpu_vram_type.name
 
@@ -242,7 +242,7 @@ def update_gpu(gpu_id: int, gpu: GPU, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="GPU not found")
 
     if hasattr(gpu, "name"):
-        gpu.name = validate_and_normalize_name(gpu.name, db, GPU)
+        gpu.name = validate_and_normalize_name(gpu.name, db, GPU, current_id=gpu_id)
 
     db_gpu.vram_size = gpu.vram_size
     db_gpu.serial = gpu.serial

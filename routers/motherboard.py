@@ -38,7 +38,7 @@ def update_motherboard_manufacturer(manufacturer_id: int, motherboard_manufactur
     if db_motherboard_manufacturer is None:
         raise HTTPException(status_code=404, detail="Motherboard manufacturer not found")
     motherboard_manufacturer.name = validate_and_normalize_name(motherboard_manufacturer.name, db,
-                                                                MotherboardManufacturer)
+                                                                MotherboardManufacturer, current_id=manufacturer_id)
     db_motherboard_manufacturer.name = motherboard_manufacturer.name
     db.commit()
     db.refresh(db_motherboard_manufacturer)
@@ -83,7 +83,7 @@ def update_motherboard_chipset(chipset_id: int, motherboard_chipset: Motherboard
     db_motherboard_chipset = db.get(MotherboardChipset, chipset_id)
     if db_motherboard_chipset is None:
         raise HTTPException(status_code=404, detail="Motherboard chipset not found")
-    motherboard_chipset.name = validate_and_normalize_name(motherboard_chipset.name, db, MotherboardChipset)
+    motherboard_chipset.name = validate_and_normalize_name(motherboard_chipset.name, db, MotherboardChipset, current_id=chipset_id)
     db_motherboard_chipset.name = motherboard_chipset.name
     db.commit()
     db.refresh(db_motherboard_chipset)
@@ -130,7 +130,7 @@ def update_motherboard(motherboard_id: int, motherboard: Motherboard, db: Sessio
     if db_motherboard is None:
         raise HTTPException(status_code=404, detail="Motherboard not found")
     if hasattr(motherboard, "name"):
-        motherboard.name = validate_and_normalize_name(motherboard.name, db, Motherboard)
+        motherboard.name = validate_and_normalize_name(motherboard.name, db, Motherboard, current_id=motherboard_id)
 
     db_motherboard.model = motherboard.model
     db_motherboard.serial = motherboard.serial
