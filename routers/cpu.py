@@ -39,7 +39,7 @@ def update_cpu_brand(brand_id: int, cpu_brand: CPUBrand, db: Session = Depends(g
     if db_cpu_brand is None:
         raise HTTPException(status_code=404, detail="CPU brand not found")
 
-    cpu_brand.name = validate_and_normalize_name(cpu_brand.name, db, CPUBrand)
+    cpu_brand.name = validate_and_normalize_name(cpu_brand.name, db, CPUBrand, current_id=brand_id)
 
     db_cpu_brand.name = cpu_brand.name
 
@@ -90,7 +90,7 @@ def update_cpu_family(family_id: int, cpu_family: CPUFamily, db: Session = Depen
     if db_cpu_family is None:
         raise HTTPException(status_code=404, detail="CPU family not found")
 
-    cpu_family.name = validate_and_normalize_name(cpu_family.name, db, CPUFamily)
+    cpu_family.name = validate_and_normalize_name(cpu_family.name, db, CPUFamily, current_id=family_id)
 
     db_cpu_family.name = cpu_family.name
 
@@ -142,7 +142,7 @@ def update_cpu(cpu_id: int, cpu: CPU, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="CPU not found")
 
     if hasattr(cpu, "name"):
-        cpu.name = validate_and_normalize_name(cpu.name, db, CPU)
+        cpu.name = validate_and_normalize_name(cpu.name, db, CPU, current_id=cpu_id)
 
     db_cpu.model = cpu.model
     db_cpu.speed = cpu.speed

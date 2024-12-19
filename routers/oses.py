@@ -35,7 +35,7 @@ def update_os(os_id: int, os: OS, db: Session = Depends(get_db)):
     db_os = db.get(OS, os_id)
     if db_os is None:
         raise HTTPException(status_code=404, detail="OS not found")
-    os.name = validate_and_normalize_name(os.name, db, OS)
+    os.name = validate_and_normalize_name(os.name, db, OS, current_id=os_id)
     db_os.name = os.name
     db.commit()
     db.refresh(db_os)

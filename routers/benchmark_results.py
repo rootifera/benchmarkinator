@@ -46,7 +46,7 @@ def update_benchmark_result(result_id: int, benchmark_result: BenchmarkResult, d
             raise HTTPException(status_code=400, detail="Invalid config ID")
 
     if hasattr(benchmark_result, "name"):
-        benchmark_result.name = validate_and_normalize_name(benchmark_result.name, db, BenchmarkResult)
+        benchmark_result.name = validate_and_normalize_name(benchmark_result.name, db, BenchmarkResult, current_id=result_id)
 
     for key, value in benchmark_result.dict(exclude_unset=True).items():
         setattr(db_result, key, value)
