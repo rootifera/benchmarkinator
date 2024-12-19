@@ -6,9 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from routers import cpu, gpu, motherboard, ram, disk, oses, config, benchmark, benchmark_results
 from utils.auth import authenticate
 from database import init_db, get_db
-from fastapi import FastAPI, UploadFile, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
+from pydantic import BaseModel
 
 app = FastAPI(dependencies=[Depends(authenticate)])
 
@@ -45,29 +46,30 @@ def read_root():
     }
 
 
+class SQLFileImport(BaseModel):
+    file_content: str
+    filename: str
+
+
 @app.post("/import_sql/")
-def import_sql(file: UploadFile, db: Session = Depends(get_db)):
+def import_sql(file_data: SQLFileImport, db: Session = Depends(get_db)):
     """
-    Endpoint to import an SQL file for initializing or updating the database.
-    This is a generic function and can handle any valid SQL file.
+    Endpoint to import SQL content for initializing or updating the database.
     """
+    print("Received file_data:", file_data)  # Add this debug line
     try:
-        sql_content = file.file.read().decode("utf-8")
-
-        statements = sql_content.split(";")
-
+        statements = file_data.file_content.split(";")
         for statement in statements:
             statement = statement.strip()
             if statement:
+                print(f"Executing statement: {statement[:100]}...")  # Print first 100 chars of each statement
                 db.execute(text(statement))
-
         db.commit()
         return {"message": "SQL file imported successfully"}
     except Exception as e:
+        print(f"Error during import: {str(e)}")  # Add this debug line
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Failed to import SQL file: {str(e)}")
-    finally:
-        file.file.close()
 
 
 @app.get("/backup_database")
