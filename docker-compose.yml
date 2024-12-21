@@ -28,5 +28,16 @@ services:
         condition: service_healthy
     entrypoint: [ "/app/wait-for-it.sh", "benchmarkinator-db:3306", "--", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "12345" ]
 
+  benchmarkinator-web:
+    image: rootifera/benchmarkinator-web:latest
+    container_name: benchmarkinator-web
+    ports:
+      - "80:80"
+    depends_on:
+      benchmarkinator-db:
+        condition: service_healthy
+    restart: unless-stopped
+    entrypoint: ["/try-entrypoint.sh" ]
+    
 volumes:
   mysql_data:
