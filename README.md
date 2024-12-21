@@ -102,6 +102,6 @@ A: I'm not. I'm just a Linux/Cloud infra guy with basic programming skills. If y
 Q: Can I take this code make it better and share?\
 A: Sure, as long as we end up with a good benchmark manager tool, I absolutely don't care.
 
-Q: Wait, did you realize the benchmarkinator-web container is 5GB+! 
+Q: Wait, did you realize the benchmarkinator-web container is 5GB+! \
 A: Yeah, I know. I told you it's not the best. Until I figure out something better, this is what I can give you. Sorry!
 
