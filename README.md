@@ -1,107 +1,117 @@
-# Benchmarkinator -- A benchmark management tool
 
-This is a fairly simple tool for managing benchmarks. You can create some hardware configurations, add benchmarks, and then add the results. Later you can see or compare results. 
+# Benchmarkinator - A Benchmark Management Tool
 
+Benchmarkinator is a simple tool for managing benchmarks. It allows you to create hardware configurations, add benchmarks, and store results. You can later view and compare these results.
 
-## What?
+## What is Benchmarkinator?
 
-The application (at the moment) is made from three parts. A FastAPI python application as backend, MySQL as database and tooljet for frontend. I had to use tooljet for frontend because I don't have the skills for creating a webUI and I don't have anyone with enough free time to help me (if you see this application would be useful for yourself or someone and feel like creating a FE please feel free to do so, I'm happy to help as much as I can). 
+Benchmarkinator consists of three main components:
 
-## Why?
+- **Backend**: A FastAPI Python application
+- **Database**: MySQL
+- **Frontend**: Tooljet
 
-I have a large collection of computer hardware (mainly from 90s). I enjoy testing them and see how they perform. But often I do a single test, I see the score, smile and nod and then move on. I decided it would be better to save these results and compare against each other. You can probably use this application for recent hardware too. 
+I used Tooljet for the frontend because I don’t have the skills to create a web UI, and I don’t have anyone with enough free time to help. If you think this tool would be useful and feel like building a frontend, feel free to contribute — I’d be happy to help however I can.
 
-## How to start
+## Why was Benchmarkinator created?
 
-Staring the application is simple:
+I have a large collection of computer hardware (mostly from the 90s) that I enjoy testing. However, I often run a test, see the score, nod in satisfaction, and then move on. I decided it would be better to save these results and compare them over time. You can certainly use this application with more recent hardware too.
 
-    docker compose up -d
+## Getting Started
 
-And once everything is up and running you can access the application as
+Starting the application is simple:
 
-    http://YOUR_DOCKER_HOST_IP/applications/benchmarkinator-webadmin
+```bash
+docker compose up -d
+```
 
-Later I'm planning to put a proper reverse proxy container on front of the tooljet but I think since this application is made to be used locally (at least within your LAN) and not suitable for being public (there's no authentication), I thought it would be OK to use it like that. (I'm not lazy, I just had enough of the FE and I really hate it). 
+Once everything is up and running, access the application at:
 
-I left the SwaggerUI for the API container and you should be able to access it via
+```
+http://YOUR_DOCKER_HOST_IP/applications/benchmarkinator-webadmin
+```
 
-    http://YOUR_DOCKER_HOST_IP:12345/docs
+In the future, I plan to set up a proper reverse proxy for Tooljet. However, since this application is designed for local (LAN) use and lacks authentication, I think it’s acceptable for now to access it this way. (I’m not lazy — I’m just done with frontend work for now!)
 
+You can also access the Swagger UI for the API container at:
 
-## How to use
+```
+http://YOUR_DOCKER_HOST_IP:12345/docs
+```
 
-This part is a little complicated but bear with me. Logic is fairly straight forward. We will create hardware configs, we will create benchmarks and then we will save our results. 
+## How to Use
 
-In order to create configs you will need to add CPU, GPU, Motherboard, RAM, Disk and OS. Let's have an example. 
+The logic of the application is straightforward, but bear with me as I explain the process. The workflow involves creating hardware configurations, adding benchmarks, and then saving the results.
 
-    Config Name: MyRetroPC1
-    CPU:  AMD Athlon XP 1500+ 
-    GPU: ELSA NVIDIA TNT2 M64 32MB
-    Motherboard: ECS K7S5A
-    RAM Type: SDRAM
-    RAM Size: 32MB
-    DISK: IDE HDD 5400RPM
-    OS: Win98
+### Step 1: Create Hardware Configurations
 
-    Config Name: MyRetroPC2
-    CPU:  Intel Pentium 4 1600Mhz 
-    GPU: 3DFX Voodoo 3
-    Motherboard: Gigabyte GA-8IK1100
-    RAM Type: SDRAM
-    RAM Size: 128MB
-    DISK: IDE HDD 7200RPM
-    OS: Win98
+To create configurations, you’ll need to specify a CPU, GPU, Motherboard, RAM, Disk, and OS. For example:
 
-You can see the "hardware config" as a PC we can run benchmarks on. 
+**Config Name**: `MyRetroPC1`
+- CPU: AMD Athlon XP 1500+
+- GPU: ELSA NVIDIA TNT2 M64 32MB
+- Motherboard: ECS K7S5A
+- RAM Type: SDRAM
+- RAM Size: 32MB
+- Disk: IDE HDD 5400RPM
+- OS: Win98
 
-Next we would add benchmarks. 
+**Config Name**: `MyRetroPC2`
+- CPU: Intel Pentium 4 1600MHz
+- GPU: 3DFX Voodoo 3
+- Motherboard: Gigabyte GA-8IK1100
+- RAM Type: SDRAM
+- RAM Size: 128MB
+- Disk: IDE HDD 7200RPM
+- OS: Win98
 
-    Benchmark: 3DMark99
-    Target: GPU
-    
-    Benchmark: 3DMark2000
-    Target: GPU
-    
-    Benchmark: Prime95
-    Target: CPU
+These configurations represent the PCs on which you’ll run benchmarks.
 
-Finally we would run the benchmarks on the PC's and enter the results
+### Step 2: Add Benchmarks
 
-    Benchmark: 3DMark2000
-    Config: MyRetroPC1
-    Result: 1521
-    Date: 11/11/2024
-    Notes: This is the average of 3 different runs.
-    
-    Benchmark: 3DMark2000
-    Config: MyRetroPC2
-    Result: 3712
-    Date: 12/11/2024
-    Notes: 2nd run crashed. 
+Next, you can add benchmarks to the system:
 
-Eventually you would have a database of each benchmark result for every config you created. You can filter results in different ways. For example you can select a CPU and see how it performed in different setups. You can do the same with GPUs, Configs or CPU&GPU combinations. 
+- **Benchmark**: 3DMark99 (Target: GPU)
+- **Benchmark**: 3DMark2000 (Target: GPU)
+- **Benchmark**: Prime95 (Target: CPU)
 
-As usual, this is a homemade application with no warranties. If you cause any damage with it to anyone or anything, it's not my responsibility but please tell me how did you manage causing an issue. Would be a funny story.
+### Step 3: Run Benchmarks and Enter Results
 
-And if you think you can make a better FE, please let me know. 
+Once your benchmarks are added, you can run them on your hardware configurations and enter the results:
 
-## TODO:
+**Benchmark**: 3DMark2000
+- **Config**: MyRetroPC1
+- **Result**: 1521
+- **Date**: 11/11/2024
+- **Notes**: This is the average of 3 different runs.
 
-- I will provide you with SQL files, so you can have some starting point. Probably CPU Brands and Family, GPU Brands, Manufacturers, Models etc. It would save you some time, so you can select stuff from the list and carry on.  
-- I tested the backup but didn't test the restore yet. That needs to be done. 
+**Benchmark**: 3DMark2000
+- **Config**: MyRetroPC2
+- **Result**: 3712
+- **Date**: 12/11/2024
+- **Notes**: 2nd run crashed.
 
+As you accumulate results, you’ll be able to compare them in various ways. For example, you can filter by CPU and view performance across different setups. The same can be done for GPUs, hardware configurations, or CPU & GPU combinations.
+
+> **Note**: This is a homemade application, and I take no responsibility for any damage caused by its use. However, if you manage to cause an issue, let me know — it would make for a funny story!
+
+If you think you can improve the frontend, feel free to reach out.
+
+## TODO
+
+- I will provide SQL files to give you a starting point with CPU Brands, Families, GPU Brands, Manufacturers, Models, etc. These will save you time by allowing you to select from a list.
+- I have tested backups, but I still need to test the restore process.
 
 ## FAQ
 
-Q: This could have been an Excel sheet. Why did you make something like that. \
-A: I thought it would be simpler if I did that. I was wrong. 
+**Q**: This could have been an Excel sheet. Why did you make something like this?  
+**A**: I thought it would be simpler to make a dedicated tool. I was wrong.
 
-Q: Your code sucks and probably most of it is from chatGPT. What kind of a developer are you?\
-A: I'm not. I'm just a Linux/Cloud infra guy with basic programming skills. If you can make it better, the code is open.
+**Q**: Your code isn’t great, and I’m sure most of it is from ChatGPT. What kind of developer are you?  
+**A**: I’m not really a developer — I’m a Linux/Cloud infrastructure guy with basic programming skills. If you can improve the code, feel free to contribute.
 
-Q: Can I take this code make it better and share?\
-A: Sure, as long as we end up with a good benchmark manager tool, I absolutely don't care.
+**Q**: Can I take the code, make it better, and share it?  
+**A**: Sure! As long as the result is a good benchmark management tool, I’m happy with that.
 
-Q: Wait, did you realize the benchmarkinator-web container is 5GB+! \
-A: Yeah, I know. I told you it's not the best. Until I figure out something better, this is what I can give you. Sorry!
-
+**Q**: Wait, did you realize the `benchmarkinator-web` container is over 5GB?  
+**A**: Yes, I’m aware. Until I come up with a better solution, this is what I can offer. Apologies for the size!
