@@ -1,0 +1,25 @@
+-- Motherboard Manufacturers
+
+INSERT INTO motherboardmanufacturer (name) VALUES
+('AOpen'),
+('Abit'),
+('Acer'),
+('ASRock'),
+('ASUS'),
+('Biostar'),
+('Chaintech'),
+('Dell'),
+('DFI'),
+('ECS'),
+('EVGA'),
+('FIC'),
+('Foxconn'),
+('Gigabyte'),
+('HP'),
+('Intel'),
+('MSI'),
+('Sapphire'),
+('Shuttle'),
+('Supermicro'),
+('Soyo'),
+('Tyan');
