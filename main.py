@@ -1,5 +1,6 @@
 from datetime import datetime
 import time
+from pathlib import Path
 from io import BytesIO
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,7 +43,7 @@ def read_root():
         "version": version,
         "db": "mysql",
         "build_no": int(time.time()),
-        "build_name": "Commander Boston Low"
+        "build_name": "Manuel Cavalera"
     }
 
 
@@ -56,18 +57,18 @@ def import_sql(file_data: SQLFileImport, db: Session = Depends(get_db)):
     """
     Endpoint to import SQL content for initializing or updating the database.
     """
-    print("Received file_data:", file_data)  # Add this debug line
+    print("Received file_data:", file_data)
     try:
         statements = file_data.file_content.split(";")
         for statement in statements:
             statement = statement.strip()
             if statement:
-                print(f"Executing statement: {statement[:100]}...")  # Print first 100 chars of each statement
+                print(f"Executing statement: {statement[:100]}...")
                 db.execute(text(statement))
         db.commit()
         return {"message": "SQL file imported successfully"}
     except Exception as e:
-        print(f"Error during import: {str(e)}")  # Add this debug line
+        print(f"Error during import: {str(e)}")
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Failed to import SQL file: {str(e)}")
 
@@ -105,3 +106,49 @@ async def backup_database(db: Session = Depends(get_db)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating backup: {str(e)}")
+
+
+valid_tables = [
+    "cpubrand", "cpufamily", "disk", "gpubrand", "gpumanufacturer", "gpumodel", "gpuvramtype",
+    "motherboardchipset", "motherboardmanufacturer", "os", "ram"
+]
+
+@app.post("/init_db/")
+def init_db(db: Session = Depends(get_db)):
+    try:
+        dbinit_file = Path("DBINIT")
+        if dbinit_file.exists():
+            return {"message": "Database has already been initialized. Skipping import."}
+
+        sql_folder = Path("extras/sql")
+        if not sql_folder.exists() or not sql_folder.is_dir():
+            raise HTTPException(status_code=404, detail="SQL folder not found")
+
+        sql_files = [f for f in sql_folder.glob("*.sql")]
+        if not sql_files:
+            raise HTTPException(status_code=404, detail="No SQL files found in the folder")
+
+        for sql_file in sql_files:
+            table_name = sql_file.stem
+            if table_name in valid_tables:
+                with open(sql_file, "r") as file:
+                    sql_content = file.read()
+
+                statements = sql_content.split(";")
+                for statement in statements:
+                    statement = statement.strip()
+                    if statement:
+                        db.execute(text(statement))
+
+                db.commit()
+            else:
+                print(f"Skipping SQL file for {table_name}, table not in valid tables list.")
+
+        with open(dbinit_file, "w") as f:
+            f.write("Database initialized successfully.\n")
+
+        return {"message": "SQL files imported successfully and DBINIT file created."}
+    except Exception as e:
+        print(f"Error during import: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Failed to import SQL files: {str(e)}")
