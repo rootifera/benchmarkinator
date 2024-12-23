@@ -99,8 +99,7 @@ If you think you can improve the frontend, feel free to reach out.
 
 ## TODO
 
-- I will provide SQL files to give you a starting point with CPU Brands, Families, GPU Brands, Manufacturers, Models, etc. These will save you time by allowing you to select from a list.
-- I have tested backups, but I still need to test the restore process.
+- SQL Import doesn't work. I need to fix that. 
 
 ## FAQ
 
