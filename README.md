@@ -1,17 +1,16 @@
 
-# Benchmarkinator - A Benchmark Management Tool
+# Benchmarkinator - A Benchmark Management API
 
-Benchmarkinator is a simple tool for managing benchmarks. It allows you to create hardware configurations, add benchmarks, and store results. You can later view and compare these results.
+Benchmarkinator is a simple tool for managing benchmarks. It allows you to create hardware configurations, add benchmarks, and store results. You can later view and compare these results through the REST API.
 
 ## What is Benchmarkinator?
 
-Benchmarkinator consists of three main components:
+Benchmarkinator consists of two main components:
 
 - **Backend**: A FastAPI Python application
 - **Database**: MySQL
-- **Frontend**: Tooljet
 
-I used Tooljet for the frontend because I don’t have the skills to create a web UI, and I don’t have anyone with enough free time to help. If you think this tool would be useful and feel like building a frontend, feel free to contribute — I’d be happy to help however I can.
+This is now a pure API solution that provides REST endpoints for all benchmark management operations.
 
 ## Why was Benchmarkinator created?
 
@@ -25,27 +24,60 @@ Starting the application is simple:
 docker compose up -d
 ```
 
-Once everything is up and running, access the application at:
+Once everything is up and running, access the API at:
 
 ```
-http://YOUR_DOCKER_HOST_IP/applications/benchmarkinator-webadmin
+http://YOUR_DOCKER_HOST_IP:12345
 ```
 
-In the future, I plan to set up a proper reverse proxy for Tooljet. However, since this application is designed for local (LAN) use and lacks authentication, I think it’s acceptable for now to access it this way. (I’m not lazy — I’m just done with frontend work for now!)
-
-You can also access the Swagger UI for the API container at:
+You can access the Swagger UI for the API at:
 
 ```
 http://YOUR_DOCKER_HOST_IP:12345/docs
 ```
 
+## API Authentication
+
+The API requires authentication using an API key. The default development key is `benchmarkinator-dev-key-2024`. Include this key in your requests using the `X-API-Key` header:
+
+```bash
+curl -H "X-API-Key: benchmarkinator-dev-key-2024" \
+     http://YOUR_DOCKER_HOST_IP:12345/api/cpu/
+```
+
+**Note**: Change the API key in production by setting the `API_KEY` environment variable in docker-compose.yml.
+
 ## How to Use
 
-The logic of the application is straightforward, but bear with me as I explain the process. The workflow involves creating hardware configurations, adding benchmarks, and then saving the results.
+The logic of the application is straightforward, but bear with me as I explain the process. The workflow involves creating hardware components, creating hardware configurations, adding benchmarks, and then saving the results.
 
-### Step 1: Create Hardware Configurations
+### Step 1: Create Hardware Components
 
-To create configurations, you’ll need to specify a CPU, GPU, Motherboard, RAM, Disk, and OS. For example:
+First, you'll need to create the individual hardware components:
+
+```bash
+# Create a CPU brand
+curl -X POST "http://YOUR_DOCKER_HOST_IP:12345/api/cpu/brand/" \
+     -H "X-API-Key: benchmarkinator-dev-key-2024" \
+     -H "Content-Type: application/json" \
+     -d '{"name": "AMD"}'
+
+# Create a CPU family
+curl -X POST "http://YOUR_DOCKER_HOST_IP:12345/api/cpu/family/" \
+     -H "X-API-Key: benchmarkinator-dev-key-2024" \
+     -H "Content-Type: application/json" \
+     -d '{"name": "Athlon XP", "brand_id": 1}'
+
+# Create a CPU
+curl -X POST "http://YOUR_DOCKER_HOST_IP:12345/api/cpu/" \
+     -H "X-API-Key: benchmarkinator-dev-key-2024" \
+     -H "Content-Type: application/json" \
+     -d '{"name": "Athlon XP 1500+", "family_id": 1, "base_clock": 1333}'
+```
+
+### Step 2: Create Hardware Configurations
+
+To create configurations, you'll need to specify a CPU, GPU, Motherboard, RAM, Disk, and OS. For example:
 
 **Config Name**: `MyRetroPC1`
 - CPU: AMD Athlon XP 1500+
@@ -65,9 +97,9 @@ To create configurations, you’ll need to specify a CPU, GPU, Motherboard, RAM,
 - Disk: IDE HDD 7200RPM
 - OS: Win98
 
-These configurations represent the PCs on which you’ll run benchmarks.
+These configurations represent the PCs on which you'll run benchmarks.
 
-### Step 2: Add Benchmarks
+### Step 3: Add Benchmarks
 
 Next, you can add benchmarks to the system:
 
@@ -75,7 +107,7 @@ Next, you can add benchmarks to the system:
 - **Benchmark**: 3DMark2000 (Target: GPU)
 - **Benchmark**: Prime95 (Target: CPU)
 
-### Step 3: Run Benchmarks and Enter Results
+### Step 4: Run Benchmarks and Enter Results
 
 Once your benchmarks are added, you can run them on your hardware configurations and enter the results:
 
@@ -91,11 +123,23 @@ Once your benchmarks are added, you can run them on your hardware configurations
 - **Date**: 12/11/2024
 - **Notes**: 2nd run crashed.
 
-As you accumulate results, you’ll be able to compare them in various ways. For example, you can filter by CPU and view performance across different setups. The same can be done for GPUs, hardware configurations, or CPU & GPU combinations.
+As you accumulate results, you'll be able to compare them in various ways. For example, you can filter by CPU and view performance across different setups. The same can be done for GPUs, hardware configurations, or CPU & GPU combinations.
 
 > **Note**: This is a homemade application, and I take no responsibility for any damage caused by its use. However, if you manage to cause an issue, let me know — it would make for a funny story!
 
-If you think you can improve the frontend, feel free to reach out.
+## API Endpoints
+
+The application provides REST API endpoints for all operations:
+
+- `/api/cpu` - CPU management
+- `/api/gpu` - GPU management  
+- `/api/motherboard` - Motherboard management
+- `/api/ram` - RAM management
+- `/api/disk` - Disk management
+- `/api/oses` - Operating system management
+- `/api/config` - Hardware configuration management
+- `/api/benchmark` - Benchmark management
+- `/api/benchmark_results` - Benchmark results management
 
 ## TODO
 
@@ -106,11 +150,8 @@ If you think you can improve the frontend, feel free to reach out.
 **Q**: This could have been an Excel sheet. Why did you make something like this?  
 **A**: I thought it would be simpler to make a dedicated tool. I was wrong.
 
-**Q**: Your code isn’t great, and I’m sure most of it is from ChatGPT. What kind of developer are you?  
-**A**: I’m not really a developer — I’m a Linux/Cloud infrastructure guy with basic programming skills. If you can improve the code, feel free to contribute.
+**Q**: Your code isn't great, and I'm sure most of it is from ChatGPT. What kind of developer are you?  
+**A**: I'm not really a developer — I'm a Linux/Cloud infrastructure guy with basic programming skills. If you can improve the code, feel free to contribute.
 
 **Q**: Can I take the code, make it better, and share it?  
-**A**: Sure! As long as the result is a good benchmark management tool, I’m happy with that.
-
-**Q**: Wait, did you realize the `benchmarkinator-web` container is over 5GB?  
-**A**: Yes, I’m aware. Until I come up with a better solution, this is what I can offer. Apologies for the size!
+**A**: Sure! As long as the result is a good benchmark management tool, I'm happy with that.
