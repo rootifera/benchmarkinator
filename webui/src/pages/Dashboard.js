@@ -6,18 +6,15 @@ import {
   Monitor, 
   BarChart3, 
   Settings, 
+  HardDrive,
   Plus,
-  TrendingUp,
-  Clock,
-  Award,
-  Key
+  TrendingUp
 } from 'lucide-react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { isAuthenticated, apiKey } = useAuth();
-  const [showApiModal, setShowApiModal] = useState(false);
+  const { apiKey, isAuthenticated } = useAuth();
   const [stats, setStats] = useState({
     cpus: 0,
     gpus: 0,
@@ -26,6 +23,7 @@ const Dashboard = () => {
     configurations: 0
   });
   const [loading, setLoading] = useState(true);
+  const [showApiModal, setShowApiModal] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -38,8 +36,7 @@ const Dashboard = () => {
   const fetchStats = async () => {
     try {
       const headers = { 'X-API-Key': apiKey };
-      
-      const [cpuRes, gpuRes, benchmarkRes, resultRes, configRes] = await Promise.all([
+      const [cpus, gpus, benchmarks, results, configs] = await Promise.all([
         axios.get('/api/cpu/', { headers }),
         axios.get('/api/gpu/', { headers }),
         axios.get('/api/benchmark/', { headers }),
@@ -48,11 +45,11 @@ const Dashboard = () => {
       ]);
 
       setStats({
-        cpus: cpuRes.data.length || 0,
-        gpus: gpuRes.data.length || 0,
-        benchmarks: benchmarkRes.data.length || 0,
-        results: resultRes.data.length || 0,
-        configurations: configRes.data.length || 0
+        cpus: cpus.data.length,
+        gpus: gpus.data.length,
+        benchmarks: benchmarks.data.length,
+        results: results.data.length,
+        configurations: configs.data.length
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -61,57 +58,37 @@ const Dashboard = () => {
     }
   };
 
-  const StatCard = ({ title, value, icon: Icon, color }) => (
-    <div className="card">
-      <div className="flex items-center">
-        <div className={`p-3 rounded-lg ${color}`}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-        <div className="ml-4">
-          <p className="text-sm font-medium text-secondary-600">{title}</p>
-          <p className="text-2xl font-semibold text-secondary-900">{value}</p>
-        </div>
-      </div>
-    </div>
-  );
+  const statCards = [
+    { name: 'CPUs', value: stats.cpus, icon: Cpu, color: 'bg-blue-500', href: '/hardware' },
+    { name: 'GPUs', value: stats.gpus, icon: Monitor, color: 'bg-green-500', href: '/hardware' },
+    { name: 'Benchmarks', value: stats.benchmarks, icon: BarChart3, color: 'bg-purple-500', href: '/benchmarks' },
+    { name: 'Results', value: stats.results, icon: TrendingUp, color: 'bg-orange-500', href: '/results' },
+    { name: 'Configurations', value: stats.configurations, icon: Settings, color: 'bg-indigo-500', href: '/configurations' },
+  ];
 
-  const QuickActionCard = ({ title, description, icon: Icon, href, color }) => (
-    <Link
-      to={href}
-      className="card hover:shadow-md transition-shadow duration-200 cursor-pointer group"
-    >
-      <div className="flex items-center">
-        <div className={`p-3 rounded-lg ${color} group-hover:scale-110 transition-transform duration-200`}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-        <div className="ml-4">
-          <h3 className="text-lg font-semibold text-secondary-900 group-hover:text-primary-600 transition-colors duration-200">
-            {title}
-          </h3>
-          <p className="text-secondary-600">{description}</p>
-        </div>
-      </div>
-    </Link>
-  );
+  const quickActions = [
+    { name: 'Add CPU', href: '/hardware', icon: Cpu, description: 'Add a new CPU to your hardware catalog' },
+    { name: 'Add GPU', href: '/hardware', icon: Monitor, description: 'Add a new GPU to your hardware catalog' },
+    { name: 'Create Benchmark', href: '/benchmarks', icon: BarChart3, description: 'Create a new benchmark test' },
+    { name: 'New Configuration', href: '/configurations', icon: Settings, description: 'Create a new hardware configuration' },
+  ];
 
   if (!isAuthenticated) {
     return (
       <div className="text-center py-12">
         <div className="max-w-md mx-auto">
-          <div className="mb-6">
-            <Cpu className="w-16 h-16 text-primary-500 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold text-secondary-900 mb-2">
-              Welcome to Benchmarkinator
-            </h1>
-            <p className="text-secondary-600">
-              Connect to your benchmark management API to get started
-            </p>
-          </div>
+          <div className="text-6xl mb-4">🔑</div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Connect Your API
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            To get started, you'll need to connect your API key to access the benchmark data.
+          </p>
           <button
             onClick={() => setShowApiModal(true)}
-            className="btn-primary text-lg px-8 py-3"
+            className="btn-primary inline-flex items-center"
           >
-            <Key className="w-5 h-5 mr-2 inline" />
+            <Plus className="w-5 h-5 mr-2" />
             Connect API
           </button>
         </div>
@@ -120,93 +97,86 @@ const Dashboard = () => {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-secondary-900">Dashboard</h1>
-        <p className="text-secondary-600 mt-2">
-          Overview of your benchmark management system
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Dashboard
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">
+          Welcome to your benchmark management system
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <StatCard
-          title="CPUs"
-          value={stats.cpus}
-          icon={Cpu}
-          color="bg-blue-500"
-        />
-        <StatCard
-          title="GPUs"
-          value={stats.gpus}
-          icon={Monitor}
-          color="bg-green-500"
-        />
-        <StatCard
-          title="Benchmarks"
-          value={stats.benchmarks}
-          icon={BarChart3}
-          color="bg-purple-500"
-        />
-        <StatCard
-          title="Results"
-          value={stats.results}
-          icon={TrendingUp}
-          color="bg-orange-500"
-        />
-        <StatCard
-          title="Configurations"
-          value={stats.configurations}
-          icon={Settings}
-          color="bg-indigo-500"
-        />
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Link
+              key={stat.name}
+              to={stat.href}
+              className="card hover:shadow-md transition-shadow cursor-pointer group"
+            >
+              <div className="flex items-center">
+                <div className={`p-3 rounded-lg ${stat.color} text-white`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    {stat.name}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {loading ? '...' : stat.value}
+                  </p>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       {/* Quick Actions */}
-      <div>
-        <h2 className="text-xl font-semibold text-secondary-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <QuickActionCard
-            title="Add Hardware"
-            description="Create new CPU, GPU, or other hardware components"
-            icon={Plus}
-            href="/hardware"
-            color="bg-blue-500"
-          />
-          <QuickActionCard
-            title="Create Benchmark"
-            description="Add new benchmarks to your testing suite"
-            icon={BarChart3}
-            href="/benchmarks"
-            color="bg-green-500"
-          />
-          <QuickActionCard
-            title="View Results"
-            description="Analyze and compare benchmark results"
-            icon={TrendingUp}
-            href="/results"
-            color="bg-purple-500"
-          />
+      <div className="card">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Link
+                key={action.name}
+                to={action.href}
+                className="group block p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary-300 dark:hover:border-primary-600 transition-colors"
+              >
+                <div className="flex items-center mb-4">
+                  <div className="p-2 bg-primary-100 dark:bg-primary-900 rounded-lg group-hover:bg-primary-200 dark:group-hover:bg-primary-800 transition-colors">
+                    <Icon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                  </div>
+                  <h3 className="ml-3 text-lg font-medium text-gray-900 dark:text-white">
+                    {action.name}
+                  </h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  {action.description}
+                </p>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
       {/* Recent Activity */}
-      <div>
-        <h2 className="text-xl font-semibold text-secondary-900 mb-4">Recent Activity</h2>
-        <div className="card">
-          <div className="flex items-center justify-center py-8 text-secondary-500">
-            <Clock className="w-8 h-8 mr-2" />
-            <span>No recent activity to display</span>
-          </div>
+      <div className="card">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+          Recent Activity
+        </h2>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <p>No recent activity to display</p>
+          <p className="text-sm mt-2">Start by adding some hardware or running benchmarks</p>
         </div>
       </div>
     </div>

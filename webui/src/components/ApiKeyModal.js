@@ -19,12 +19,12 @@ const ApiKeyModal = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-secondary-900">Enter API Key</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Enter API Key</h2>
           <button
             onClick={onClose}
-            className="text-secondary-400 hover:text-secondary-600"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400"
           >
             <X className="w-5 h-5" />
           </button>
@@ -32,11 +32,11 @@ const ApiKeyModal = ({ isOpen, onClose }) => {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="apiKey" className="block text-sm font-medium text-secondary-700 mb-2">
+            <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               API Key
             </label>
             <div className="relative">
-              <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-secondary-400" />
+              <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
                 id="apiKey"
@@ -47,7 +47,7 @@ const ApiKeyModal = ({ isOpen, onClose }) => {
                 required
               />
             </div>
-            <p className="mt-1 text-sm text-secondary-500">
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               The default development key is: benchmarkinator-dev-key-2024
             </p>
           </div>

@@ -11,18 +11,31 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [apiKey, setApiKey] = useState(localStorage.getItem('benchmarkinator_api_key') || '');
+  const [apiKey, setApiKey] = useState(localStorage.getItem('apiKey') || '');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   useEffect(() => {
     if (apiKey) {
-      localStorage.setItem('benchmarkinator_api_key', apiKey);
       setIsAuthenticated(true);
+      localStorage.setItem('apiKey', apiKey);
     } else {
-      localStorage.removeItem('benchmarkinator_api_key');
       setIsAuthenticated(false);
+      localStorage.removeItem('apiKey');
     }
   }, [apiKey]);
+
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   const login = (key) => {
     setApiKey(key);
@@ -32,11 +45,17 @@ export const AuthProvider = ({ children }) => {
     setApiKey('');
   };
 
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
   const value = {
     apiKey,
     isAuthenticated,
     login,
     logout,
+    darkMode,
+    toggleDarkMode
   };
 
   return (

@@ -154,14 +154,14 @@ const Hardware = () => {
             className="flex items-center justify-between cursor-pointer"
             onClick={() => toggleSection('cpu_brands')}
           >
-            <h3 className="text-lg font-medium text-secondary-900">CPU Brands</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">CPU Brands</h3>
             {expandedSections.cpu_brands ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
           </div>
           
           {expandedSections.cpu_brands && (
             <div className="mt-4">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-sm text-secondary-600">Manage CPU brands (AMD, Intel, etc.)</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Manage CPU brands (AMD, Intel, etc.)</span>
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -176,16 +176,16 @@ const Hardware = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {data.lookup.brands?.map(brand => (
-                  <div key={brand.id} className="p-3 border border-secondary-200 rounded-lg">
+                  <div key={brand.id} className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
                     <div className="flex justify-between items-center">
-                      <span className="font-medium">{brand.name}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{brand.name}</span>
                       <div className="flex space-x-2">
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             openLookupForm('brand', brand);
                           }}
-                          className="text-primary-600 hover:text-primary-900"
+                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -194,7 +194,7 @@ const Hardware = () => {
                             e.stopPropagation();
                             handleLookupDelete('brand', brand.id);
                           }}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -213,14 +213,14 @@ const Hardware = () => {
             className="flex items-center justify-between cursor-pointer"
             onClick={() => toggleSection('cpu_families')}
           >
-            <h3 className="text-lg font-medium text-secondary-900">CPU Families</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">CPU Families</h3>
             {expandedSections.cpu_families ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
           </div>
           
           {expandedSections.cpu_families && (
             <div className="mt-4">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-sm text-secondary-600">Manage CPU families (K6, Core i7, etc.)</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Manage CPU families (K6, Core i7, etc.)</span>
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -235,16 +235,16 @@ const Hardware = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {data.lookup.families?.map(family => (
-                  <div key={family.id} className="p-3 border border-secondary-200 rounded-lg">
+                  <div key={family.id} className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
                     <div className="flex justify-between items-center">
-                      <span className="font-medium">{family.name}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{family.name}</span>
                       <div className="flex space-x-2">
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             openLookupForm('family', family);
                           }}
-                          className="text-primary-600 hover:text-primary-900"
+                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -253,7 +253,7 @@ const Hardware = () => {
                             e.stopPropagation();
                             handleLookupDelete('family', family.id);
                           }}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -269,7 +269,7 @@ const Hardware = () => {
         {/* Individual CPUs Section */}
         <div className="card">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-secondary-900">Individual CPUs</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Individual CPUs</h3>
             <button 
               onClick={() => setShowForm(true)}
               className="btn-primary"
@@ -280,49 +280,49 @@ const Hardware = () => {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-secondary-200">
-              <thead className="bg-secondary-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Model</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Speed</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Cores</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Brand</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Family</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-secondary-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Model</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Speed</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cores</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Brand</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Family</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-secondary-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {data.main?.map((cpu) => {
                   const brand = data.lookup.brands?.find(b => b.id === cpu.cpu_brand_id);
                   const family = data.lookup.families?.find(f => f.id === cpu.cpu_family_id);
                   
                   return (
-                    <tr key={cpu.id} className="hover:bg-secondary-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-secondary-900">
+                    <tr key={cpu.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {cpu.model}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {cpu.speed}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {cpu.core_count}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {brand?.name || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {family?.name || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => setEditingItem(cpu)}
-                          className="text-primary-600 hover:text-primary-900 mr-3"
+                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(cpu.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -349,14 +349,14 @@ const Hardware = () => {
             className="flex items-center justify-between cursor-pointer"
             onClick={() => toggleSection('gpu_manufacturers')}
           >
-            <h3 className="text-lg font-medium text-secondary-900">GPU Manufacturers</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">GPU Manufacturers</h3>
             {expandedSections.gpu_manufacturers ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
           </div>
           
           {expandedSections.gpu_manufacturers && (
             <div className="mt-4">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-sm text-secondary-600">Manage GPU manufacturers (Leadtek, ASUS, etc.)</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Manage GPU manufacturers (Leadtek, ASUS, etc.)</span>
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -371,16 +371,16 @@ const Hardware = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {data.lookup.manufacturers?.map(manufacturer => (
-                  <div key={manufacturer.id} className="p-3 border border-secondary-200 rounded-lg">
+                  <div key={manufacturer.id} className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
                     <div className="flex justify-between items-center">
-                      <span className="font-medium">{manufacturer.name}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{manufacturer.name}</span>
                       <div className="flex space-x-2">
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             openLookupForm('manufacturer', manufacturer);
                           }}
-                          className="text-primary-600 hover:text-primary-900"
+                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -389,7 +389,7 @@ const Hardware = () => {
                             e.stopPropagation();
                             handleLookupDelete('manufacturer', manufacturer.id);
                           }}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -408,14 +408,14 @@ const Hardware = () => {
             className="flex items-center justify-between cursor-pointer"
             onClick={() => toggleSection('gpu_brands')}
           >
-            <h3 className="text-lg font-medium text-secondary-900">GPU Brands</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">GPU Brands</h3>
             {expandedSections.gpu_brands ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
           </div>
           
           {expandedSections.gpu_brands && (
             <div className="mt-4">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-sm text-secondary-600">Manage GPU brands (NVIDIA, ATI, etc.)</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Manage GPU brands (NVIDIA, ATI, etc.)</span>
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -430,16 +430,16 @@ const Hardware = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {data.lookup.brands?.map(brand => (
-                  <div key={brand.id} className="p-3 border border-secondary-200 rounded-lg">
+                  <div key={brand.id} className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
                     <div className="flex justify-between items-center">
-                      <span className="font-medium">{brand.name}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{brand.name}</span>
                       <div className="flex space-x-2">
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             openLookupForm('brand', brand);
                           }}
-                          className="text-primary-600 hover:text-primary-900"
+                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -448,7 +448,7 @@ const Hardware = () => {
                             e.stopPropagation();
                             handleLookupDelete('brand', brand.id);
                           }}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -467,14 +467,14 @@ const Hardware = () => {
             className="flex items-center justify-between cursor-pointer"
             onClick={() => toggleSection('gpu_models')}
           >
-            <h3 className="text-lg font-medium text-secondary-900">GPU Models</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">GPU Models</h3>
             {expandedSections.gpu_models ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
           </div>
           
           {expandedSections.gpu_models && (
             <div className="mt-4">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-sm text-secondary-600">Manage GPU models (TNT2 M64, GTX 1080, etc.)</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Manage GPU models (TNT2 M64, GTX 1080, etc.)</span>
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -489,16 +489,16 @@ const Hardware = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {data.lookup.models?.map(model => (
-                  <div key={model.id} className="p-3 border border-secondary-200 rounded-lg">
+                  <div key={model.id} className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
                     <div className="flex justify-between items-center">
-                      <span className="font-medium">{model.name}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{model.name}</span>
                       <div className="flex space-x-2">
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             openLookupForm('model', model);
                           }}
-                          className="text-primary-600 hover:text-primary-900"
+                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -507,7 +507,7 @@ const Hardware = () => {
                             e.stopPropagation();
                             handleLookupDelete('model', model.id);
                           }}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -523,7 +523,7 @@ const Hardware = () => {
         {/* Individual GPUs Section */}
         <div className="card">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-secondary-900">Individual GPUs</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Individual GPUs</h3>
             <button 
               onClick={() => setShowForm(true)}
               className="btn-primary"
@@ -534,18 +534,18 @@ const Hardware = () => {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-secondary-200">
-              <thead className="bg-secondary-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">VRAM Size</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Manufacturer</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Brand</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">Model</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">VRAM Type</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-secondary-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">VRAM Size</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Manufacturer</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Brand</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Model</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">VRAM Type</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-secondary-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {data.main?.map((gpu) => {
                   const manufacturer = data.lookup.manufacturers?.find(m => m.id === gpu.gpu_manufacturer_id);
                   const brand = data.lookup.brands?.find(b => b.id === gpu.gpu_brand_id);
@@ -553,32 +553,32 @@ const Hardware = () => {
                   const vramType = data.lookup.vramTypes?.find(v => v.id === gpu.gpu_vram_type_id);
                   
                   return (
-                    <tr key={gpu.id} className="hover:bg-secondary-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-secondary-900">
+                    <tr key={gpu.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {gpu.vram_size}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {manufacturer?.name || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {brand?.name || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {model?.name || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {vramType?.name || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() => setEditingItem(gpu)}
-                          className="text-primary-600 hover:text-primary-900 mr-3"
+                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(gpu.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -611,7 +611,7 @@ const Hardware = () => {
       default:
         return (
           <div className="card">
-            <div className="text-center py-8 text-secondary-500">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
               {activeTab} management coming soon...
             </div>
           </div>
@@ -623,15 +623,15 @@ const Hardware = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-secondary-900">Hardware Management</h1>
-          <p className="text-secondary-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Hardware Management</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Manage your hardware components with proper hierarchical structure
           </p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-secondary-200">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -642,8 +642,8 @@ const Hardware = () => {
                 className={`
                   py-2 px-1 border-b-2 font-medium text-sm flex items-center
                   ${activeTab === tab.id
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
+                    ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                   }
                 `}
               >
@@ -755,14 +755,14 @@ const LookupForm = ({ type, item, onClose, onSave }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-        <h2 className="text-lg font-semibold text-secondary-900 mb-4">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           {item ? 'Edit' : 'Add New'} {getTypeLabel()}
         </h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Name
             </label>
             <input
@@ -827,7 +827,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
   const renderCPUForm = () => (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-secondary-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Model
         </label>
         <input
@@ -841,7 +841,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-secondary-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Speed
         </label>
         <input
@@ -855,7 +855,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-secondary-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Core Count
         </label>
         <input
@@ -869,7 +869,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-secondary-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Brand
         </label>
         <select
@@ -887,7 +887,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-secondary-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Family
         </label>
         <select
@@ -909,7 +909,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
   const renderGPUForm = () => (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-secondary-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           VRAM Size
         </label>
         <input
@@ -923,7 +923,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-secondary-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Manufacturer
         </label>
         <select
@@ -941,7 +941,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-secondary-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Brand
         </label>
         <select
@@ -959,7 +959,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-secondary-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Model
         </label>
         <select
@@ -977,7 +977,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-secondary-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           VRAM Type
         </label>
         <select
@@ -1005,7 +1005,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       default:
         return (
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Name
             </label>
             <input
@@ -1023,8 +1023,8 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-semibold text-secondary-900 mb-4">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           {item ? 'Edit' : 'Add New'} {type.charAt(0).toUpperCase() + type.slice(1)}
         </h2>
         
