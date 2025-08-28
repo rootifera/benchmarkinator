@@ -7,6 +7,8 @@ services:
       MYSQL_DATABASE: benchmarkinator
       MYSQL_USER: benchmarkinator
       MYSQL_PASSWORD: benchmarkinatorpassword
+    ports:
+      - "13306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:

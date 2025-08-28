@@ -1,8 +1,10 @@
-from sqlmodel import Field, SQLModel, Relationship
 from typing import List, Optional
+from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import UniqueConstraint
 
 
 class MotherboardManufacturer(SQLModel, table=True):
+    """Board maker (e.g., ASUS, MSI, Gigabyte)."""
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
 
@@ -10,6 +12,7 @@ class MotherboardManufacturer(SQLModel, table=True):
 
 
 class MotherboardChipset(SQLModel, table=True):
+    """Chipset (e.g., Intel 440BX, AMD B550, VIA KT133)."""
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
 
@@ -17,12 +20,24 @@ class MotherboardChipset(SQLModel, table=True):
 
 
 class Motherboard(SQLModel, table=True):
+    """
+    Concrete motherboard entry.
+    - model is free text (e.g., "P3B-F", "B550 Tomahawk").
+    - Must reference an existing manufacturer and chipset.
+    - Unique per (manufacturer, model) to avoid duplicates like "ASUS P3B-F".
+    """
+    __table_args__ = (
+        UniqueConstraint("manufacturer_id", "model", name="uq_motherboard_mfr_model"),
+    )
+
     id: Optional[int] = Field(default=None, primary_key=True)
     model: str
-    serial: Optional[str] = None
 
-    motherboard_manufacturer_id: Optional[int] = Field(default=None, foreign_key="motherboardmanufacturer.id")
-    motherboard_chipset_id: Optional[int] = Field(default=None, foreign_key="motherboardchipset.id")
+    manufacturer_id: int = Field(foreign_key="motherboardmanufacturer.id")
+    chipset_id: int = Field(foreign_key="motherboardchipset.id")
+
+    serial: Optional[str] = None
+    notes: Optional[str] = None
 
     manufacturer: Optional[MotherboardManufacturer] = Relationship(back_populates="motherboards")
     chipset: Optional[MotherboardChipset] = Relationship(back_populates="motherboards")
