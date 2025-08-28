@@ -10,9 +10,7 @@ router = APIRouter()
 
 @router.post("/brand/", response_model=CPUBrand)
 def create_cpu_brand(cpu_brand: CPUBrand, db: Session = Depends(get_db)):
-    # Validate and normalize the name
     cpu_brand.name = validate_and_normalize_name(cpu_brand.name, db, CPUBrand)
-
     db.add(cpu_brand)
     db.commit()
     db.refresh(cpu_brand)
@@ -21,48 +19,58 @@ def create_cpu_brand(cpu_brand: CPUBrand, db: Session = Depends(get_db)):
 
 @router.get("/brand/", response_model=list[CPUBrand])
 def get_cpu_brands(db: Session = Depends(get_db)):
-    cpu_brands = db.exec(select(CPUBrand)).all()
-    return cpu_brands
+    return db.exec(select(CPUBrand)).all()
 
 
 @router.get("/brand/{brand_id}", response_model=CPUBrand)
 def get_cpu_brand(brand_id: int, db: Session = Depends(get_db)):
-    cpu_brand = db.get(CPUBrand, brand_id)
-    if cpu_brand is None:
+    brand = db.get(CPUBrand, brand_id)
+    if not brand:
         raise HTTPException(status_code=404, detail="CPU brand not found")
-    return cpu_brand
+    return brand
 
 
 @router.put("/brand/{brand_id}", response_model=CPUBrand)
 def update_cpu_brand(brand_id: int, cpu_brand: CPUBrand, db: Session = Depends(get_db)):
-    db_cpu_brand = db.get(CPUBrand, brand_id)
-    if db_cpu_brand is None:
+    db_brand = db.get(CPUBrand, brand_id)
+    if not db_brand:
         raise HTTPException(status_code=404, detail="CPU brand not found")
 
     cpu_brand.name = validate_and_normalize_name(cpu_brand.name, db, CPUBrand, current_id=brand_id)
-
-    db_cpu_brand.name = cpu_brand.name
-
+    db_brand.name = cpu_brand.name
     db.commit()
-    db.refresh(db_cpu_brand)
-    return db_cpu_brand
+    db.refresh(db_brand)
+    return db_brand
 
 
 @router.delete("/brand/{brand_id}")
 def delete_cpu_brand(brand_id: int, db: Session = Depends(get_db)):
-    cpu_brand = db.get(CPUBrand, brand_id)
-    if cpu_brand is None:
+    brand = db.get(CPUBrand, brand_id)
+    if not brand:
         raise HTTPException(status_code=404, detail="CPU brand not found")
 
-    db.delete(cpu_brand)
+    has_family = db.exec(select(CPUFamily).where(CPUFamily.cpu_brand_id == brand_id)).first()
+    has_cpu = db.exec(select(CPU).where(CPU.cpu_brand_id == brand_id)).first()
+    if has_family or has_cpu:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete brand with existing families or CPUs."
+        )
+
+    db.delete(brand)
     db.commit()
     return {"message": "CPU brand deleted successfully"}
 
 
+# ---------- Families ----------
+
 @router.post("/family/", response_model=CPUFamily)
 def create_cpu_family(cpu_family: CPUFamily, db: Session = Depends(get_db)):
-    # Validate and normalize the name
     cpu_family.name = validate_and_normalize_name(cpu_family.name, db, CPUFamily)
+
+    brand = db.get(CPUBrand, cpu_family.cpu_brand_id)
+    if not brand:
+        raise HTTPException(status_code=400, detail="Invalid CPU brand")
 
     db.add(cpu_family)
     db.commit()
@@ -72,65 +80,89 @@ def create_cpu_family(cpu_family: CPUFamily, db: Session = Depends(get_db)):
 
 @router.get("/family/", response_model=list[CPUFamily])
 def get_cpu_families(db: Session = Depends(get_db)):
-    cpu_families = db.exec(select(CPUFamily)).all()
-    return cpu_families
+    return db.exec(select(CPUFamily)).all()
 
 
 @router.get("/family/{family_id}", response_model=CPUFamily)
 def get_cpu_family(family_id: int, db: Session = Depends(get_db)):
-    cpu_family = db.get(CPUFamily, family_id)
-    if cpu_family is None:
+    family = db.get(CPUFamily, family_id)
+    if not family:
         raise HTTPException(status_code=404, detail="CPU family not found")
-    return cpu_family
+    return family
 
 
 @router.put("/family/{family_id}", response_model=CPUFamily)
 def update_cpu_family(family_id: int, cpu_family: CPUFamily, db: Session = Depends(get_db)):
-    db_cpu_family = db.get(CPUFamily, family_id)
-    if db_cpu_family is None:
+    db_family = db.get(CPUFamily, family_id)
+    if not db_family:
         raise HTTPException(status_code=404, detail="CPU family not found")
 
     cpu_family.name = validate_and_normalize_name(cpu_family.name, db, CPUFamily, current_id=family_id)
 
-    db_cpu_family.name = cpu_family.name
+    if cpu_family.cpu_brand_id is not None and cpu_family.cpu_brand_id != db_family.cpu_brand_id:
+        if not db.get(CPUBrand, cpu_family.cpu_brand_id):
+            raise HTTPException(status_code=400, detail="Invalid CPU brand")
+        db_family.cpu_brand_id = cpu_family.cpu_brand_id
 
-    db.commit()
-    db.refresh(db_cpu_family)
-    return db_cpu_family
+    db_family.name = cpu_family.name
+    try:
+        db.commit()
+        db.refresh(db_family)
+        return db_family
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Family name already exists under this brand")
 
 
 @router.delete("/family/{family_id}")
 def delete_cpu_family(family_id: int, db: Session = Depends(get_db)):
-    cpu_family = db.get(CPUFamily, family_id)
-    if cpu_family is None:
+    family = db.get(CPUFamily, family_id)
+    if not family:
         raise HTTPException(status_code=404, detail="CPU family not found")
 
-    db.delete(cpu_family)
+    has_cpu = db.exec(select(CPU).where(CPU.cpu_family_id == family_id)).first()
+    if has_cpu:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete family with existing CPUs."
+        )
+
+    db.delete(family)
     db.commit()
     return {"message": "CPU family deleted successfully"}
 
 
 @router.post("/", response_model=CPU)
 def create_cpu(cpu: CPU, db: Session = Depends(get_db)):
-    if hasattr(cpu, "name"):
-        cpu.name = validate_and_normalize_name(cpu.name, db, CPU)
+    brand = db.get(CPUBrand, cpu.cpu_brand_id)
+    if not brand:
+        raise HTTPException(status_code=400, detail="Invalid CPU brand")
+
+    family = db.get(CPUFamily, cpu.cpu_family_id)
+    if not family:
+        raise HTTPException(status_code=400, detail="Invalid CPU family")
+    if family.cpu_brand_id != cpu.cpu_brand_id:
+        raise HTTPException(status_code=400, detail="CPU family does not belong to the specified brand")
 
     db.add(cpu)
-    db.commit()
-    db.refresh(cpu)
-    return cpu
+    try:
+        db.commit()
+        db.refresh(cpu)
+        return cpu
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Duplicate CPU for this family (model+speed)")
 
 
 @router.get("/", response_model=list[CPU])
 def get_cpus(db: Session = Depends(get_db)):
-    cpus = db.exec(select(CPU)).all()
-    return cpus
+    return db.exec(select(CPU)).all()
 
 
 @router.get("/{cpu_id}", response_model=CPU)
 def get_cpu(cpu_id: int, db: Session = Depends(get_db)):
     cpu = db.get(CPU, cpu_id)
-    if cpu is None:
+    if not cpu:
         raise HTTPException(status_code=404, detail="CPU not found")
     return cpu
 
@@ -138,11 +170,20 @@ def get_cpu(cpu_id: int, db: Session = Depends(get_db)):
 @router.put("/{cpu_id}", response_model=CPU)
 def update_cpu(cpu_id: int, cpu: CPU, db: Session = Depends(get_db)):
     db_cpu = db.get(CPU, cpu_id)
-    if db_cpu is None:
+    if not db_cpu:
         raise HTTPException(status_code=404, detail="CPU not found")
 
-    if hasattr(cpu, "name"):
-        cpu.name = validate_and_normalize_name(cpu.name, db, CPU, current_id=cpu_id)
+    if cpu.cpu_brand_id is not None:
+        brand = db.get(CPUBrand, cpu.cpu_brand_id)
+        if not brand:
+            raise HTTPException(status_code=400, detail="Invalid CPU brand")
+
+    if cpu.cpu_family_id is not None:
+        family = db.get(CPUFamily, cpu.cpu_family_id)
+        if not family:
+            raise HTTPException(status_code=400, detail="Invalid CPU family")
+        if (cpu.cpu_brand_id or db_cpu.cpu_brand_id) != family.cpu_brand_id:
+            raise HTTPException(status_code=400, detail="CPU family does not belong to the specified brand")
 
     db_cpu.model = cpu.model
     db_cpu.speed = cpu.speed
@@ -151,25 +192,28 @@ def update_cpu(cpu_id: int, cpu: CPU, db: Session = Depends(get_db)):
     db_cpu.cpu_brand_id = cpu.cpu_brand_id
     db_cpu.cpu_family_id = cpu.cpu_family_id
 
-    db.commit()
-    db.refresh(db_cpu)
-    return db_cpu
+    try:
+        db.commit()
+        db.refresh(db_cpu)
+        return db_cpu
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Duplicate CPU for this family (model+speed)")
 
 
 @router.delete("/{cpu_id}", status_code=status.HTTP_200_OK)
 def delete_cpu(cpu_id: int, db: Session = Depends(get_db)):
     cpu = db.get(CPU, cpu_id)
-    if cpu is None:
+    if not cpu:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="CPU not found")
 
     try:
         db.delete(cpu)
         db.commit()
-    except IntegrityError as e:
+        return {"message": "CPU deleted successfully"}
+    except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Cannot delete CPU because it is referenced by one or more config records."
         )
-
-    return {"message": "CPU deleted successfully"}
