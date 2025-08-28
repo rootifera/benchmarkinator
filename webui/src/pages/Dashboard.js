@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import ApiKeyModal from '../components/ApiKeyModal';
 import { 
@@ -6,7 +6,6 @@ import {
   Monitor, 
   BarChart3, 
   Settings, 
-  HardDrive,
   Plus,
   TrendingUp
 } from 'lucide-react';
@@ -25,15 +24,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showApiModal, setShowApiModal] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchStats();
-    } else {
-      setLoading(false);
-    }
-  }, [isAuthenticated]);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const headers = { 'X-API-Key': apiKey };
       const [cpus, gpus, benchmarks, results, configs] = await Promise.all([
@@ -56,7 +47,15 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiKey]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchStats();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated, fetchStats]);
 
   const statCards = [
     { name: 'CPUs', value: stats.cpus, icon: Cpu, color: 'bg-blue-500', href: '/hardware' },

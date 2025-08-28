@@ -1,12 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  BarChart3, 
   Plus,
-  Filter,
-  TrendingUp,
-  Calendar,
-  Target
+  Filter
 } from 'lucide-react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -25,11 +21,7 @@ const Results = () => {
     dateTo: ''
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const headers = { 'X-API-Key': apiKey };
@@ -48,7 +40,11 @@ const Results = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiKey]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filteredResults = results.filter(result => {
     if (filters.benchmark && result.benchmark_id !== parseInt(filters.benchmark)) return false;

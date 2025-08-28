@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  Monitor, 
   Plus,
   Edit,
   Trash2,
-  Play,
   Target
 } from 'lucide-react';
 import axios from 'axios';
@@ -17,11 +15,7 @@ const Benchmarks = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
-  useEffect(() => {
-    fetchBenchmarks();
-  }, []);
-
-  const fetchBenchmarks = async () => {
+  const fetchBenchmarks = useCallback(async () => {
     setLoading(true);
     try {
       const headers = { 'X-API-Key': apiKey };
@@ -32,7 +26,11 @@ const Benchmarks = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiKey]);
+
+  useEffect(() => {
+    fetchBenchmarks();
+  }, [fetchBenchmarks]);
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this benchmark?')) {

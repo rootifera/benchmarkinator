@@ -4,9 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   Home, 
   Cpu, 
-  Monitor, 
+  Wrench, 
   BarChart3, 
-  Settings, 
+  FileText, 
   LogOut,
   Sun,
   Moon
@@ -19,9 +19,9 @@ const Sidebar = () => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Hardware', href: '/hardware', icon: Cpu },
-    { name: 'Benchmarks', href: '/benchmarks', icon: Monitor },
-    { name: 'Results', href: '/results', icon: BarChart3 },
-    { name: 'Configurations', href: '/configurations', icon: Settings },
+    { name: 'Build PC', href: '/configurations', icon: Wrench },
+    { name: 'Benchmarks', href: '/benchmarks', icon: BarChart3 },
+    { name: 'Results', href: '/results', icon: FileText },
   ];
 
   const isActive = (href) => {
