@@ -1048,10 +1048,9 @@ const Hardware = () => {
             <div className="mt-4">
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Manage individual motherboards</span>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {data.main?.length || 0} Motherboard{(data.main?.length || 0) !== 1 ? 's' : ''} configured
-                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {data.main?.length || 0} Motherboard{(data.main?.length !== 1 ? 's' : '')} configured
+                  </p>
                 </div>
                 <button 
                   onClick={() => {
