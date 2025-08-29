@@ -105,12 +105,12 @@ const Hardware = () => {
           break;
           
         case 'disk':
-          mainData = await axios.get('http://localhost:12345/api/disk/', { headers });
+          mainData = await axios.get('http://192.168.1.24:12345/api/disk/', { headers });
           lookupData = {};
           break;
           
         case 'os':
-          mainData = await axios.get('http://localhost:12345/api/oses/', { headers });
+          mainData = await axios.get('http://192.168.1.24:12345/api/oses/', { headers });
           lookupData = {};
           break;
           
@@ -1911,6 +1911,8 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       let endpoint;
       if (type === 'ram') {
         endpoint = 'http://192.168.1.24:12345/api/ram/module/';
+      } else if (type === 'disk') {
+        endpoint = 'http://192.168.1.24:12345/api/disk/';
       } else if (type === 'os') {
         endpoint = 'http://192.168.1.24:12345/api/oses/';
       } else {
