@@ -25,6 +25,7 @@ const Hardware = () => {
   const [showLookupForm, setShowLookupForm] = useState(false);
   const [lookupFormType, setLookupFormType] = useState(null);
   const [editingLookupItem, setEditingLookupItem] = useState(null);
+  const [type, setType] = useState(null);
 
   const tabs = [
     { id: 'cpu', name: 'CPUs', icon: Cpu },
@@ -91,16 +92,15 @@ const Hardware = () => {
           break;
           
         case 'ram':
-          [mainData, lookupData] = await Promise.all([
-            axios.get('http://localhost:12345/api/ram/module/', { headers }),
-            Promise.all([
-              axios.get('http://localhost:12345/api/ram/type/', { headers }),
-              axios.get('http://localhost:12345/api/ram/brand/', { headers })
-            ])
-          ]);
+                  const ramResponses = await Promise.all([
+          axios.get('http://192.168.1.24:12345/api/ram/module/', { headers }),
+          axios.get('http://192.168.1.24:12345/api/ram/type/', { headers }),
+          axios.get('http://192.168.1.24:12345/api/ram/brand/', { headers })
+        ]);
+          mainData = ramResponses[0];
           lookupData = {
-            ram_types: lookupData[0].data,
-            ram_brands: lookupData[1].data
+            ram_types: ramResponses[1].data,
+            ram_brands: ramResponses[2].data
           };
           break;
           
@@ -1187,15 +1187,6 @@ const Hardware = () => {
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                openLookupForm('ram_brand', brand);
-                              }}
-                              className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
                                 handleLookupDelete('ram_brand', brand.id);
                               }}
                               className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
@@ -1266,15 +1257,6 @@ const Hardware = () => {
                             <button 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                openLookupForm('ram_type', ramType);
-                              }}
-                              className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
                                 handleLookupDelete('ram_type', ramType.id);
                               }}
                               className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
@@ -1307,6 +1289,7 @@ const Hardware = () => {
                   alert('Please create at least one RAM type and brand before adding RAM modules.');
                   return;
                 }
+                setType('ram');
                 setShowForm(true);
               }}
               className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1318,59 +1301,63 @@ const Hardware = () => {
           
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Brand</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Speed</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Size</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Serial</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {data.main?.map((ram) => {
-                  const brand = data.lookup.ram_brands?.find(b => b.id === ram.ram_brand_id);
-                  const ramType = data.lookup.ram_types?.find(t => t.id === ram.ram_type_id);
-                  
-                  return (
-                    <tr key={ram.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {brand?.name || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {ramType?.name || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {ram.speed ? `${ram.speed} MHz` : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {ram.size ? `${ram.size} MB` : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {ram.serial || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => {
-                            setEditingItem(ram);
-                            setShowForm(true);
-                          }}
-                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(ram.id)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+                                <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Brand</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Size</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Speed (MHz)</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Part Number</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Notes</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                     </tr>
-                  );
-                })}
-              </tbody>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {data.main?.map((ram) => {
+                      const brand = data.lookup.ram_brands?.find(b => b.id === ram.brand_id);
+                      const ramType = data.lookup.ram_types?.find(t => t.id === ram.type_id);
+                      
+                      return (
+                        <tr key={ram.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {brand?.name || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {ramType?.name || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {ram.size || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {ram.speed_mhz || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {ram.part_number || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {ram.notes || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button
+                              onClick={() => {
+                                setEditingItem(ram);
+                                setShowForm(true);
+                              }}
+                              className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(ram.id)}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
             </table>
           </div>
         </div>
@@ -1883,17 +1870,10 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('Form submission - type:', type, 'formData:', formData);
+    
     // Validate required fields based on type
     if (type === 'cpu') {
-      console.log('CPU validation - formData:', formData);
-      console.log('CPU validation - required fields:', {
-        model: formData.model,
-        speed: formData.speed,
-        core_count: formData.core_count,
-        cpu_brand_id: formData.cpu_brand_id,
-        cpu_family_id: formData.cpu_family_id
-      });
-      
       if (!formData.model || !formData.speed || !formData.core_count || !formData.cpu_brand_id || !formData.cpu_family_id) {
         alert('Please fill in all required fields for CPU.');
         return;
@@ -1904,19 +1884,13 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
         return;
       }
     } else if (type === 'motherboard') {
-      console.log('Motherboard validation - formData:', formData);
       if (!formData.model || !formData.manufacturer_id || !formData.chipset_id) {
-        console.log('Missing fields:', {
-          model: formData.model,
-          manufacturer_id: formData.manufacturer_id,
-          chipset_id: formData.chipset_id
-        });
         alert('Please fill in all required fields for Motherboard:\n- Model\n- Manufacturer\n- Chipset');
         return;
       }
     } else if (type === 'ram') {
-      if (!formData.name || !formData.ram_brand_id || !formData.ram_type_id || !formData.speed || !formData.size) {
-        alert('Please fill in all required fields for RAM.');
+      if (!formData.brand_id || !formData.type_id || !formData.size) {
+        alert('Please fill in all required fields for RAM:\n- Brand\n- Type\n- Size');
         return;
       }
     } else if (type === 'disk') {
@@ -1936,23 +1910,20 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       // Determine the correct endpoint for each type
       let endpoint;
       if (type === 'ram') {
-        endpoint = 'http://localhost:12345/api/ram/module/';
+        endpoint = 'http://192.168.1.24:12345/api/ram/module/';
       } else if (type === 'os') {
-        endpoint = 'http://localhost:12345/api/oses/';
+        endpoint = 'http://192.168.1.24:12345/api/oses/';
       } else {
-        endpoint = `http://localhost:12345/api/${type}`;
+        endpoint = `http://192.168.1.24:12345/api/${type}`;
       }
       
-      console.log(`Submitting ${type} data:`, formData);
-      console.log(`API endpoint: ${endpoint}`);
-      console.log(`Request headers:`, headers);
-      console.log(`Item being edited:`, item);
-      console.log(`Is update operation:`, !!item);
+
       
+      console.log('About to submit:', { endpoint, formData, isUpdate: !!item });
       if (item) {
-        await axios.put(`${endpoint}/${item.id}`, formData, { headers });
+        await axios.put(`${endpoint}${item.id}`, formData, { headers });
       } else {
-        await axios.post(`${endpoint}/`, formData, { headers });
+        await axios.post(endpoint, formData, { headers });
       }
       onSave();
     } catch (error) {
@@ -1967,9 +1938,6 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
   };
 
   const renderCPUForm = () => {
-    console.log('renderCPUForm - formData:', formData);
-    console.log('renderCPUForm - lookupData:', lookupData);
-    
     return (
     <div className="space-y-4">
       <div>
@@ -2291,8 +2259,8 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
           Brand
         </label>
         <select
-          value={formData.ram_brand_id || ''}
-          onChange={(e) => setFormData({ ...formData, ram_brand_id: parseInt(e.target.value) })}
+          value={formData.brand_id || ''}
+          onChange={(e) => setFormData({ ...formData, brand_id: parseInt(e.target.value) })}
           className="input-field"
           required
         >
@@ -2310,8 +2278,8 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
           RAM Type
         </label>
         <select
-          value={formData.ram_type_id || ''}
-          onChange={(e) => setFormData({ ...formData, ram_type_id: parseInt(e.target.value) })}
+          value={formData.type_id || ''}
+          onChange={(e) => setFormData({ ...formData, type_id: parseInt(e.target.value) })}
           className="input-field"
           required
         >
@@ -2326,58 +2294,54 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Name
-        </label>
-        <input
-          type="text"
-          value={formData.name || ''}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="input-field"
-          placeholder="e.g., Corsair Vengeance LPX 16GB"
-          required
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Size
         </label>
         <input
-          type="number"
-          min="1"
+          type="text"
           value={formData.size || ''}
-          onChange={(e) => setFormData({ ...formData, size: parseInt(e.target.value) })}
+          onChange={(e) => setFormData({ ...formData, size: e.target.value })}
           className="input-field"
-          placeholder="e.g., 16384"
+          placeholder="e.g., 16GB, 32GB, 8GB"
           required
         />
       </div>
       
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Speed
-        </label>
-        <input
-          type="number"
-          min="1"
-          value={formData.speed || ''}
-          onChange={(e) => setFormData({ ...formData, speed: parseInt(e.target.value) })}
-          className="input-field"
-          placeholder="e.g., 3200"
-          required
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Serial
+          Speed (MHz)
         </label>
         <input
           type="text"
-          value={formData.serial || ''}
-          onChange={(e) => setFormData({ ...formData, serial: e.target.value })}
+          value={formData.speed_mhz || ''}
+          onChange={(e) => setFormData({ ...formData, speed_mhz: e.target.value })}
           className="input-field"
-          placeholder="e.g., RAM123456"
+          placeholder="e.g., 3200, 3600, 4000"
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Part Number
+        </label>
+        <input
+          type="text"
+          value={formData.part_number || ''}
+          onChange={(e) => setFormData({ ...formData, part_number: e.target.value })}
+          className="input-field"
+          placeholder="e.g., CMK16GX4M2B3200C16"
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Notes
+        </label>
+        <textarea
+          value={formData.notes || ''}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          className="input-field"
+          placeholder="Optional notes about the RAM module"
+          rows="3"
         />
       </div>
     </div>
@@ -2459,7 +2423,10 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
           {item ? 'Edit' : 'Add New'} {type === 'cpu' ? 'CPU' : type === 'gpu' ? 'GPU' : type === 'ram' ? 'RAM' : type === 'os' ? 'OS' : type.charAt(0).toUpperCase() + type.slice(1)}
         </h2>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={(e) => {
+          console.log('Form submitted!');
+          handleSubmit(e);
+        }} className="space-y-4">
           {renderFormContent()}
           
           <div className="flex space-x-3">
