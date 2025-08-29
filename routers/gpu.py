@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 from utils.helper import validate_and_normalize_name
 from models.gpu import GPU, GPUManufacturer, GPUBrand, GPUModel, GPUVRAMType
@@ -36,8 +35,9 @@ def update_gpu_manufacturer(manufacturer_id: int, gpu_manufacturer: GPUManufactu
     if not m:
         raise HTTPException(status_code=404, detail="GPU manufacturer not found")
 
-    gpu_manufacturer.name = validate_and_normalize_name(gpu_manufacturer.name, db, GPUManufacturer,
-                                                        current_id=manufacturer_id)
+    gpu_manufacturer.name = validate_and_normalize_name(
+        gpu_manufacturer.name, db, GPUManufacturer, current_id=manufacturer_id
+    )
     m.name = gpu_manufacturer.name
     db.commit()
     db.refresh(m)
@@ -52,12 +52,15 @@ def delete_gpu_manufacturer(manufacturer_id: int, db: Session = Depends(get_db))
 
     has_gpu = db.exec(select(GPU).where(GPU.gpu_manufacturer_id == manufacturer_id)).first()
     if has_gpu:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail="Cannot delete manufacturer with existing GPUs.")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete manufacturer with existing GPUs."
+        )
 
     db.delete(m)
     db.commit()
     return {"message": "GPU manufacturer deleted successfully"}
+
 
 
 @router.post("/brand/", response_model=GPUBrand)
@@ -104,15 +107,16 @@ def delete_gpu_brand(brand_id: int, db: Session = Depends(get_db)):
     has_model = db.exec(select(GPUModel).where(GPUModel.gpu_brand_id == brand_id)).first()
     has_gpu = db.exec(select(GPU).where(GPU.gpu_brand_id == brand_id)).first()
     if has_model or has_gpu:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail="Cannot delete brand with existing models or GPUs.")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete brand with existing models or GPUs."
+        )
 
     db.delete(b)
     db.commit()
     return {"message": "GPU brand deleted successfully"}
 
 
-# ---------- Models ----------
 
 @router.post("/model/", response_model=GPUModel)
 def create_gpu_model(gpu_model: GPUModel, db: Session = Depends(get_db)):
@@ -122,13 +126,9 @@ def create_gpu_model(gpu_model: GPUModel, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid GPU brand")
 
     db.add(gpu_model)
-    try:
-        db.commit()
-        db.refresh(gpu_model)
-        return gpu_model
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Model name already exists under this brand")
+    db.commit()
+    db.refresh(gpu_model)
+    return gpu_model
 
 
 @router.get("/model/", response_model=list[GPUModel])
@@ -158,13 +158,9 @@ def update_gpu_model(model_id: int, gpu_model: GPUModel, db: Session = Depends(g
         m.gpu_brand_id = gpu_model.gpu_brand_id
 
     m.name = gpu_model.name
-    try:
-        db.commit()
-        db.refresh(m)
-        return m
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Model name already exists under this brand")
+    db.commit()
+    db.refresh(m)
+    return m
 
 
 @router.delete("/model/{model_id}")
@@ -180,6 +176,7 @@ def delete_gpu_model(model_id: int, db: Session = Depends(get_db)):
     db.delete(m)
     db.commit()
     return {"message": "GPU model deleted successfully"}
+
 
 
 @router.post("/vram_type/", response_model=GPUVRAMType)
@@ -232,7 +229,6 @@ def delete_gpu_vram_type(vram_type_id: int, db: Session = Depends(get_db)):
     return {"message": "GPU VRAM type deleted successfully"}
 
 
-# ---------- GPUs ----------
 
 @router.post("/", response_model=GPU)
 def create_gpu(gpu: GPU, db: Session = Depends(get_db)):
@@ -253,13 +249,9 @@ def create_gpu(gpu: GPU, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid GPU VRAM type")
 
     db.add(gpu)
-    try:
-        db.commit()
-        db.refresh(gpu)
-        return gpu
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Duplicate GPU spec for this model (vram type + size)")
+    db.commit()
+    db.refresh(gpu)
+    return gpu
 
 
 @router.get("/", response_model=list[GPU])
@@ -309,13 +301,9 @@ def update_gpu(gpu_id: int, gpu: GPU, db: Session = Depends(get_db)):
     db_gpu.gpu_model_id = gpu.gpu_model_id
     db_gpu.gpu_vram_type_id = gpu.gpu_vram_type_id
 
-    try:
-        db.commit()
-        db.refresh(db_gpu)
-        return db_gpu
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Duplicate GPU spec for this model (vram type + size)")
+    db.commit()
+    db.refresh(db_gpu)
+    return db_gpu
 
 
 @router.delete("/{gpu_id}")

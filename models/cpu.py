@@ -28,11 +28,11 @@ class CPUFamily(SQLModel, table=True):
 
 
 class CPU(SQLModel, table=True):
-    """Represents the specific CPU model (e.g., '200MMX', '550MHz')."""
-    __table_args__ = (
-        UniqueConstraint("cpu_family_id", "model", "speed", name="uq_cpu_family_model_speed"),
-    )
+    """Represents a concrete CPU instance/spec.
 
+    - Unlimited identical specs are allowed (no spec-level unique constraint).
+    - `serial` is optional and NOT unique.
+    """
     id: Optional[int] = Field(default=None, primary_key=True)
     model: str
     speed: str

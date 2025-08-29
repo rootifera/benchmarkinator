@@ -44,11 +44,11 @@ class GPUVRAMType(SQLModel, table=True):
 
 
 class GPU(SQLModel, table=True):
-    """Represents a concrete GPU card instance/spec."""
-    __table_args__ = (
-        UniqueConstraint("gpu_model_id", "gpu_vram_type_id", "vram_size", name="uq_gpu_model_vramtype_size"),
-    )
+    """Represents a concrete GPU card instance/spec.
 
+    - Unlimited identical specs are allowed (no spec-level unique constraint).
+    - `serial` (part number / batch code) is optional and NOT unique.
+    """
     id: Optional[int] = Field(default=None, primary_key=True)
     vram_size: str
     serial: Optional[str] = None

@@ -1,6 +1,5 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import UniqueConstraint
 
 
 class MotherboardManufacturer(SQLModel, table=True):
@@ -24,11 +23,8 @@ class Motherboard(SQLModel, table=True):
     Concrete motherboard entry.
     - model is free text (e.g., "P3B-F", "B550 Tomahawk").
     - Must reference an existing manufacturer and chipset.
-    - Unique per (manufacturer, model) to avoid duplicates like "ASUS P3B-F".
+    - No uniqueness constraint — you can own multiple identical boards.
     """
-    __table_args__ = (
-        UniqueConstraint("manufacturer_id", "model", name="uq_motherboard_mfr_model"),
-    )
 
     id: Optional[int] = Field(default=None, primary_key=True)
     model: str

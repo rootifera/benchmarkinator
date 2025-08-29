@@ -132,6 +132,8 @@ def delete_cpu_family(family_id: int, db: Session = Depends(get_db)):
     return {"message": "CPU family deleted successfully"}
 
 
+# ---------- CPUs ----------
+
 @router.post("/", response_model=CPU)
 def create_cpu(cpu: CPU, db: Session = Depends(get_db)):
     brand = db.get(CPUBrand, cpu.cpu_brand_id)
@@ -145,13 +147,9 @@ def create_cpu(cpu: CPU, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="CPU family does not belong to the specified brand")
 
     db.add(cpu)
-    try:
-        db.commit()
-        db.refresh(cpu)
-        return cpu
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Duplicate CPU for this family (model+speed)")
+    db.commit()
+    db.refresh(cpu)
+    return cpu
 
 
 @router.get("/", response_model=list[CPU])
@@ -182,7 +180,9 @@ def update_cpu(cpu_id: int, cpu: CPU, db: Session = Depends(get_db)):
         family = db.get(CPUFamily, cpu.cpu_family_id)
         if not family:
             raise HTTPException(status_code=400, detail="Invalid CPU family")
-        if (cpu.cpu_brand_id or db_cpu.cpu_brand_id) != family.cpu_brand_id:
+        # Determine the effective brand to validate the family binding
+        effective_brand_id = cpu.cpu_brand_id if cpu.cpu_brand_id is not None else db_cpu.cpu_brand_id
+        if family.cpu_brand_id != effective_brand_id:
             raise HTTPException(status_code=400, detail="CPU family does not belong to the specified brand")
 
     db_cpu.model = cpu.model
@@ -192,13 +192,9 @@ def update_cpu(cpu_id: int, cpu: CPU, db: Session = Depends(get_db)):
     db_cpu.cpu_brand_id = cpu.cpu_brand_id
     db_cpu.cpu_family_id = cpu.cpu_family_id
 
-    try:
-        db.commit()
-        db.refresh(db_cpu)
-        return db_cpu
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Duplicate CPU for this family (model+speed)")
+    db.commit()
+    db.refresh(db_cpu)
+    return db_cpu
 
 
 @router.delete("/{cpu_id}", status_code=status.HTTP_200_OK)

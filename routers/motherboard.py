@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 from utils.helper import validate_and_normalize_name
 from models.motherboard import MotherboardManufacturer, MotherboardChipset, Motherboard
@@ -8,7 +7,6 @@ from database import get_db
 
 router = APIRouter()
 
-# -------------------- Manufacturers -------------------- #
 
 @router.post("/manufacturer/", response_model=MotherboardManufacturer)
 def create_manufacturer(manufacturer: MotherboardManufacturer, db: Session = Depends(get_db)):
@@ -129,13 +127,9 @@ def create_motherboard(board: Motherboard, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid motherboard chipset")
 
     db.add(board)
-    try:
-        db.commit()
-        db.refresh(board)
-        return board
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Duplicate motherboard for this manufacturer (model already exists)")
+    db.commit()
+    db.refresh(board)
+    return board
 
 
 @router.get("/", response_model=list[Motherboard])
@@ -171,13 +165,9 @@ def update_motherboard(board_id: int, board: Motherboard, db: Session = Depends(
     db_b.serial = board.serial
     db_b.notes = board.notes
 
-    try:
-        db.commit()
-        db.refresh(db_b)
-        return db_b
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Duplicate motherboard for this manufacturer (model already exists)")
+    db.commit()
+    db.refresh(db_b)
+    return db_b
 
 
 @router.delete("/{board_id}")
