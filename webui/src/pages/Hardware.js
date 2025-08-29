@@ -32,6 +32,7 @@ const Hardware = () => {
     { id: 'motherboard', name: 'Motherboards', icon: Settings },
     { id: 'ram', name: 'RAM', icon: Database },
     { id: 'disk', name: 'Disks', icon: HardDrive },
+    { id: 'os', name: 'OS', icon: Monitor },
   ];
 
   const fetchData = useCallback(async () => {
@@ -104,19 +105,13 @@ const Hardware = () => {
           break;
           
         case 'disk':
-          [mainData, lookupData] = await Promise.all([
-            axios.get('/api/disk/', { headers }),
-            Promise.all([
-              axios.get('/api/disk/type/', { headers }),
-              axios.get('/api/disk/brand/', { headers }),
-              axios.get('/api/disk/interface/', { headers })
-            ])
-          ]);
-          lookupData = {
-            disk_types: lookupData[0].data,
-            disk_brands: lookupData[1].data,
-            disk_interfaces: lookupData[2].data
-          };
+          mainData = await axios.get('http://localhost:12345/api/disk/', { headers });
+          lookupData = {};
+          break;
+          
+        case 'os':
+          mainData = await axios.get('http://localhost:12345/api/oses/', { headers });
+          lookupData = {};
           break;
           
         default:
@@ -161,12 +156,7 @@ const Hardware = () => {
         ram_brands: false        // Collapsed
       }));
     } else if (activeTab === 'disk') {
-      setExpandedSections(prev => ({
-        ...prev,
-        disk_types: true,
-        disk_brands: true,
-        disk_interfaces: true
-      }));
+      // No lookup sections for disk, just show main table
     }
   }, [activeTab]);
 
@@ -474,7 +464,10 @@ const Hardware = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
-                          onClick={() => setEditingItem(cpu)}
+                          onClick={() => {
+                            setEditingItem(cpu);
+                            setShowForm(true);
+                          }}
                           className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
                         >
                           <Edit className="w-4 h-4" />
@@ -858,7 +851,10 @@ const Hardware = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
-                              onClick={() => setEditingItem(gpu)}
+                              onClick={() => {
+                                setEditingItem(gpu);
+                                setShowForm(true);
+                              }}
                               className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
                             >
                               <Edit className="w-4 h-4" />
@@ -1071,10 +1067,11 @@ const Hardware = () => {
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Model</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Manufacturer</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Model</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Chipset</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Serial</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Notes</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -1085,11 +1082,11 @@ const Hardware = () => {
                       
                       return (
                         <tr key={motherboard.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            {motherboard.model}
-                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {manufacturer?.name || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            {motherboard.model}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {chipset?.name || 'N/A'}
@@ -1097,9 +1094,15 @@ const Hardware = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {motherboard.serial || 'N/A'}
                           </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {motherboard.notes || 'N/A'}
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <button
-                              onClick={() => setEditingItem(motherboard)}
+                              onClick={() => {
+                                setEditingItem(motherboard);
+                                setShowForm(true);
+                              }}
                               className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
                             >
                               <Edit className="w-4 h-4" />
@@ -1131,6 +1134,85 @@ const Hardware = () => {
     
     return (
       <div className="space-y-4">
+        {/* RAM Brands Section */}
+        <div className="card">
+          <div 
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => toggleSection('ram_brands')}
+          >
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">RAM Brands</h3>
+            {expandedSections.ram_brands ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+          </div>
+          
+          {expandedSections.ram_brands && (
+            <div className="mt-4">
+              <div className="flex justify-between items-center mb-3">
+                <div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Manage RAM brands (Corsair, G.Skill, Kingston, etc.)</span>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {data.lookup.ram_brands?.length || 0} brand{(data.lookup.ram_brands?.length || 0) !== 1 ? 's' : ''}
+                  </div>
+                </div>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openLookupForm('ram_brand');
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
+                >
+                  Add RAM Brand
+                </button>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Brand Name
+                      </th>
+                                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Actions
+                        </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                    {data.lookup.ram_brands?.map(brand => (
+                      <tr key={brand.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                          {brand.name}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-2">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openLookupForm('ram_brand', brand);
+                              }}
+                              className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLookupDelete('ram_brand', brand.id);
+                              }}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* RAM Types Section */}
         <div className="card">
           <div 
@@ -1210,85 +1292,6 @@ const Hardware = () => {
           )}
         </div>
 
-        {/* RAM Brands Section */}
-        <div className="card">
-          <div 
-            className="flex items-center justify-between cursor-pointer"
-            onClick={() => toggleSection('ram_brands')}
-          >
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">RAM Brands</h3>
-            {expandedSections.ram_brands ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-          </div>
-          
-          {expandedSections.ram_brands && (
-            <div className="mt-4">
-              <div className="flex justify-between items-center mb-3">
-                <div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Manage RAM brands (Corsair, G.Skill, Kingston, etc.)</span>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {data.lookup.ram_brands?.length || 0} brand{(data.lookup.ram_brands?.length || 0) !== 1 ? 's' : ''}
-                  </div>
-                </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openLookupForm('ram_brand');
-                  }}
-                  className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
-                >
-                  Add RAM Brand
-                </button>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Brand Name
-                      </th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
-                    {data.lookup.ram_brands?.map(brand => (
-                      <tr key={brand.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                          {brand.name}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end space-x-2">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openLookupForm('ram_brand', brand);
-                              }}
-                              className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleLookupDelete('ram_brand', brand.id);
-                              }}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* RAM Modules Section */}
         <div className="card">
           <div className="flex justify-between items-center mb-4">
@@ -1349,7 +1352,10 @@ const Hardware = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
-                          onClick={() => setEditingItem(ram)}
+                          onClick={() => {
+                            setEditingItem(ram);
+                            setShowForm(true);
+                          }}
                           className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
                         >
                           <Edit className="w-4 h-4" />
@@ -1377,220 +1383,20 @@ const Hardware = () => {
     
     return (
       <div className="space-y-4">
-        {/* Disk Types Section */}
-        <div className="card">
-          <div 
-            className="flex items-center justify-between cursor-pointer"
-            onClick={() => toggleSection('disk_types')}
-          >
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Disk Types</h3>
-            {expandedSections.disk_types ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-          </div>
-          
-          {expandedSections.disk_types && (
-            <div className="mt-4">
-              <div className="flex justify-between items-center mb-3">
-                <div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Manage disk types (HDD, SSD, NVMe, etc.)</span>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {data.lookup.disk_types?.length || 0} disk type{(data.lookup.disk_types?.length || 0) !== 1 ? 's' : ''}
-                  </div>
-                </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openLookupForm('disk_type');
-                  }}
-                  className="btn-primary text-sm px-3 py-1"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Disk Type
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {data.lookup.disk_types?.map(diskType => (
-                  <div key={diskType.id} className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-gray-900 dark:text-white">{diskType.name}</span>
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openLookupForm('disk_type', diskType);
-                          }}
-                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLookupDelete('disk_type', diskType.id);
-                          }}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Disk Brands Section */}
-        <div className="card">
-          <div 
-            className="flex items-center justify-between cursor-pointer"
-            onClick={() => toggleSection('disk_brands')}
-          >
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Disk Brands</h3>
-            {expandedSections.disk_brands ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-          </div>
-          
-          {expandedSections.disk_brands && (
-            <div className="mt-4">
-              <div className="flex justify-between items-center mb-3">
-                <div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Manage disk brands (Samsung, Western Digital, Seagate, etc.)</span>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {data.lookup.disk_brands?.length || 0} brand{(data.lookup.disk_brands?.length || 0) !== 1 ? 's' : ''}
-                  </div>
-                </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openLookupForm('disk_brand');
-                  }}
-                  className="btn-primary text-sm px-3 py-1"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Disk Brand
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {data.lookup.disk_brands?.map(brand => (
-                  <div key={brand.id} className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-gray-900 dark:text-white">{brand.name}</span>
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openLookupForm('disk_brand', brand);
-                          }}
-                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLookupDelete('disk_brand', brand.id);
-                          }}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Disk Interfaces Section */}
-        <div className="card">
-          <div 
-            className="flex items-center justify-between cursor-pointer"
-            onClick={() => toggleSection('disk_interfaces')}
-          >
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Disk Interfaces</h3>
-            {expandedSections.disk_interfaces ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-          </div>
-          
-          {expandedSections.disk_interfaces && (
-            <div className="mt-4">
-              <div className="flex justify-between items-center mb-3">
-                <div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Manage disk interfaces (SATA, PCIe, USB, etc.)</span>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {data.lookup.disk_interfaces?.length || 0} interface{(data.lookup.disk_interfaces?.length || 0) !== 1 ? 's' : ''}
-                  </div>
-                </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openLookupForm('disk_interface');
-                  }}
-                  className="btn-primary text-sm px-3 py-1"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add Disk Interface
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {data.lookup.disk_interfaces?.map(diskInterface => (
-                  <div key={diskInterface.id} className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-gray-900 dark:text-white">{diskInterface.name}</span>
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openLookupForm('disk_interface', diskInterface);
-                          }}
-                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLookupDelete('disk_interface', diskInterface.id);
-                          }}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Individual Disks Section */}
+        {/* Disks Section */}
         <div className="card">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Individual Disks</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Disks</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {data.main?.length || 0} disk{(data.main?.length || 0) !== 1 ? 's' : ''} configured
+                {data.main?.length || 0} disk{(data.main?.length !== 1 ? 's' : '')} configured
               </p>
             </div>
             <button 
-              onClick={() => {
-                if (!data.lookup?.disk_types?.length || !data.lookup?.disk_brands?.length || !data.lookup?.disk_interfaces?.length) {
-                  alert('Please create at least one disk type, brand, and interface before adding disks.');
-                  return;
-                }
-                setShowForm(true);
-              }}
-              className="btn-primary"
-              disabled={!data.lookup?.disk_types?.length || !data.lookup?.disk_brands?.length || !data.lookup?.disk_interfaces?.length}
+              onClick={() => setShowForm(true)}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
             >
-              <Plus className="w-5 h-5 mr-2" />
-              Add Disk
+              Add New Disk
             </button>
           </div>
           
@@ -1599,57 +1405,97 @@ const Hardware = () => {
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Brand</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Interface</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Capacity</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Speed</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {data.main?.map((disk) => {
-                  const brand = data.lookup.disk_brands?.find(b => b.id === disk.disk_brand_id);
-                  const diskType = data.lookup.disk_types?.find(t => t.id === disk.disk_type_id);
-                  const diskInterface = data.lookup.disk_interfaces?.find(i => i.id === disk.disk_interface_id);
-                  
-                  return (
-                    <tr key={disk.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        {disk.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {brand?.name || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {diskType?.name || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {diskInterface?.name || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {disk.capacity ? `${disk.capacity} GB` : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {disk.speed ? `${disk.speed} MB/s` : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => setEditingItem(disk)}
-                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(disk.id)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {data.main?.map((disk) => (
+                  <tr key={disk.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      {disk.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => {
+                          setEditingItem(disk);
+                          setShowForm(true);
+                        }}
+                        className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(disk.id)}
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderOSSection = () => {
+    if (!data.lookup) return null;
+    
+    return (
+      <div className="space-y-4">
+        {/* OS Section */}
+        <div className="card">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Operating Systems</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {data.main?.length || 0} OS{(data.main?.length !== 1 ? 'es' : '')} configured
+              </p>
+            </div>
+            <button 
+              onClick={() => setShowForm(true)}
+              className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
+            >
+              Add New OS
+            </button>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {data.main?.map((os) => (
+                  <tr key={os.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      {os.name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => {
+                          setEditingItem(os);
+                          setShowForm(true);
+                        }}
+                        className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(os.id)}
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -1678,6 +1524,8 @@ const Hardware = () => {
         return renderRAMSection();
       case 'disk':
         return renderDiskSection();
+      case 'os':
+        return renderOSSection();
       default:
         return (
           <div className="card">
@@ -1693,9 +1541,9 @@ const Hardware = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Hardware Management</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Components</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Please add your hardware using the menus below. Later you can select these hardware in the Build section to build your benchmark PC.
+            Please add your components using the menus below. Later you can select these components in the Build section to build your benchmark PC.
           </p>
         </div>
 
@@ -2037,13 +1885,22 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
     
     // Validate required fields based on type
     if (type === 'cpu') {
+      console.log('CPU validation - formData:', formData);
+      console.log('CPU validation - required fields:', {
+        model: formData.model,
+        speed: formData.speed,
+        core_count: formData.core_count,
+        cpu_brand_id: formData.cpu_brand_id,
+        cpu_family_id: formData.cpu_family_id
+      });
+      
       if (!formData.model || !formData.speed || !formData.core_count || !formData.cpu_brand_id || !formData.cpu_family_id) {
         alert('Please fill in all required fields for CPU.');
         return;
       }
     } else if (type === 'gpu') {
-      if (!formData.vram_size || !formData.gpu_brand_id || !formData.gpu_model_id || !formData.gpu_vram_type_id) {
-        alert('Please fill in all required fields for GPU.');
+      if (!formData.gpu_manufacturer_id || !formData.vram_size || !formData.gpu_brand_id || !formData.gpu_model_id || !formData.gpu_vram_type_id) {
+        alert('Please fill in all required fields for GPU:\n- Manufacturer\n- VRAM Size\n- Brand\n- Model\n- VRAM Type');
         return;
       }
     } else if (type === 'motherboard') {
@@ -2063,8 +1920,13 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
         return;
       }
     } else if (type === 'disk') {
-      if (!formData.name || !formData.disk_brand_id || !formData.disk_type_id || !formData.disk_interface_id || !formData.capacity || !formData.speed) {
-        alert('Please fill in all required fields for Disk.');
+      if (!formData.name) {
+        alert('Please fill in the disk name.');
+        return;
+      }
+    } else if (type === 'os') {
+      if (!formData.name) {
+        alert('Please fill in the OS name.');
         return;
       }
     }
@@ -2075,18 +1937,22 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       let endpoint;
       if (type === 'ram') {
         endpoint = 'http://localhost:12345/api/ram/module/';
+      } else if (type === 'os') {
+        endpoint = 'http://localhost:12345/api/oses/';
       } else {
-        endpoint = `http://localhost:12345/api/${type}/`;
+        endpoint = `http://localhost:12345/api/${type}`;
       }
       
       console.log(`Submitting ${type} data:`, formData);
       console.log(`API endpoint: ${endpoint}`);
       console.log(`Request headers:`, headers);
+      console.log(`Item being edited:`, item);
+      console.log(`Is update operation:`, !!item);
       
       if (item) {
-        await axios.put(`${endpoint}${item.id}`, formData, { headers });
+        await axios.put(`${endpoint}/${item.id}`, formData, { headers });
       } else {
-        await axios.post(endpoint, formData, { headers });
+        await axios.post(`${endpoint}/`, formData, { headers });
       }
       onSave();
     } catch (error) {
@@ -2100,7 +1966,11 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
     }
   };
 
-  const renderCPUForm = () => (
+  const renderCPUForm = () => {
+    console.log('renderCPUForm - formData:', formData);
+    console.log('renderCPUForm - lookupData:', lookupData);
+    
+    return (
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -2207,6 +2077,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       </div>
     </div>
   );
+  };
 
     const renderGPUForm = () => (
     <div className="space-y-4">
@@ -2214,18 +2085,19 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Manufacturer
         </label>
-                  <select
-            value={formData.gpu_manufacturer_id || ''}
-            onChange={(e) => setFormData({ ...formData, gpu_manufacturer_id: parseInt(e.target.value) || null })}
-            className="input-field"
-          >
-            <option value="">Select Manufacturer (Optional)</option>
-            {lookupData?.manufacturers?.map(manufacturer => (
-              <option key={manufacturer.id} value={manufacturer.id}>
-                {manufacturer.name}
-              </option>
-            ))}
-          </select>
+        <select
+          value={formData.gpu_manufacturer_id || ''}
+          onChange={(e) => setFormData({ ...formData, gpu_manufacturer_id: parseInt(e.target.value) || null })}
+          className="input-field"
+          required
+        >
+          <option value="">Select Manufacturer</option>
+          {lookupData?.manufacturers?.map(manufacturer => (
+            <option key={manufacturer.id} value={manufacturer.id}>
+              {manufacturer.name}
+            </option>
+          ))}
+        </select>
       </div>
       
       <div>
@@ -2241,14 +2113,20 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
           })}
           className="input-field"
           required
+          disabled={!formData.gpu_manufacturer_id}
         >
           <option value="">Select Brand</option>
-          {lookupData?.brands?.map(brand => (
-            <option key={brand.id} value={brand.id}>
-              {brand.name}
-            </option>
-          ))}
+          {lookupData?.brands
+            ?.filter(brand => !formData.gpu_manufacturer_id || brand.gpu_manufacturer_id === formData.gpu_manufacturer_id)
+            ?.map(brand => (
+              <option key={brand.id} value={brand.id}>
+                {brand.name}
+              </option>
+            ))}
         </select>
+        {!formData.gpu_manufacturer_id && (
+          <p className="text-xs text-gray-500 mt-1">Please select a manufacturer first</p>
+        )}
       </div>
       
       <div>
@@ -2347,6 +2225,20 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Model
+        </label>
+        <input
+          type="text"
+          value={formData.model || ''}
+          onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+          className="input-field"
+          placeholder="e.g., P5A-B"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Chipset
         </label>
         <select
@@ -2366,20 +2258,6 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Model
-        </label>
-        <input
-          type="text"
-          value={formData.model || ''}
-          onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-          className="input-field"
-          placeholder="e.g., ASUS P5A-B"
-          required
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Serial
         </label>
         <input
@@ -2388,6 +2266,19 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
           onChange={(e) => setFormData({ ...formData, serial: e.target.value })}
           className="input-field"
           placeholder="e.g., MB123456"
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Notes
+        </label>
+        <textarea
+          value={formData.notes || ''}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          className="input-field"
+          placeholder="Optional notes about the motherboard"
+          rows="3"
         />
       </div>
     </div>
@@ -2507,104 +2398,22 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
           required
         />
       </div>
-      
+    </div>
+  );
+
+  const renderOSForm = () => (
+    <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Brand
-        </label>
-        <select
-          value={formData.disk_brand_id || ''}
-          onChange={(e) => setFormData({ ...formData, disk_brand_id: parseInt(e.target.value) })}
-          className="input-field"
-          required
-        >
-          <option value="">Select Brand</option>
-          {lookupData?.disk_brands?.map(brand => (
-            <option key={brand.id} value={brand.id}>
-              {brand.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Disk Type
-        </label>
-        <select
-          value={formData.disk_type_id || ''}
-          onChange={(e) => setFormData({ ...formData, disk_type_id: parseInt(e.target.value) })}
-          className="input-field"
-          required
-        >
-          <option value="">Select Disk Type</option>
-          {lookupData?.disk_types?.map(diskType => (
-            <option key={diskType.id} value={diskType.id}>
-              {diskType.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Interface
-        </label>
-        <select
-          value={formData.disk_interface_id || ''}
-          onChange={(e) => setFormData({ ...formData, disk_interface_id: parseInt(e.target.value) })}
-          className="input-field"
-          required
-        >
-          <option value="">Select Interface</option>
-          {lookupData?.disk_interfaces?.map(diskInterface => (
-            <option key={diskInterface.id} value={diskInterface.id}>
-              {diskInterface.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Capacity (GB)
-        </label>
-        <input
-          type="number"
-          min="1"
-          value={formData.capacity || ''}
-          onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
-          className="input-field"
-          placeholder="e.g., 1000"
-          required
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Speed (MB/s)
-        </label>
-        <input
-          type="number"
-          min="1"
-          value={formData.speed || ''}
-          onChange={(e) => setFormData({ ...formData, speed: parseInt(e.target.value) })}
-          className="input-field"
-          placeholder="e.g., 3500"
-          required
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Serial Number (Optional)
+          Name
         </label>
         <input
           type="text"
-          value={formData.serial || ''}
-          onChange={(e) => setFormData({ ...formData, serial: e.target.value })}
+          value={formData.name || ''}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           className="input-field"
-          placeholder="e.g., DISK123456"
+          placeholder="e.g., Windows 10 Pro, Ubuntu 22.04 LTS"
+          required
         />
       </div>
     </div>
@@ -2622,6 +2431,8 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
         return renderRAMForm();
       case 'disk':
         return renderDiskForm();
+      case 'os':
+        return renderOSForm();
       default:
         return (
           <div>
@@ -2645,7 +2456,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
       <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {item ? 'Edit' : 'Add New'} {type === 'cpu' ? 'CPU' : type === 'gpu' ? 'GPU' : type === 'ram' ? 'RAM' : type.charAt(0).toUpperCase() + type.slice(1)}
+          {item ? 'Edit' : 'Add New'} {type === 'cpu' ? 'CPU' : type === 'gpu' ? 'GPU' : type === 'ram' ? 'RAM' : type === 'os' ? 'OS' : type.charAt(0).toUpperCase() + type.slice(1)}
         </h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
