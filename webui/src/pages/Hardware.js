@@ -6,7 +6,6 @@ import {
   Settings, 
   Database,
   HardDrive,
-  Plus,
   Edit,
   Trash2,
   ChevronDown,
@@ -25,7 +24,7 @@ const Hardware = () => {
   const [showLookupForm, setShowLookupForm] = useState(false);
   const [lookupFormType, setLookupFormType] = useState(null);
   const [editingLookupItem, setEditingLookupItem] = useState(null);
-  const [type, setType] = useState(null);
+
 
   const tabs = [
     { id: 'cpu', name: 'CPUs', icon: Cpu },
@@ -1289,7 +1288,6 @@ const Hardware = () => {
                   alert('Please create at least one RAM type and brand before adding RAM modules.');
                   return;
                 }
-                setType('ram');
                 setShowForm(true);
               }}
               className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

@@ -18,7 +18,7 @@ const Sidebar = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Hardware', href: '/hardware', icon: Cpu },
+    { name: 'Components', href: '/hardware', icon: Cpu },
     { name: 'Build PC', href: '/configurations', icon: Wrench },
     { name: 'Benchmarks', href: '/benchmarks', icon: BarChart3 },
     { name: 'Results', href: '/results', icon: FileText },
