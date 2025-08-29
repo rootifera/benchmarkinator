@@ -1537,29 +1537,33 @@ const Hardware = () => {
       </div>
       
       {/* Hardware Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-          <div className="text-blue-600 dark:text-blue-400 font-medium">
-            {activeTab === 'cpu' ? 'CPU Brands' : activeTab === 'gpu' ? 'GPU Brands' : activeTab === 'motherboard' ? 'MB Manufacturers' : activeTab === 'ram' ? 'RAM Brands' : activeTab === 'disk' ? 'Disk Brands' : 'Brands'}
+      <div className={`grid gap-4 mb-6 ${activeTab === 'disk' || activeTab === 'os' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'}`}>
+        {activeTab !== 'disk' && activeTab !== 'os' && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="text-blue-600 dark:text-blue-400 font-medium">
+              {activeTab === 'cpu' ? 'CPU Brands' : activeTab === 'gpu' ? 'GPU Brands' : activeTab === 'motherboard' ? 'Motherboard Manufacturers' : activeTab === 'ram' ? 'RAM Brands' : 'Brands'}
+            </div>
+            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+              {activeTab === 'motherboard' ? (data.lookup?.manufacturers?.length || 0) : activeTab === 'ram' ? (data.lookup?.ram_brands?.length || 0) : (data.lookup?.brands?.length || 0)}
+            </div>
           </div>
-          <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-            {activeTab === 'motherboard' ? (data.lookup?.manufacturers?.length || 0) : activeTab === 'ram' ? (data.lookup?.ram_brands?.length || 0) : activeTab === 'disk' ? (data.lookup?.disk_brands?.length || 0) : (data.lookup?.brands?.length || 0)}
+        )}
+        {activeTab !== 'disk' && activeTab !== 'os' && (
+          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+            <div className="text-green-600 dark:text-green-400 font-medium">
+              {activeTab === 'cpu' ? 'CPU Families' : activeTab === 'gpu' ? 'GPU Models' : activeTab === 'motherboard' ? 'Motherboard Chipsets' : activeTab === 'ram' ? 'RAM Types' : 'Models'}
+            </div>
+            <div className="text-2xl font-bold text-green-900 dark:text-green-100">
+              {activeTab === 'cpu' ? (data.lookup?.families?.length || 0) : activeTab === 'gpu' ? (data.lookup?.models?.length || 0) : activeTab === 'motherboard' ? (data.lookup?.chipsets?.length || 0) : activeTab === 'ram' ? (data.lookup?.ram_types?.length || 0) : 'Models'}
+            </div>
           </div>
-        </div>
-        <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-          <div className="text-green-600 dark:text-green-400 font-medium">
-            {activeTab === 'cpu' ? 'CPU Families' : activeTab === 'gpu' ? 'GPU Models' : activeTab === 'motherboard' ? 'MB Chipsets' : activeTab === 'ram' ? 'RAM Types' : activeTab === 'disk' ? 'Disk Types' : 'Models'}
-          </div>
-          <div className="text-2xl font-bold text-green-900 dark:text-green-100">
-            {activeTab === 'cpu' ? (data.lookup?.families?.length || 0) : activeTab === 'gpu' ? (data.lookup?.models?.length || 0) : activeTab === 'motherboard' ? (data.lookup?.chipsets?.length || 0) : activeTab === 'ram' ? (data.lookup?.ram_types?.length || 0) : (data.lookup?.disk_types?.length || 0)}
-          </div>
-        </div>
+        )}
         <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
           <div className="text-yellow-600 dark:text-yellow-400 font-medium">
-            {activeTab === 'cpu' ? 'CPUs' : activeTab === 'gpu' ? 'VRAM Types' : activeTab === 'motherboard' ? 'MB Models' : activeTab === 'ram' ? 'RAM Sizes' : activeTab === 'disk' ? 'Disk Interfaces' : 'Features'}
+            {activeTab === 'cpu' ? 'CPUs' : activeTab === 'gpu' ? 'GPUs' : activeTab === 'motherboard' ? 'Motherboards' : activeTab === 'ram' ? 'RAM Modules' : activeTab === 'disk' ? 'Disks' : activeTab === 'os' ? 'Operating Systems' : 'Features'}
           </div>
           <div className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
-            {activeTab === 'cpu' ? (data.main?.reduce((sum, cpu) => sum + (cpu.core_count || 0), 0) || 0) : activeTab === 'gpu' ? (data.lookup?.vramTypes?.length || 0) : activeTab === 'motherboard' ? (data.main?.length || 0) : activeTab === 'ram' ? (data.main?.reduce((sum, ram) => sum + (ram.size || 0), 0) || 0) : (data.lookup?.disk_interfaces?.length || 0)}
+            {activeTab === 'cpu' ? (data.main?.length || 0) : activeTab === 'gpu' ? (data.main?.length || 0) : activeTab === 'motherboard' ? (data.main?.length || 0) : activeTab === 'ram' ? (data.main?.length || 0) : activeTab === 'disk' ? (data.main?.length || 0) : activeTab === 'os' ? (data.main?.length || 0) : 'Features'}
           </div>
         </div>
 
