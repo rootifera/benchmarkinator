@@ -4,31 +4,27 @@ from sqlalchemy import UniqueConstraint
 
 
 class GPUManufacturer(SQLModel, table=True):
-    """Represents the AIB/board partner (e.g., Leadtek, ASUS)."""
+    """Board partner / AIB (e.g., ASUS, Leadtek)."""
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
-
     gpus: List["GPU"] = Relationship(back_populates="manufacturer")
 
 
 class GPUBrand(SQLModel, table=True):
-    """Represents the silicon brand (e.g., NVIDIA, ATI/AMD)."""
+    """Silicon brand (e.g., NVIDIA, ATI/AMD)."""
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
-
     models: List["GPUModel"] = Relationship(back_populates="brand")
     gpus: List["GPU"] = Relationship(back_populates="brand")
 
 
 class GPUModel(SQLModel, table=True):
-    """Represents the model within a brand (e.g., TNT2 M64, GTX 1080)."""
+    """Model within a brand (e.g., TNT2 M64, GTX 1080)."""
     __table_args__ = (
         UniqueConstraint("gpu_brand_id", "name", name="uq_gpumodel_brand_name"),
     )
-
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
-
     gpu_brand_id: int = Field(foreign_key="gpubrand.id")
 
     brand: Optional[GPUBrand] = Relationship(back_populates="models")
@@ -36,18 +32,16 @@ class GPUModel(SQLModel, table=True):
 
 
 class GPUVRAMType(SQLModel, table=True):
-    """Represents VRAM type (e.g., SDR, DDR, GDDR5, GDDR6)."""
+    """VRAM type (e.g., SDR, DDR, GDDR5, GDDR6)."""
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
-
     gpus: List["GPU"] = Relationship(back_populates="vram_type")
 
 
 class GPU(SQLModel, table=True):
-    """Represents a concrete GPU card instance/spec.
-
-    - Unlimited identical specs are allowed (no spec-level unique constraint).
-    - `serial` (part number / batch code) is optional and NOT unique.
+    """
+    Concrete GPU cards — duplicates ALLOWED.
+    (No uniqueness across model+vram_type+size; manufacturer can vary.)
     """
     id: Optional[int] = Field(default=None, primary_key=True)
     vram_size: str

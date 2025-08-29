@@ -4,7 +4,7 @@ from sqlalchemy import UniqueConstraint
 
 
 class CPUBrand(SQLModel, table=True):
-    """Represents the brand of the CPU (e.g., AMD, Intel)."""
+    """CPU brand (e.g., Intel, AMD)."""
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
 
@@ -13,11 +13,10 @@ class CPUBrand(SQLModel, table=True):
 
 
 class CPUFamily(SQLModel, table=True):
-    """Represents the family of the CPU (e.g., K6, Pentium III)."""
+    """Family under a brand (e.g., Pentium III, K6-2)."""
     __table_args__ = (
         UniqueConstraint("cpu_brand_id", "name", name="uq_cpufamily_brand_name"),
     )
-
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
 
@@ -28,10 +27,9 @@ class CPUFamily(SQLModel, table=True):
 
 
 class CPU(SQLModel, table=True):
-    """Represents a concrete CPU instance/spec.
-
-    - Unlimited identical specs are allowed (no spec-level unique constraint).
-    - `serial` is optional and NOT unique.
+    """
+    Concrete CPU rows — duplicates ALLOWED (same family+model+speed ok).
+    Brand-family binding is enforced in the router.
     """
     id: Optional[int] = Field(default=None, primary_key=True)
     model: str

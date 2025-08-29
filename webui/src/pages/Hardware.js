@@ -91,10 +91,10 @@ const Hardware = () => {
           
         case 'ram':
           [mainData, lookupData] = await Promise.all([
-            axios.get('/api/ram/', { headers }),
+            axios.get('http://localhost:12345/api/ram/module/', { headers }),
             Promise.all([
-              axios.get('/api/ram/type/', { headers }),
-              axios.get('/api/ram/brand/', { headers })
+              axios.get('http://localhost:12345/api/ram/type/', { headers }),
+              axios.get('http://localhost:12345/api/ram/brand/', { headers })
             ])
           ]);
           lookupData = {
@@ -157,8 +157,8 @@ const Hardware = () => {
     } else if (activeTab === 'ram') {
       setExpandedSections(prev => ({
         ...prev,
-        ram_types: true,
-        ram_brands: true
+        ram_types: false,        // Collapsed
+        ram_brands: false        // Collapsed
       }));
     } else if (activeTab === 'disk') {
       setExpandedSections(prev => ({
@@ -174,7 +174,7 @@ const Hardware = () => {
     if (window.confirm('Are you sure you want to delete this item?')) {
       try {
         const headers = { 'X-API-Key': apiKey };
-        await axios.delete(`/api/${activeTab}/${id}`, { headers });
+        await axios.delete(`http://localhost:12345/api/${activeTab}/${id}`, { headers });
         fetchData();
       } catch (error) {
         console.error('Error deleting item:', error);
@@ -190,31 +190,31 @@ const Hardware = () => {
         // Determine the correct API endpoint based on type
         let endpoint;
         if (type === 'brand' && activeTab === 'cpu') {
-          endpoint = `/api/cpu/brand/${id}`;
+          endpoint = `http://localhost:12345/api/cpu/brand/${id}`;
         } else if (type === 'family') {
-          endpoint = `/api/cpu/family/${id}`;
+          endpoint = `http://localhost:12345/api/cpu/family/${id}`;
         } else if (type === 'manufacturer' && activeTab === 'gpu') {
-          endpoint = `/api/gpu/manufacturer/${id}`;
+          endpoint = `http://localhost:12345/api/gpu/manufacturer/${id}`;
         } else if (type === 'manufacturer' && activeTab === 'motherboard') {
-          endpoint = `/api/motherboard/manufacturer/${id}`;
+          endpoint = `http://localhost:12345/api/motherboard/manufacturer/${id}`;
         } else if (type === 'model') {
-          endpoint = `/api/gpu/model/${id}`;
+          endpoint = `http://localhost:12345/api/gpu/model/${id}`;
         } else if (type === 'vram_type') {
-          endpoint = `/api/gpu/vram_type/${id}`;
+          endpoint = `http://localhost:12345/api/gpu/vram_type/${id}`;
         } else if (type === 'chipset') {
-          endpoint = `/api/motherboard/chipset/${id}`;
+          endpoint = `http://localhost:12345/api/motherboard/chipset/${id}`;
         } else if (type === 'ram_type') {
-          endpoint = `/api/ram/type/${id}`;
+          endpoint = `http://localhost:12345/api/ram/type/${id}`;
         } else if (type === 'ram_brand') {
-          endpoint = `/api/ram/brand/${id}`;
+          endpoint = `http://localhost:12345/api/ram/brand/${id}`;
         } else if (type === 'disk_type') {
-          endpoint = `/api/disk/type/${id}`;
+          endpoint = `http://localhost:12345/api/disk/type/${id}`;
         } else if (type === 'disk_brand') {
-          endpoint = `/api/disk/brand/${id}`;
+          endpoint = `http://localhost:12345/api/disk/brand/${id}`;
         } else if (type === 'disk_interface') {
-          endpoint = `/api/disk/interface/${id}`;
+          endpoint = `http://localhost:12345/api/disk/interface/${id}`;
         } else {
-          endpoint = `/api/${activeTab}/${type}/${id}`;
+          endpoint = `http://localhost:12345/api/${activeTab}/${type}/${id}`;
         }
         
         await axios.delete(endpoint, { headers });
@@ -1155,41 +1155,56 @@ const Hardware = () => {
                     e.stopPropagation();
                     openLookupForm('ram_type');
                   }}
-                  className="btn-primary text-sm px-3 py-1"
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
                 >
-                  <Plus className="w-4 h-4 mr-1" />
                   Add RAM Type
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {data.lookup.ram_types?.map(ramType => (
-                  <div key={ramType.id} className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-gray-900 dark:text-white">{ramType.name}</span>
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openLookupForm('ram_type', ramType);
-                          }}
-                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLookupDelete('ram_type', ramType.id);
-                          }}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Type Name
+                      </th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                    {data.lookup.ram_types?.map(ramType => (
+                      <tr key={ramType.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                          {ramType.name}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-2">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openLookupForm('ram_type', ramType);
+                              }}
+                              className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLookupDelete('ram_type', ramType.id);
+                              }}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -1219,53 +1234,68 @@ const Hardware = () => {
                     e.stopPropagation();
                     openLookupForm('ram_brand');
                   }}
-                  className="btn-primary text-sm px-3 py-1"
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
                 >
-                  <Plus className="w-4 h-4 mr-1" />
                   Add RAM Brand
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {data.lookup.ram_brands?.map(brand => (
-                  <div key={brand.id} className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-gray-900 dark:text-white">{brand.name}</span>
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openLookupForm('ram_brand', brand);
-                          }}
-                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLookupDelete('ram_brand', brand.id);
-                          }}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Brand Name
+                      </th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                    {data.lookup.ram_brands?.map(brand => (
+                      <tr key={brand.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                          {brand.name}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-2">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openLookupForm('ram_brand', brand);
+                              }}
+                              className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleLookupDelete('ram_brand', brand.id);
+                              }}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
         </div>
 
-        {/* Individual RAM Modules Section */}
+        {/* RAM Modules Section */}
         <div className="card">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Individual RAM Modules</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">RAM Modules</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {data.main?.length || 0} RAM module{(data.main?.length || 0) !== 1 ? 's' : ''} configured
+                {data.main?.length || 0} RAM module{(data.main?.length !== 1 ? 's' : '')} configured
               </p>
             </div>
             <button 
@@ -1276,11 +1306,10 @@ const Hardware = () => {
                 }
                 setShowForm(true);
               }}
-              className="btn-primary"
+              className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={!data.lookup?.ram_types?.length || !data.lookup?.ram_brands?.length}
             >
-              <Plus className="w-5 h-5 mr-2" />
-              Add RAM Module
+              Add New RAM
             </button>
           </div>
           
@@ -1288,11 +1317,11 @@ const Hardware = () => {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Brand</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Speed</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Speed</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Size</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Serial</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -1303,9 +1332,6 @@ const Hardware = () => {
                   
                   return (
                     <tr key={ram.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        {ram.name}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {brand?.name || 'N/A'}
                       </td>
@@ -1317,6 +1343,9 @@ const Hardware = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {ram.size ? `${ram.size} MB` : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {ram.serial || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
@@ -1794,34 +1823,34 @@ const LookupForm = ({ type, item, onClose, onSave, activeTab, lookupData }) => {
       // Determine the correct API endpoint based on active tab and type
       let endpoint;
       if (type === 'brand' && activeTab === 'cpu') {
-        endpoint = `/api/cpu/brand/`;
+        endpoint = `http://localhost:12345/api/cpu/brand/`;
       } else if (type === 'brand' && activeTab === 'gpu') {
-        endpoint = `/api/gpu/brand/`;
+        endpoint = `http://localhost:12345/api/gpu/brand/`;
       } else if (type === 'family') {
-        endpoint = `/api/cpu/family/`;
+        endpoint = `http://localhost:12345/api/cpu/family/`;
       } else if (type === 'manufacturer' && activeTab === 'gpu') {
-        endpoint = `/api/gpu/manufacturer/`;
+        endpoint = `http://localhost:12345/api/gpu/manufacturer/`;
       } else if (type === 'manufacturer' && activeTab === 'motherboard') {
-        endpoint = `/api/motherboard/manufacturer/`;
+        endpoint = `http://localhost:12345/api/motherboard/manufacturer/`;
       } else if (type === 'model') {
-        endpoint = `/api/gpu/model/`;
+        endpoint = `http://localhost:12345/api/gpu/model/`;
       } else if (type === 'vram_type') {
-        endpoint = `/api/gpu/vram_type/`;
+        endpoint = `http://localhost:12345/api/gpu/vram_type/`;
       } else if (type === 'chipset') {
-        endpoint = `/api/motherboard/chipset/`;
+        endpoint = `http://localhost:12345/api/motherboard/chipset/`;
       } else if (type === 'ram_type') {
-        endpoint = `/api/ram/type/`;
+        endpoint = `http://localhost:12345/api/ram/type/`;
       } else if (type === 'ram_brand') {
-        endpoint = `/api/ram/brand/`;
+        endpoint = `http://localhost:12345/api/ram/brand/`;
       } else if (type === 'disk_type') {
-        endpoint = `/api/disk/type/`;
+        endpoint = `http://localhost:12345/api/disk/type/`;
       } else if (type === 'disk_brand') {
-        endpoint = `/api/disk/brand/`;
+        endpoint = `http://localhost:12345/api/disk/brand/`;
       } else if (type === 'disk_interface') {
-        endpoint = `/api/disk/interface/`;
+        endpoint = `http://localhost:12345/api/disk/interface/`;
       } else {
         // Fallback for any unmatched combinations
-        endpoint = `/api/${activeTab}/${type}/`;
+        endpoint = `http://localhost:12345/api/${activeTab}/${type}/`;
       }
       
       // Debug logging
@@ -2042,13 +2071,22 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
     
     try {
       const headers = { 'X-API-Key': apiKey };
+      // Determine the correct endpoint for each type
+      let endpoint;
+      if (type === 'ram') {
+        endpoint = 'http://localhost:12345/api/ram/module/';
+      } else {
+        endpoint = `http://localhost:12345/api/${type}/`;
+      }
+      
       console.log(`Submitting ${type} data:`, formData);
-      console.log(`API endpoint: /api/${type}/`);
+      console.log(`API endpoint: ${endpoint}`);
+      console.log(`Request headers:`, headers);
       
       if (item) {
-        await axios.put(`/api/${type}/${item.id}`, formData, { headers });
+        await axios.put(`${endpoint}${item.id}`, formData, { headers });
       } else {
-        await axios.post(`/api/${type}/`, formData, { headers });
+        await axios.post(endpoint, formData, { headers });
       }
       onSave();
     } catch (error) {
@@ -2359,20 +2397,6 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Name
-        </label>
-        <input
-          type="text"
-          value={formData.name || ''}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="input-field"
-          placeholder="e.g., Corsair Vengeance LPX 16GB"
-          required
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Brand
         </label>
         <select
@@ -2411,22 +2435,21 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Speed (MHz)
+          Name
         </label>
         <input
-          type="number"
-          min="1"
-          value={formData.speed || ''}
-          onChange={(e) => setFormData({ ...formData, speed: parseInt(e.target.value) })}
+          type="text"
+          value={formData.name || ''}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           className="input-field"
-          placeholder="e.g., 3200"
+          placeholder="e.g., Corsair Vengeance LPX 16GB"
           required
         />
       </div>
       
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Size (MB)
+          Size
         </label>
         <input
           type="number"
@@ -2441,7 +2464,22 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Serial Number (Optional)
+          Speed
+        </label>
+        <input
+          type="number"
+          min="1"
+          value={formData.speed || ''}
+          onChange={(e) => setFormData({ ...formData, speed: parseInt(e.target.value) })}
+          className="input-field"
+          placeholder="e.g., 3200"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Serial
         </label>
         <input
           type="text"
@@ -2607,7 +2645,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
       <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {item ? 'Edit' : 'Add New'} {type === 'cpu' ? 'CPU' : type === 'gpu' ? 'GPU' : type.charAt(0).toUpperCase() + type.slice(1)}
+          {item ? 'Edit' : 'Add New'} {type === 'cpu' ? 'CPU' : type === 'gpu' ? 'GPU' : type === 'ram' ? 'RAM' : type.charAt(0).toUpperCase() + type.slice(1)}
         </h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
