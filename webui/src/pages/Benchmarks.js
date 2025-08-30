@@ -4,7 +4,8 @@ import {
   Plus,
   Edit,
   Trash2,
-  Target
+  Target,
+  BarChart3
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -55,62 +56,64 @@ const Benchmarks = () => {
 
     if (benchmarks.length === 0) {
       return (
-        <div className="text-center py-8 text-secondary-500">
-          No benchmarks found. Click the "Add New" button to create one.
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <p>No benchmarks found</p>
+          <p className="text-sm mt-2">Click the "Add New Benchmark" button to create one</p>
         </div>
       );
     }
 
     return (
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-secondary-200">
-          <thead className="bg-secondary-50">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Target
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Description
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Version
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-secondary-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-secondary-200">
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {benchmarks.map((benchmark) => (
-              <tr key={benchmark.id} className="hover:bg-secondary-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-secondary-900">
+              <tr key={benchmark.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                   {benchmark.name}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
                     <Target className="w-3 h-3 mr-1" />
                     {benchmark.target}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-secondary-900">
+                <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                   {benchmark.description || 'No description'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                   {benchmark.version || 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => setEditingItem(benchmark)}
-                    className="text-primary-600 hover:text-primary-900 mr-3"
+                    className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(benchmark.id)}
-                    className="text-red-600 hover:text-red-900"
+                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -124,11 +127,14 @@ const Benchmarks = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-secondary-900">Benchmarks</h1>
-          <p className="text-secondary-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Benchmarks
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Manage your benchmark tests and their configurations
           </p>
         </div>
@@ -199,14 +205,14 @@ const BenchmarkForm = ({ benchmark, onClose, onSave }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-        <h2 className="text-lg font-semibold text-secondary-900 mb-4">
+      <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           {benchmark ? 'Edit' : 'Add New'} Benchmark
         </h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Name
             </label>
             <input
@@ -220,7 +226,7 @@ const BenchmarkForm = ({ benchmark, onClose, onSave }) => {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Target
             </label>
             <select
@@ -238,7 +244,7 @@ const BenchmarkForm = ({ benchmark, onClose, onSave }) => {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Description
             </label>
             <textarea
@@ -251,7 +257,7 @@ const BenchmarkForm = ({ benchmark, onClose, onSave }) => {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Version
             </label>
             <input

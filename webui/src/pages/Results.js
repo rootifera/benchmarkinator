@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  Plus,
-  Filter
+  Filter,
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -13,7 +14,6 @@ const Results = () => {
   const [benchmarks, setBenchmarks] = useState([]);
   const [configurations, setConfigurations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
   const [filters, setFilters] = useState({
     benchmark: '',
     configuration: '',
@@ -69,13 +69,13 @@ const Results = () => {
   const renderFilters = () => (
     <div className="card mb-6">
       <div className="flex items-center mb-4">
-        <Filter className="w-5 h-5 mr-2 text-secondary-600" />
-        <h3 className="text-lg font-medium text-secondary-900">Filters</h3>
+        <Filter className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Filters</h3>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label className="block text-sm font-medium text-secondary-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Benchmark
           </label>
           <select
@@ -93,7 +93,7 @@ const Results = () => {
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-secondary-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Configuration
           </label>
           <select
@@ -111,7 +111,7 @@ const Results = () => {
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-secondary-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Date From
           </label>
           <input
@@ -123,7 +123,7 @@ const Results = () => {
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-secondary-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Date To
           </label>
           <input
@@ -139,7 +139,7 @@ const Results = () => {
 
   const renderChart = () => (
     <div className="card mb-6">
-      <h3 className="text-lg font-medium text-secondary-900 mb-4">Performance Comparison</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Performance Comparison</h3>
       {chartData.length > 0 ? (
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
@@ -154,8 +154,9 @@ const Results = () => {
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="text-center py-8 text-secondary-500">
-          No data available for the selected filters
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <p>No data available for the selected filters</p>
         </div>
       )}
     </div>
@@ -172,55 +173,57 @@ const Results = () => {
 
     if (filteredResults.length === 0) {
       return (
-        <div className="text-center py-8 text-secondary-500">
-          No results found matching the current filters
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <p>No results found matching the current filters</p>
         </div>
       );
     }
 
     return (
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-secondary-200">
-          <thead className="bg-secondary-50">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Benchmark
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Configuration
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Score
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Notes
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-secondary-200">
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {filteredResults.map((result) => {
               const benchmark = benchmarks.find(b => b.id === result.benchmark_id);
               const config = configurations.find(c => c.id === result.config_id);
-              
               return (
-                <tr key={result.id} className="hover:bg-secondary-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-secondary-900">
+                <tr key={result.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                     {benchmark?.name || 'Unknown'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {config?.name || 'Unknown'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
-                    <span className="font-semibold text-lg">{result.score}</span>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
+                      {result.score}
+                    </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {new Date(result.date).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 text-sm text-secondary-900">
-                    {result.notes || '-'}
+                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                    {result.notes || 'No notes'}
                   </td>
                 </tr>
               );
@@ -232,173 +235,29 @@ const Results = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-secondary-900">Benchmark Results</h1>
-          <p className="text-secondary-600 mt-2">
-            View and analyze your benchmark results with charts and comparisons
-          </p>
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="btn-primary"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Add New Result
-        </button>
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Results
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">
+          View and analyze your benchmark results
+        </p>
       </div>
 
+      {/* Filters */}
       {renderFilters()}
+
+      {/* Chart */}
       {renderChart()}
 
       {/* Results Table */}
       <div className="card">
-        <h3 className="text-lg font-medium text-secondary-900 mb-4">Results</h3>
-        {renderResultsTable()}
-      </div>
-
-      {/* Add Result Form Modal */}
-      {showForm && (
-        <ResultForm
-          onClose={() => setShowForm(false)}
-          onSave={() => {
-            setShowForm(false);
-            fetchData();
-          }}
-          benchmarks={benchmarks}
-          configurations={configurations}
-        />
-      )}
-    </div>
-  );
-};
-
-// Result Form Component (simplified for now)
-const ResultForm = ({ onClose, onSave, benchmarks, configurations }) => {
-  const [formData, setFormData] = useState({
-    benchmark_id: '',
-    config_id: '',
-    score: '',
-    date: new Date().toISOString().split('T')[0],
-    notes: ''
-  });
-  const { apiKey } = useAuth();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const headers = { 'X-API-Key': apiKey };
-      await axios.post('/api/benchmark_results/', formData, { headers });
-      onSave();
-    } catch (error) {
-      console.error('Error saving result:', error);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-        <h2 className="text-lg font-semibold text-secondary-900 mb-4">
-          Add New Result
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+          Benchmark Results
         </h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
-              Benchmark
-            </label>
-            <select
-              value={formData.benchmark_id}
-              onChange={(e) => setFormData({ ...formData, benchmark_id: e.target.value })}
-              className="input-field"
-              required
-            >
-              <option value="">Select Benchmark</option>
-              {benchmarks.map(benchmark => (
-                <option key={benchmark.id} value={benchmark.id}>
-                  {benchmark.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
-              Configuration
-            </label>
-            <select
-              value={formData.config_id}
-              onChange={(e) => setFormData({ ...formData, config_id: e.target.value })}
-              className="input-field"
-              required
-            >
-              <option value="">Select Configuration</option>
-              {configurations.map(config => (
-                <option key={config.id} value={config.id}>
-                  {config.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
-              Score
-            </label>
-            <input
-              type="number"
-              value={formData.score}
-              onChange={(e) => setFormData({ ...formData, score: e.target.value })}
-              className="input-field"
-              placeholder="Enter benchmark score"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
-              Date
-            </label>
-            <input
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className="input-field"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
-              Notes
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="input-field"
-              rows="3"
-              placeholder="Additional notes about this result"
-            />
-          </div>
-          
-          <div className="flex space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary flex-1"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn-primary flex-1"
-            >
-              Save Result
-            </button>
-          </div>
-        </form>
+        {renderResultsTable()}
       </div>
     </div>
   );

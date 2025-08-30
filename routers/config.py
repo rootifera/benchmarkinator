@@ -1,60 +1,54 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from sqlalchemy.exc import IntegrityError
-
 from utils.helper import validate_and_normalize_name
-
 from models.config import Config
+from models.ram import RAM
 from models.cpu import CPU
 from models.motherboard import Motherboard
 from models.gpu import GPU
 from models.disk import Disk
 from models.oses import OS
-from models.ram import RAMModule
-
 from database import get_db
 
 router = APIRouter()
 
-
 @router.post("/", response_model=Config)
 def create_config(config: Config, db: Session = Depends(get_db)):
     try:
-        # name uniqueness/normalization
         config.name = validate_and_normalize_name(config.name, db, Config)
 
-        # FK validations
-        if config.cpu_id is None or db.get(CPU, config.cpu_id) is None:
+        # Validate FKs
+        if db.get(CPU, config.cpu_id) is None:
             raise HTTPException(status_code=400, detail="Invalid CPU")
 
-        if config.motherboard_id is None or db.get(Motherboard, config.motherboard_id) is None:
+        if db.get(Motherboard, config.motherboard_id) is None:
             raise HTTPException(status_code=400, detail="Invalid Motherboard")
 
-        if config.gpu_id is None or db.get(GPU, config.gpu_id) is None:
+        if db.get(GPU, config.gpu_id) is None:
             raise HTTPException(status_code=400, detail="Invalid GPU")
 
-        if config.disk_id is None or db.get(Disk, config.disk_id) is None:
+        if db.get(Disk, config.disk_id) is None:
             raise HTTPException(status_code=400, detail="Invalid Disk")
 
-        if config.os_id is None or db.get(OS, config.os_id) is None:
+        if db.get(OS, config.os_id) is None:
             raise HTTPException(status_code=400, detail="Invalid OS")
 
-        if config.ram_module_id is None or db.get(RAMModule, config.ram_module_id) is None:
-            raise HTTPException(status_code=400, detail="Invalid RAM module")
+        if db.get(RAM, config.ram_id) is None:
+            raise HTTPException(status_code=400, detail="Invalid RAM")
 
         db.add(config)
         db.commit()
         db.refresh(config)
         return config
-    except IntegrityError as e:
+
+    except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=400, detail="A configuration with this name already exists")
-
 
 @router.get("/", response_model=list[Config])
 def get_configs(db: Session = Depends(get_db)):
     return db.exec(select(Config)).all()
-
 
 @router.get("/{config_id}", response_model=Config)
 def get_config(config_id: int, db: Session = Depends(get_db)):
@@ -63,50 +57,41 @@ def get_config(config_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Config not found")
     return config
 
-
 @router.put("/{config_id}", response_model=Config)
 def update_config(config_id: int, config: Config, db: Session = Depends(get_db)):
     db_config = db.get(Config, config_id)
     if db_config is None:
         raise HTTPException(status_code=404, detail="Config not found")
 
-    # validate new FKs (if provided); for simplicity we require all
-    if config.cpu_id is None or db.get(CPU, config.cpu_id) is None:
+    # Validate FKs
+    if db.get(CPU, config.cpu_id) is None:
         raise HTTPException(status_code=400, detail="Invalid CPU")
-
-    if config.motherboard_id is None or db.get(Motherboard, config.motherboard_id) is None:
+    if db.get(Motherboard, config.motherboard_id) is None:
         raise HTTPException(status_code=400, detail="Invalid Motherboard")
-
-    if config.gpu_id is None or db.get(GPU, config.gpu_id) is None:
+    if db.get(GPU, config.gpu_id) is None:
         raise HTTPException(status_code=400, detail="Invalid GPU")
-
-    if config.disk_id is None or db.get(Disk, config.disk_id) is None:
+    if db.get(Disk, config.disk_id) is None:
         raise HTTPException(status_code=400, detail="Invalid Disk")
-
-    if config.os_id is None or db.get(OS, config.os_id) is None:
+    if db.get(OS, config.os_id) is None:
         raise HTTPException(status_code=400, detail="Invalid OS")
+    if db.get(RAM, config.ram_id) is None:
+        raise HTTPException(status_code=400, detail="Invalid RAM")
 
-    if config.ram_module_id is None or db.get(RAMModule, config.ram_module_id) is None:
-        raise HTTPException(status_code=400, detail="Invalid RAM module")
-
-    # name normalization + uniqueness (allow same row)
     if hasattr(config, "name"):
         config.name = validate_and_normalize_name(config.name, db, Config, current_id=config_id)
 
-    existing_config = db.exec(
-        select(Config).where(Config.name == config.name, Config.id != config_id)
-    ).first()
+    existing_config = db.exec(select(Config).where(Config.name == config.name, Config.id != config_id)).first()
     if existing_config:
         raise HTTPException(status_code=400, detail="A configuration with this name already exists")
 
-    # apply updates
     db_config.name = config.name
     db_config.cpu_id = config.cpu_id
     db_config.motherboard_id = config.motherboard_id
     db_config.gpu_id = config.gpu_id
     db_config.disk_id = config.disk_id
     db_config.os_id = config.os_id
-    db_config.ram_module_id = config.ram_module_id
+    db_config.ram_id = config.ram_id
+    db_config.ram_size = config.ram_size
 
     db_config.cpu_driver_version = config.cpu_driver_version
     db_config.mb_chipset_driver_version = config.mb_chipset_driver_version
@@ -124,6 +109,10 @@ def update_config(config_id: int, config: Config, db: Session = Depends(get_db))
     db_config.gpu_vram_baseclock = config.gpu_vram_baseclock
     db_config.gpu_vram_currentclock = config.gpu_vram_currentclock
 
+    db_config.ram_overclock = config.ram_overclock
+    db_config.ram_baseclock = config.ram_baseclock
+    db_config.ram_currentclock = config.ram_currentclock
+
     db_config.notes = config.notes
 
     try:
@@ -134,13 +123,11 @@ def update_config(config_id: int, config: Config, db: Session = Depends(get_db))
         db.rollback()
         raise HTTPException(status_code=400, detail="A configuration with this name already exists")
 
-
 @router.delete("/{config_id}")
 def delete_config(config_id: int, db: Session = Depends(get_db)):
     config = db.get(Config, config_id)
     if config is None:
         raise HTTPException(status_code=404, detail="Config not found")
-
     db.delete(config)
     db.commit()
     return {"message": "Config deleted successfully"}
