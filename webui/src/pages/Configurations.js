@@ -561,16 +561,16 @@ const ConfigurationDetailsModal = ({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Driver Versions</label>
                 <div className="mt-1 text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded space-y-1">
                   {configuration.cpu_driver_version && (
-                    <p><span className="font-medium">CPU:</span> {configuration.cpu_driver_version}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400"><span className="font-medium">CPU:</span> {configuration.cpu_driver_version}</p>
                   )}
                   {configuration.gpu_driver_version && (
-                    <p><span className="font-medium">GPU:</span> {configuration.gpu_driver_version}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400"><span className="font-medium">GPU:</span> {configuration.gpu_driver_version}</p>
                   )}
                   {configuration.mb_chipset_driver_version && (
-                    <p><span className="font-medium">Motherboard:</span> {configuration.mb_chipset_driver_version}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400"><span className="font-medium">Motherboard:</span> {configuration.mb_chipset_driver_version}</p>
                   )}
                   {!configuration.cpu_driver_version && !configuration.gpu_driver_version && !configuration.mb_chipset_driver_version && (
-                    <span className="text-gray-500 dark:text-gray-400">No driver versions specified</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">No driver versions specified</span>
                   )}
                 </div>
               </div>
