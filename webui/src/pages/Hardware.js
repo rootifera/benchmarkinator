@@ -171,7 +171,20 @@ const Hardware = () => {
       onConfirm: async () => {
         try {
           const headers = { 'X-API-Key': apiKey };
-          await axios.delete(`http://localhost:12345/api/${activeTab}/${id}`, { headers });
+          
+          // Determine the correct delete endpoint
+          let deleteEndpoint;
+          if (activeTab === 'os') {
+            deleteEndpoint = `http://192.168.1.24:12345/api/oses/${id}`;
+          } else if (activeTab === 'ram') {
+            deleteEndpoint = `http://192.168.1.24:12345/api/ram/${id}`;
+          } else if (activeTab === 'disk') {
+            deleteEndpoint = `http://192.168.1.24:12345/api/disk/${id}`;
+          } else {
+            deleteEndpoint = `http://localhost:12345/api/${activeTab}/${id}`;
+          }
+          
+          await axios.delete(deleteEndpoint, { headers });
           fetchData();
           
           // Show success toast
@@ -1444,7 +1457,7 @@ const Hardware = () => {
       </div>
       
       {/* Information Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {activeTab !== 'disk' && activeTab !== 'os' && activeTab !== 'ram' && (
           <div className="card">
             <div className="flex items-center">
@@ -1500,77 +1513,13 @@ const Hardware = () => {
           </div>
         </div>
         
-        {activeTab === 'gpu' && (
-          <div className="card">
-            <div className="flex items-center">
-              <div className="p-3 rounded-lg bg-orange-500 text-white">
-                <Database className="w-6 h-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  VRAM Types
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {data.lookup?.vramTypes?.length || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+
         
-        {activeTab === 'ram' && (
-          <div className="card">
-            <div className="flex items-center">
-              <div className="p-3 rounded-lg bg-indigo-500 text-white">
-                <Database className="w-6 h-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  RAM Types
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {data.main?.length || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+
         
-        {activeTab === 'disk' && (
-          <div className="card">
-            <div className="flex items-center">
-              <div className="p-3 rounded-lg bg-orange-500 text-white">
-                <HardDrive className="w-6 h-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  Disks
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {data.main?.length || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+
         
-        {activeTab === 'os' && (
-          <div className="card">
-            <div className="flex items-center">
-              <div className="p-3 rounded-lg bg-indigo-500 text-white">
-                <Monitor className="w-6 h-6" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  Operating Systems
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {data.main?.length || 0}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+
       </div>
 
       {/* Tabs */}
