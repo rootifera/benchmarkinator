@@ -12,7 +12,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 
 
 const Results = () => {
-  const { apiKey } = useAuth();
+  const { apiKey, isAuthenticated } = useAuth();
   const [results, setResults] = useState([]);
   const [benchmarks, setBenchmarks] = useState([]);
   const [configurations, setConfigurations] = useState([]);
@@ -78,11 +78,19 @@ const Results = () => {
   const [filteredResults, setFilteredResults] = useState([]);
 
   const handleEditResult = (result) => {
+    if (!isAuthenticated) {
+      alert('Please log in to edit results');
+      return;
+    }
     setEditingItem(result);
     setShowForm(true);
   };
 
   const handleDeleteResult = async (resultId) => {
+    if (!isAuthenticated) {
+      alert('Please log in to delete results');
+      return;
+    }
     if (window.confirm('Are you sure you want to delete this result?')) {
       try {
         const headers = { 'X-API-Key': apiKey };
@@ -401,15 +409,25 @@ const Results = () => {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleEditResult(result)}
-                        className="p-1 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                        title="Edit Result"
+                        disabled={!isAuthenticated}
+                        className={`p-1 rounded transition-colors ${
+                          isAuthenticated
+                            ? 'text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                            : 'text-gray-400 cursor-not-allowed'
+                        }`}
+                        title={isAuthenticated ? "Edit Result" : "Login required to edit"}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteResult(result.id)}
-                        className="p-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                        title="Delete Result"
+                        disabled={!isAuthenticated}
+                        className={`p-1 rounded transition-colors ${
+                          isAuthenticated
+                            ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20'
+                            : 'text-gray-400 cursor-not-allowed'
+                        }`}
+                        title={isAuthenticated ? "Delete Result" : "Login required to delete"}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -438,14 +456,36 @@ const Results = () => {
         </div>
         <div className="flex space-x-3">
           <button
-            onClick={() => setShowCompareForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors"
+            onClick={() => {
+              if (!isAuthenticated) {
+                alert('Please log in to compare test systems');
+                return;
+              }
+              setShowCompareForm(true);
+            }}
+            disabled={!isAuthenticated}
+            className={`text-xs font-medium px-3 py-2 rounded-lg transition-colors ${
+              isAuthenticated 
+                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+            }`}
           >
             Compare Test Systems
           </button>
           <button
-            onClick={() => setShowForm(true)}
-            className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
+            onClick={() => {
+              if (!isAuthenticated) {
+                alert('Please log in to add new results');
+                return;
+              }
+              setShowForm(true);
+            }}
+            disabled={!isAuthenticated}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
+              isAuthenticated 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+            }`}
           >
             Add New Result
           </button>
@@ -490,7 +530,7 @@ const Results = () => {
       </div>
 
       {/* Add/Edit Form Modal */}
-      {showForm && (
+      {showForm && isAuthenticated && (
         <ResultForm
           result={editingItem}
           benchmarks={benchmarks}
@@ -508,7 +548,7 @@ const Results = () => {
       )}
 
       {/* Compare Test Systems Modal */}
-      {showCompareForm && (
+      {showCompareForm && isAuthenticated && (
         <CompareForm
           configurations={configurations}
           benchmarks={benchmarks}

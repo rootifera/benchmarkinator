@@ -1,9 +1,9 @@
 // Authentication configuration
 // This reads from React environment variables (REACT_APP_*)
-// Set these in your .env file in the webui directory
+// These are set during the Docker build process from the parent .env file
 
 export const AUTH_CONFIG = {
-  // Read from environment variables with fallbacks
+  // Read from React environment variables with fallbacks
   WEBADMIN: process.env.REACT_APP_WEBADMIN || 'admin',
   WEBPASSWORD: process.env.REACT_APP_WEBPASSWORD || 'admin123',
 };
@@ -13,8 +13,9 @@ export const AUTH_CONFIG = {
 // 2. Never exposed in the frontend code
 // 3. Validated through secure API endpoints
 // 
-// To use environment variables, create a .env file in the webui directory with:
-// REACT_APP_WEBADMIN=your_admin_username
-// REACT_APP_WEBPASSWORD=your_admin_password
+// The credentials are set in the parent .env file:
+// WEBADMIN=your_admin_username
+// WEBPASSWORD=your_admin_password
 // 
-// The REACT_APP_ prefix is required for Create React App to expose these variables
+// These are passed to the Docker container via docker-compose.yml and
+// converted to REACT_APP_* variables during the build process
