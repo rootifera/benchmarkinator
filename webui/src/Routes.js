@@ -14,7 +14,7 @@ const Routes = () => {
         <Route path="/hardware" element={<Hardware />} />
         <Route path="/benchmarks" element={<Benchmarks />} />
         <Route path="/results" element={<Results />} />
-        <Route path="/configurations" element={<Configurations />} />
+        <Route path="/testsystems" element={<Configurations />} />
       </RouterRoutes>
     </div>
   );

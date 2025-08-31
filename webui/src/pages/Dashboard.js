@@ -60,7 +60,7 @@ const Dashboard = () => {
 
 
   const statCards = [
-    { name: 'Test Systems', value: stats.configurations, icon: Settings, color: 'bg-indigo-500', href: '/configurations' },
+            { name: 'Test Systems', value: stats.configurations, icon: Settings, color: 'bg-indigo-500', href: '/testsystems' },
     { name: 'Benchmarks', value: stats.benchmarks, icon: BarChart3, color: 'bg-purple-500', href: '/benchmarks' },
     { name: 'Results', value: stats.results, icon: TrendingUp, color: 'bg-orange-500', href: '/results' },
   ];

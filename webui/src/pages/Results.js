@@ -3,20 +3,35 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   Filter,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
 
 const Results = () => {
   const { apiKey } = useAuth();
   const [results, setResults] = useState([]);
   const [benchmarks, setBenchmarks] = useState([]);
   const [configurations, setConfigurations] = useState([]);
+  const [cpus, setCpus] = useState([]);
+  const [gpus, setGpus] = useState([]);
+  const [cpuBrands, setCpuBrands] = useState([]);
+  const [cpuFamilies, setCpuFamilies] = useState([]);
+  const [gpuManufacturers, setGpuManufacturers] = useState([]);
+  const [gpuBrands, setGpuBrands] = useState([]);
+  const [gpuModels, setGpuModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [showCompareForm, setShowCompareForm] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   const [filters, setFilters] = useState({
     benchmark: '',
     configuration: '',
+    cpu: '',
+    gpu: '',
     dateFrom: '',
     dateTo: ''
   });
@@ -26,15 +41,29 @@ const Results = () => {
     try {
       const headers = { 'X-API-Key': apiKey };
       
-      const [resultsRes, benchmarksRes, configsRes] = await Promise.all([
+      const [resultsRes, benchmarksRes, configsRes, cpusRes, gpusRes, cpuBrandsRes, cpuFamiliesRes, gpuManufacturersRes, gpuBrandsRes, gpuModelsRes] = await Promise.all([
         axios.get('/api/benchmark_results/', { headers }),
         axios.get('/api/benchmark/', { headers }),
-        axios.get('/api/config/', { headers })
+        axios.get('/api/config/', { headers }),
+        axios.get('/api/cpu/', { headers }),
+        axios.get('/api/gpu/', { headers }),
+        axios.get('/api/cpu/brand/', { headers }),
+        axios.get('/api/cpu/family/', { headers }),
+        axios.get('/api/gpu/manufacturer/', { headers }),
+        axios.get('/api/gpu/brand/', { headers }),
+        axios.get('/api/gpu/model/', { headers })
       ]);
 
       setResults(resultsRes.data);
       setBenchmarks(benchmarksRes.data);
       setConfigurations(configsRes.data);
+      setCpus(cpusRes.data);
+      setGpus(gpusRes.data);
+      setCpuBrands(cpuBrandsRes.data);
+      setCpuFamilies(cpuFamiliesRes.data);
+      setGpuManufacturers(gpuManufacturersRes.data);
+      setGpuBrands(gpuBrandsRes.data);
+      setGpuModels(gpuModelsRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -46,62 +75,144 @@ const Results = () => {
     fetchData();
   }, [fetchData]);
 
-  const filteredResults = results.filter(result => {
-    if (filters.benchmark && result.benchmark_id !== parseInt(filters.benchmark)) return false;
-    if (filters.configuration && result.config_id !== parseInt(filters.configuration)) return false;
-    if (filters.dateFrom && new Date(result.date) < new Date(filters.dateFrom)) return false;
-    if (filters.dateTo && new Date(result.date) > new Date(filters.dateTo)) return false;
-    return true;
-  });
+  const [filteredResults, setFilteredResults] = useState([]);
 
-  const chartData = filteredResults.map(result => {
-    const benchmark = benchmarks.find(b => b.id === result.benchmark_id);
-    const config = configurations.find(c => c.id === result.config_id);
-    return {
-      name: `${benchmark?.name || 'Unknown'} - ${config?.name || 'Unknown'}`,
-      score: result.score,
-      date: new Date(result.date).toLocaleDateString(),
-      benchmark: benchmark?.name || 'Unknown',
-      configuration: config?.name || 'Unknown'
-    };
-  });
+  const handleEditResult = (result) => {
+    setEditingItem(result);
+    setShowForm(true);
+  };
+
+  const handleDeleteResult = async (resultId) => {
+    if (window.confirm('Are you sure you want to delete this result?')) {
+      try {
+        const headers = { 'X-API-Key': apiKey };
+        await axios.delete(`/api/benchmark_results/${resultId}`, { headers });
+        // Refresh the data
+        fetchData();
+        fetchFilteredResults();
+      } catch (error) {
+        console.error('Error deleting result:', error);
+        alert('Failed to delete result');
+      }
+    }
+  };
+
+  const fetchFilteredResults = useCallback(async () => {
+    if (!filters.benchmark && !filters.configuration && !filters.cpu && !filters.gpu && !filters.dateFrom && !filters.dateTo) {
+      setFilteredResults(results);
+      return;
+    }
+
+    try {
+      const headers = { 'X-API-Key': apiKey };
+      let endpoint = '/api/benchmark_results/';
+      let filtered = [];
+      
+      // Start with the most specific endpoint if available
+      if (filters.configuration) {
+        endpoint = `/api/benchmark_results/config/${filters.configuration}`;
+        const response = await axios.get(endpoint, { headers });
+        filtered = response.data;
+        
+        // Apply benchmark filter if also selected
+        if (filters.benchmark) {
+          filtered = filtered.filter(result => result.benchmark_id === parseInt(filters.benchmark));
+        }
+      } else if (filters.cpu && filters.gpu) {
+        endpoint = `/api/benchmark_results/cpu-gpu/${filters.cpu}/${filters.gpu}`;
+        const response = await axios.get(endpoint, { headers });
+        filtered = response.data;
+        
+        // Apply benchmark filter if also selected
+        if (filters.benchmark) {
+          filtered = filtered.filter(result => result.benchmark_id === parseInt(filters.benchmark));
+        }
+      } else if (filters.cpu) {
+        endpoint = `/api/benchmark_results/cpu/${filters.cpu}`;
+        const response = await axios.get(endpoint, { headers });
+        filtered = response.data;
+        
+        // Apply benchmark filter if also selected
+        if (filters.benchmark) {
+          filtered = filtered.filter(result => result.benchmark_id === parseInt(filters.benchmark));
+        }
+      } else if (filters.gpu) {
+        endpoint = `/api/benchmark_results/gpu/${filters.gpu}`;
+        const response = await axios.get(endpoint, { headers });
+        filtered = response.data;
+        
+        // Apply benchmark filter if also selected
+        if (filters.benchmark) {
+          filtered = filtered.filter(result => result.benchmark_id === parseInt(filters.benchmark));
+        }
+      } else {
+        // Use general endpoint and apply all filters
+        const response = await axios.get(endpoint, { headers });
+        filtered = response.data;
+        
+        if (filters.benchmark) {
+          filtered = filtered.filter(result => result.benchmark_id === parseInt(filters.benchmark));
+        }
+      }
+
+      // Apply date filters to all results
+      if (filters.dateFrom) {
+        filtered = filtered.filter(result => {
+          try {
+            const resultDate = new Date(result.timestamp);
+            return resultDate.getTime() > 0 && resultDate >= new Date(filters.dateFrom);
+          } catch (e) {
+            return false;
+          }
+        });
+      }
+      if (filters.dateTo) {
+        filtered = filtered.filter(result => {
+          try {
+            const resultDate = new Date(result.timestamp);
+            return resultDate.getTime() > 0 && resultDate <= new Date(filters.dateTo);
+          } catch (e) {
+            return false;
+          }
+        });
+      }
+
+      setFilteredResults(filtered);
+    } catch (error) {
+      console.error('Error fetching filtered results:', error);
+      setFilteredResults([]);
+    }
+  }, [filters, apiKey, results]);
+
+  useEffect(() => {
+    fetchFilteredResults();
+  }, [fetchFilteredResults]);
+
+
 
   const renderFilters = () => (
     <div className="card mb-6">
-      <div className="flex items-center mb-4">
-        <Filter className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Filters</h3>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center">
+          <Filter className="w-5 h-5 mr-2 text-gray-600 dark:text-gray-400" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Filters</h3>
+        </div>
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          Filters work together - combine benchmark, test system, and date filters
+        </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Benchmark
-          </label>
-          <select
-            value={filters.benchmark}
-            onChange={(e) => setFilters({ ...filters, benchmark: e.target.value })}
-            className="input-field"
-          >
-            <option value="">All Benchmarks</option>
-            {benchmarks.map(benchmark => (
-              <option key={benchmark.id} value={benchmark.id}>
-                {benchmark.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Configuration
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Test System
           </label>
           <select
             value={filters.configuration}
             onChange={(e) => setFilters({ ...filters, configuration: e.target.value })}
-            className="input-field"
+            className="input-field text-sm py-1"
           >
-            <option value="">All Configurations</option>
+            <option value="">All</option>
             {configurations.map(config => (
               <option key={config.id} value={config.id}>
                 {config.name}
@@ -111,56 +222,102 @@ const Results = () => {
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Date From
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Benchmark
+          </label>
+          <select
+            value={filters.benchmark}
+            onChange={(e) => setFilters({ ...filters, benchmark: e.target.value })}
+            className="input-field text-sm py-1"
+          >
+            <option value="">All</option>
+            {benchmarks.map(benchmark => (
+              <option key={benchmark.id} value={benchmark.id}>
+                {benchmark.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+            CPU
+          </label>
+          <select
+            value={filters.cpu}
+            onChange={(e) => setFilters({ ...filters, cpu: e.target.value })}
+            className="input-field text-sm py-1"
+          >
+            <option value="">All</option>
+            {cpus.map(cpu => {
+              const brand = cpuBrands.find(b => b.id === cpu.cpu_brand_id);
+              const family = cpuFamilies.find(f => f.id === cpu.cpu_family_id);
+              return (
+                <option key={cpu.id} value={cpu.id}>
+                  {brand?.name || 'Unknown'} {family?.name || 'Unknown'} {cpu.model} [{cpu.speed} - {cpu.core_count} Cores]{cpu.serial ? ` [${cpu.serial}]` : ''}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+            GPU
+          </label>
+          <select
+            value={filters.gpu}
+            onChange={(e) => setFilters({ ...filters, gpu: e.target.value })}
+            className="input-field text-sm py-1"
+          >
+            <option value="">All</option>
+            {gpus.map(gpu => {
+              const manufacturer = gpuManufacturers.find(m => m.id === gpu.gpu_manufacturer_id);
+              const brand = gpuBrands.find(b => b.id === gpu.gpu_brand_id);
+              const model = gpuModels.find(m => m.id === gpu.gpu_model_id);
+              return (
+                <option key={gpu.id} value={gpu.id}>
+                  {manufacturer?.name || 'Unknown'} {brand?.name || 'Unknown'} {model?.name || 'Unknown'} {gpu.vram_size}{gpu.serial ? ` [${gpu.serial}]` : ''}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Date
           </label>
           <input
             type="date"
             value={filters.dateFrom}
             onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-            className="input-field"
+            className="input-field text-sm py-1"
           />
         </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Date To
-          </label>
-          <input
-            type="date"
-            value={filters.dateTo}
-            onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-            className="input-field"
-          />
+        <div className="flex items-end">
+          <button
+            onClick={() => setFilters({
+              benchmark: '',
+              configuration: '',
+              cpu: '',
+              gpu: '',
+              dateFrom: '',
+              dateTo: ''
+            })}
+            className="bg-gray-600 hover:bg-gray-700 text-white text-xs font-medium px-3 py-1 rounded transition-colors"
+          >
+            Clear
+          </button>
         </div>
       </div>
+      
+
     </div>
   );
 
-  const renderChart = () => (
-    <div className="card mb-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Performance Comparison</h3>
-      {chartData.length > 0 ? (
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="score" fill="#3b82f6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      ) : (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>No data available for the selected filters</p>
-        </div>
-      )}
-    </div>
-  );
+
 
   const renderResultsTable = () => {
     if (loading) {
@@ -189,16 +346,19 @@ const Results = () => {
                 Benchmark
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Configuration
+                Test System
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Score
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Result
+                  </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Notes
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Actions
               </th>
             </tr>
           </thead>
@@ -216,14 +376,44 @@ const Results = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
-                      {result.score}
+                      {result.result}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {new Date(result.date).toLocaleDateString()}
+                    {(() => {
+                      try {
+                        const date = new Date(result.timestamp);
+                        // Check if it's a valid date (not epoch 0)
+                        if (date.getTime() > 0) {
+                          return date.toLocaleDateString();
+                        } else {
+                          return 'No date';
+                        }
+                      } catch (e) {
+                        return 'Invalid date';
+                      }
+                    })()}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                     {result.notes || 'No notes'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEditResult(result)}
+                        className="p-1 text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                        title="Edit Result"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteResult(result.id)}
+                        className="p-1 text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                        title="Delete Result"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -237,17 +427,33 @@ const Results = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Results
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          View and analyze your benchmark results
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Results
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            View and analyze your benchmark results
+          </p>
+        </div>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setShowCompareForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors"
+          >
+            Compare Test Systems
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
+          >
+            Add New Result
+          </button>
+        </div>
       </div>
 
       {/* Information Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <div className="card">
           <div className="flex items-center">
             <div className="p-3 rounded-lg bg-blue-500 text-white">
@@ -263,68 +469,484 @@ const Results = () => {
             </div>
           </div>
         </div>
-        
-        <div className="card">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-green-500 text-white">
-              <BarChart3 className="w-6 h-6" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Benchmarks Used
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {loading ? '...' : new Set(results.map(r => r.benchmark_id)).size}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="card">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-purple-500 text-white">
-              <BarChart3 className="w-6 h-6" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Configurations Tested
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {loading ? '...' : new Set(results.map(r => r.config_id)).size}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="card">
-          <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-orange-500 text-white">
-              <TrendingUp className="w-6 h-6" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Filtered Results
-              </p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {loading ? '...' : filteredResults.length}
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Filters */}
       {renderFilters()}
 
-      {/* Chart */}
-      {renderChart()}
+
 
       {/* Results Table */}
       <div className="card">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-          Benchmark Results
-        </h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Benchmark Results
+          </h2>
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Detailed view of all benchmark results
+          </div>
+        </div>
         {renderResultsTable()}
+      </div>
+
+      {/* Add/Edit Form Modal */}
+      {showForm && (
+        <ResultForm
+          result={editingItem}
+          benchmarks={benchmarks}
+          configurations={configurations}
+          onClose={() => {
+            setShowForm(false);
+            setEditingItem(null);
+          }}
+          onSave={() => {
+            setShowForm(false);
+            setEditingItem(null);
+            fetchData();
+          }}
+        />
+      )}
+
+      {/* Compare Test Systems Modal */}
+      {showCompareForm && (
+        <CompareForm
+          configurations={configurations}
+          benchmarks={benchmarks}
+          onClose={() => setShowCompareForm(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+// Result Form Component
+const ResultForm = ({ result, onClose, onSave, benchmarks, configurations }) => {
+  const [formData, setFormData] = useState({
+    benchmark_id: '',
+    config_id: '',
+    result: '',
+    timestamp: new Date().toISOString(),
+    notes: ''
+  });
+  const { apiKey } = useAuth();
+
+  useEffect(() => {
+    if (result) {
+      setFormData({
+        benchmark_id: result.benchmark_id,
+        config_id: result.config_id,
+        result: result.result,
+        timestamp: result.timestamp || new Date().toISOString(),
+        notes: result.notes || ''
+      });
+    } else {
+      setFormData({
+        benchmark_id: '',
+        config_id: '',
+        result: '',
+        timestamp: new Date().toISOString(),
+        notes: ''
+      });
+    }
+  }, [result]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const headers = { 'X-API-Key': apiKey };
+      
+      // Ensure timestamp is set for new results
+      const dataToSend = {
+        ...formData,
+        timestamp: formData.timestamp || new Date().toISOString()
+      };
+      
+      if (result) {
+        await axios.put(`/api/benchmark_results/${result.id}`, dataToSend, { headers });
+      } else {
+        await axios.post('/api/benchmark_results/', dataToSend, { headers });
+      }
+      onSave();
+    } catch (error) {
+      console.error('Error saving result:', error);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
+      <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          {result ? 'Edit' : 'Add New'} Benchmark Result
+        </h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Benchmark
+              </label>
+              <select
+                value={formData.benchmark_id}
+                onChange={(e) => setFormData({ ...formData, benchmark_id: parseInt(e.target.value) })}
+                className="input-field"
+                required
+              >
+                <option value="">Select a benchmark</option>
+                {benchmarks.map((benchmark) => (
+                  <option key={benchmark.id} value={benchmark.id}>
+                    {benchmark.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Test System
+              </label>
+              <select
+                value={formData.config_id}
+                onChange={(e) => setFormData({ ...formData, config_id: parseInt(e.target.value) })}
+                className="input-field"
+                required
+              >
+                <option value="">Select Test System</option>
+                {configurations.map((config) => (
+                  <option key={config.id} value={config.id}>
+                    {config.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Result Score
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.result}
+              onChange={(e) => setFormData({ ...formData, result: parseFloat(e.target.value) })}
+              className="input-field"
+              placeholder="Enter benchmark result score"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Date
+            </label>
+            <input
+              type="date"
+              value={formData.timestamp ? formData.timestamp.slice(0, 10) : ''}
+              onChange={(e) => setFormData({ ...formData, timestamp: new Date(e.target.value + 'T00:00:00').toISOString() })}
+              className="input-field"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Notes
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              className="input-field"
+              rows="3"
+              placeholder="Optional notes about this result"
+            />
+          </div>
+          
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex-1"
+            >
+              {result ? 'Update' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Compare Form Component
+const CompareForm = ({ configurations, benchmarks, onClose }) => {
+  const [formData, setFormData] = useState({
+    config_id_1: '',
+    config_id_2: ''
+  });
+  const [comparisonResults, setComparisonResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const { apiKey } = useAuth();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.config_id_1 || !formData.config_id_2) {
+      alert('Please select both test systems to compare');
+      return;
+    }
+    
+    if (formData.config_id_1 === formData.config_id_2) {
+      alert('Please select two different test systems to compare');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const headers = { 'X-API-Key': apiKey };
+      const response = await axios.get(
+        `/api/benchmark_results/compare/configs?config_id_1=${formData.config_id_1}&config_id_2=${formData.config_id_2}`,
+        { headers }
+      );
+      setComparisonResults(response.data);
+    } catch (error) {
+      console.error('Error fetching comparison:', error);
+      setComparisonResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getConfigName = (configId) => {
+    const config = configurations.find(c => c.id === parseInt(configId));
+    return config ? config.name : 'Unknown';
+  };
+
+  const getBenchmarkName = (benchmarkId) => {
+    const benchmark = benchmarks.find(b => b.id === benchmarkId);
+    return benchmark ? benchmark.name : `Benchmark ${benchmarkId}`;
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
+      <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Compare Test Systems
+        </h2>
+        
+        <form onSubmit={handleSubmit} className="mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Test System 1
+              </label>
+              <select
+                value={formData.config_id_1}
+                onChange={(e) => setFormData({ ...formData, config_id_1: e.target.value })}
+                className="input-field"
+                required
+              >
+                <option value="">Select first test system</option>
+                {configurations.map((config) => (
+                  <option key={config.id} value={config.id}>
+                    {config.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Test System 2
+              </label>
+              <select
+                value={formData.config_id_2}
+                onChange={(e) => setFormData({ ...formData, config_id_2: e.target.value })}
+                className="input-field"
+                required
+              >
+                <option value="">Select second test system</option>
+                {configurations.map((config) => (
+                  <option key={config.id} value={config.id}>
+                    {config.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div className="flex space-x-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {loading ? 'Comparing...' : 'Compare'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </form>
+
+        {/* Comparison Results */}
+        {comparisonResults.length > 0 ? (
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              Comparison Results: {getConfigName(formData.config_id_1)} vs {getConfigName(formData.config_id_2)}
+            </h3>
+            
+            {/* Bar Chart Comparison */}
+            <div className="mb-6">
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={comparisonResults}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="benchmark_id" 
+                      tickFormatter={(value) => getBenchmarkName(value)}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis 
+                      domain={[0, 'dataMax + (dataMax * 0.1)']}
+                      tickCount={8}
+                      tickFormatter={(value) => value.toLocaleString()}
+                    />
+                    <Tooltip 
+                      formatter={(value, name) => [
+                        value, 
+                        name === 'config_1_result' ? getConfigName(formData.config_id_1) : getConfigName(formData.config_id_2)
+                      ]}
+                      labelFormatter={(value) => `Benchmark: ${getBenchmarkName(value)}`}
+                    />
+                    <Legend 
+                      formatter={(value) => 
+                        value === 'config_1_result' ? getConfigName(formData.config_id_1) : getConfigName(formData.config_id_2)
+                      }
+                    />
+                    <Bar 
+                      dataKey="config_1_result" 
+                      fill="#3b82f6" 
+                      name="config_1_result"
+                    />
+                    <Bar 
+                      dataKey="config_2_result" 
+                      fill="#10b981" 
+                      name="config_2_result"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Overall Performance Summary */}
+            <div className="mb-6">
+              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg w-full">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      Overall Performance
+                    </h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {comparisonResults.reduce((sum, r) => sum + r.percentage_change, 0) > 0 ? 'Improvement' : 'Regression'}
+                    </p>
+                  </div>
+                  <p className={`text-3xl font-bold ${
+                    comparisonResults.reduce((sum, r) => sum + r.percentage_change, 0) > 0 
+                      ? 'text-green-900 dark:text-green-100' 
+                      : 'text-red-900 dark:text-red-100'
+                  }`}>
+                    {comparisonResults.length > 0 ? 
+                      Math.round(comparisonResults.reduce((sum, r) => sum + r.percentage_change, 0) / comparisonResults.length) : 
+                      0
+                    }%
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Detailed Results Table */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Benchmark
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {getConfigName(formData.config_id_1)}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {getConfigName(formData.config_id_2)}
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Difference
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      % Change
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                  {comparisonResults.map((result, index) => (
+                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        {getBenchmarkName(result.benchmark_id)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                          {result.config_1_result}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                          {result.config_2_result}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          result.config_2_result > result.config_1_result 
+                            ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                            : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                        }`}>
+                          {result.config_2_result > result.config_1_result ? '+' : ''}
+                          {result.config_2_result - result.config_1_result}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          result.percentage_change > 0 
+                            ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                            : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                        }`}>
+                          {result.percentage_change > 0 ? '+' : ''}
+                          {result.percentage_change}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="border-t pt-6">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>Select two test systems and click "Compare Systems" to see results</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

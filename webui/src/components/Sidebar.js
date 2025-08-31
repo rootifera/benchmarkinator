@@ -19,7 +19,7 @@ const Sidebar = () => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Components', href: '/hardware', icon: Cpu },
-    { name: 'Test Systems', href: '/configurations', icon: Wrench },
+    { name: 'Test Systems', href: '/testsystems', icon: Wrench },
     { name: 'Benchmarks', href: '/benchmarks', icon: BarChart3 },
     { name: 'Results', href: '/results', icon: FileText },
   ];
