@@ -3,6 +3,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
 import Routes from './Routes';
+import ToastContainer from './components/ToastContainer';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <main className="flex-1 overflow-auto">
             <Routes />
           </main>
+          <ToastContainer />
         </div>
       </AuthProvider>
     </Router>

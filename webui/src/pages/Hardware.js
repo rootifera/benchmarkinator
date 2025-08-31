@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import ConfirmModal from '../components/ConfirmModal';
 import { 
   Cpu, 
   Monitor, 
@@ -24,6 +25,8 @@ const Hardware = () => {
   const [showLookupForm, setShowLookupForm] = useState(false);
   const [lookupFormType, setLookupFormType] = useState(null);
   const [editingLookupItem, setEditingLookupItem] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalConfig, setConfirmModalConfig] = useState({});
 
 
   const tabs = [
@@ -151,99 +154,142 @@ const Hardware = () => {
   }, [activeTab]);
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      try {
-        const headers = { 'X-API-Key': apiKey };
-        await axios.delete(`http://localhost:12345/api/${activeTab}/${id}`, { headers });
-        fetchData();
-      } catch (error) {
-        console.error('Error deleting item:', error);
-        
-        // Provide better error messages for common constraint violations
-        if (error.response?.status === 409) {
-          const itemType = activeTab === 'cpu' ? 'CPU' : 
-                          activeTab === 'gpu' ? 'GPU' : 
-                          activeTab === 'motherboard' ? 'Motherboard' : 
-                          activeTab === 'ram' ? 'RAM Type' : 
-                          activeTab === 'disk' ? 'Disk' : 
-                          activeTab === 'os' ? 'OS' : 
-                          activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+    const itemType = activeTab === 'cpu' ? 'CPU' : 
+                    activeTab === 'gpu' ? 'GPU' : 
+                    activeTab === 'motherboard' ? 'Motherboard' : 
+                    activeTab === 'ram' ? 'RAM Type' : 
+                    activeTab === 'disk' ? 'Disk' : 
+                    activeTab === 'os' ? 'OS' : 
+                    activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+    
+    setConfirmModalConfig({
+      title: `Delete ${itemType}`,
+      message: `Are you sure you want to delete this ${itemType}? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const headers = { 'X-API-Key': apiKey };
+          await axios.delete(`http://localhost:12345/api/${activeTab}/${id}`, { headers });
+          fetchData();
           
-          alert(`Cannot delete this ${itemType}. It is currently being used by one or more test systems.\n\nTo delete it, you must first remove all test systems that reference this ${itemType}.`);
-        } else if (error.response?.status === 404) {
-          alert('Item not found. It may have already been deleted.');
-        } else if (error.response?.data?.detail) {
-          alert(`Error: ${error.response.data.detail}`);
-        } else {
-          alert('An error occurred while deleting the item. Please try again.');
+          // Show success toast
+          if (window.showToast) {
+            window.showToast(`${itemType} deleted successfully`, 'success');
+          }
+        } catch (error) {
+          console.error('Error deleting item:', error);
+          
+          // Provide better error messages for common constraint violations
+          if (error.response?.status === 409) {
+            if (window.showToast) {
+              window.showToast(`Cannot delete this ${itemType}. It is currently being used by one or more test systems.`, 'error', 8000);
+            }
+          } else if (error.response?.status === 404) {
+            if (window.showToast) {
+              window.showToast('Item not found. It may have already been deleted.', 'warning');
+            }
+          } else if (error.response?.data?.detail) {
+            if (window.showToast) {
+              window.showToast(`Error: ${error.response.data.detail}`, 'error');
+            }
+          } else {
+            if (window.showToast) {
+              window.showToast('An error occurred while deleting the item. Please try again.', 'error');
+            }
+          }
         }
+        setShowConfirmModal(false);
       }
-    }
+    });
+    setShowConfirmModal(true);
   };
 
   const handleLookupDelete = async (type, id) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      try {
-        const headers = { 'X-API-Key': apiKey };
-        
-        // Determine the correct API endpoint based on type
-        let endpoint;
-        if (type === 'brand' && activeTab === 'cpu') {
-          endpoint = `http://localhost:12345/api/cpu/brand/${id}`;
-        } else if (type === 'family') {
-          endpoint = `http://localhost:12345/api/cpu/family/${id}`;
-        } else if (type === 'manufacturer' && activeTab === 'gpu') {
-          endpoint = `http://localhost:12345/api/gpu/manufacturer/${id}`;
-        } else if (type === 'manufacturer' && activeTab === 'motherboard') {
-          endpoint = `http://localhost:12345/api/motherboard/manufacturer/${id}`;
-        } else if (type === 'model') {
-          endpoint = `http://localhost:12345/api/gpu/model/${id}`;
-        } else if (type === 'vram_type') {
-          endpoint = `http://localhost:12345/api/gpu/vram_type/${id}`;
-        } else if (type === 'chipset') {
-          endpoint = `http://localhost:12345/api/motherboard/chipset/${id}`;
-        } else if (type === 'ram_type') {
-          endpoint = `http://localhost:12345/api/ram/type/${id}`;
-
-        } else if (type === 'disk_type') {
-          endpoint = `http://localhost:12345/api/disk/type/${id}`;
-        } else if (type === 'disk_brand') {
-          endpoint = `http://localhost:12345/api/disk/brand/${id}`;
-        } else if (type === 'disk_interface') {
-          endpoint = `http://localhost:12345/api/disk/interface/${id}`;
-        } else {
-          endpoint = `http://localhost:12345/api/${activeTab}/${type}/${id}`;
-        }
-        
-        await axios.delete(endpoint, { headers });
-        fetchData();
-      } catch (error) {
-        console.error('Error deleting lookup item:', error);
-        
-        // Provide better error messages for common constraint violations
-        if (error.response?.status === 409) {
-          const itemType = type === 'brand' ? 'Brand' : 
-                          type === 'family' ? 'Family' : 
-                          type === 'manufacturer' ? 'Manufacturer' : 
-                          type === 'model' ? 'Model' : 
-                          type === 'vram_type' ? 'VRAM Type' : 
-                          type === 'chipset' ? 'Chipset' : 
-                          type === 'ram_type' ? 'RAM Type' : 
-                          type === 'disk_type' ? 'Disk Type' : 
-                          type === 'disk_brand' ? 'Disk Brand' : 
-                          type === 'disk_interface' ? 'Disk Interface' : 
-                          type.charAt(0).toUpperCase() + type.slice(1);
+    const itemType = type === 'brand' ? 'Brand' : 
+                    type === 'family' ? 'Family' : 
+                    type === 'manufacturer' ? 'Manufacturer' : 
+                    type === 'model' ? 'Model' : 
+                    type === 'vram_type' ? 'VRAM Type' : 
+                    type === 'chipset' ? 'Chipset' : 
+                    type === 'ram_type' ? 'RAM Type' : 
+                    type === 'disk_type' ? 'Disk Type' : 
+                    type === 'disk_brand' ? 'Disk Brand' : 
+                    type === 'disk_interface' ? 'Disk Interface' : 
+                    type.charAt(0).toUpperCase() + type.slice(1);
+    
+    setConfirmModalConfig({
+      title: `Delete ${itemType}`,
+      message: `Are you sure you want to delete this ${itemType}? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const headers = { 'X-API-Key': apiKey };
           
-          alert(`Cannot delete this ${itemType}. It is currently being used by one or more components.\n\nTo delete it, you must first remove all components that reference this ${itemType}.`);
-        } else if (error.response?.status === 404) {
-          alert('Item not found. It may have already been deleted.');
-        } else if (error.response?.data?.detail) {
-          alert(`Error: ${error.response.data.detail}`);
-        } else {
-          alert('An error occurred while deleting the item. Please try again.');
+          // Determine the correct API endpoint based on type
+          let endpoint;
+          if (type === 'brand' && activeTab === 'cpu') {
+            endpoint = `http://localhost:12345/api/cpu/brand/${id}`;
+          } else if (type === 'family') {
+            endpoint = `http://localhost:12345/api/cpu/family/${id}`;
+          } else if (type === 'manufacturer' && activeTab === 'gpu') {
+            endpoint = `http://localhost:12345/api/gpu/manufacturer/${id}`;
+          } else if (type === 'manufacturer' && activeTab === 'motherboard') {
+            endpoint = `http://localhost:12345/api/motherboard/manufacturer/${id}`;
+          } else if (type === 'model') {
+            endpoint = `http://localhost:12345/api/gpu/model/${id}`;
+          } else if (type === 'vram_type') {
+            endpoint = `http://localhost:12345/api/gpu/vram_type/${id}`;
+          } else if (type === 'chipset') {
+            endpoint = `http://localhost:12345/api/motherboard/chipset/${id}`;
+          } else if (type === 'ram_type') {
+            endpoint = `http://localhost:12345/api/ram/type/${id}`;
+          } else if (type === 'disk_type') {
+            endpoint = `http://localhost:12345/api/disk/type/${id}`;
+          } else if (type === 'disk_brand') {
+            endpoint = `http://localhost:12345/api/disk/brand/${id}`;
+          } else if (type === 'disk_interface') {
+            endpoint = `http://localhost:12345/api/disk/interface/${id}`;
+          } else {
+            endpoint = `http://localhost:12345/api/${activeTab}/${type}/${id}`;
+          }
+          
+          await axios.delete(endpoint, { headers });
+          fetchData();
+          
+          // Show success toast
+          if (window.showToast) {
+            window.showToast(`${itemType} deleted successfully`, 'success');
+          }
+        } catch (error) {
+          console.error('Error deleting lookup item:', error);
+          
+          // Provide better error messages for common constraint violations
+          if (error.response?.status === 409) {
+            if (window.showToast) {
+              window.showToast(`Cannot delete this ${itemType}. It is currently being used by one or more components.`, 'error', 8000);
+            }
+          } else if (error.response?.status === 404) {
+            if (window.showToast) {
+              window.showToast('Item not found. It may have already been deleted.', 'warning');
+            }
+          } else if (error.response?.data?.detail) {
+            if (window.showToast) {
+              window.showToast(`Error: ${error.response.data.detail}`, 'error');
+            }
+          } else {
+            if (window.showToast) {
+              window.showToast('An error occurred while deleting the item. Please try again.', 'error');
+            }
+          }
         }
+        setShowConfirmModal(false);
       }
-    }
+    });
+    setShowConfirmModal(true);
   };
 
   const toggleSection = (section) => {
@@ -443,7 +489,9 @@ const Hardware = () => {
             <button 
               onClick={() => {
                 if (!data.lookup?.brands?.length || !data.lookup?.families?.length) {
-                  alert('Please create at least one CPU brand and family before adding CPUs.');
+                  if (window.showToast) {
+                    window.showToast('Please create at least one CPU brand and family before adding CPUs.', 'warning');
+                  }
                   return;
                 }
                 setShowForm(true);
@@ -1591,6 +1639,18 @@ const Hardware = () => {
           }}
         />
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmModalConfig.onConfirm}
+        title={confirmModalConfig.title}
+        message={confirmModalConfig.message}
+        confirmText={confirmModalConfig.confirmText}
+        cancelText={confirmModalConfig.cancelText}
+        type={confirmModalConfig.type}
+      />
     </div>
   );
 };
@@ -1650,23 +1710,39 @@ const LookupForm = ({ type, item, onClose, onSave, activeTab, lookupData }) => {
       
       if (!endpoint) {
         console.error('No endpoint determined for:', { type, activeTab });
-        alert(`Error: Could not determine API endpoint for ${type} in ${activeTab} tab`);
+        if (window.showToast) {
+          window.showToast(`Error: Could not determine API endpoint for ${type} in ${activeTab} tab`, 'error');
+        }
         return;
       }
       
+      const itemType = getTypeLabel();
+      
       if (item) {
         await axios.put(`${endpoint}${item.id}`, formData, { headers });
+        // Show success toast
+        if (window.showToast) {
+          window.showToast(`${itemType} updated successfully`, 'success');
+        }
       } else {
         await axios.post(endpoint, formData, { headers });
+        // Show success toast
+        if (window.showToast) {
+          window.showToast(`${itemType} created successfully`, 'success');
+        }
       }
       onSave();
     } catch (error) {
       console.error('Error saving lookup item:', error);
       // Show user-friendly error message
       if (error.response?.data?.detail) {
-        alert(`Error: ${error.response.data.detail}`);
+        if (window.showToast) {
+          window.showToast(`Error: ${error.response.data.detail}`, 'error');
+        }
       } else {
-        alert('An error occurred while saving. Please try again.');
+        if (window.showToast) {
+          window.showToast('An error occurred while saving. Please try again.', 'error');
+        }
       }
     }
   };
@@ -1832,32 +1908,44 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
     // Validate required fields based on type
     if (type === 'cpu') {
       if (!formData.model || !formData.speed || !formData.core_count || !formData.cpu_brand_id || !formData.cpu_family_id) {
-        alert('Please fill in all required fields for CPU.');
+        if (window.showToast) {
+          window.showToast('Please fill in all required fields for CPU.', 'warning');
+        }
         return;
       }
     } else if (type === 'gpu') {
       if (!formData.gpu_manufacturer_id || !formData.vram_size || !formData.gpu_brand_id || !formData.gpu_model_id || !formData.gpu_vram_type_id) {
-        alert('Please fill in all required fields for GPU:\n- Manufacturer\n- VRAM Size\n- Brand\n- Model\n- VRAM Type');
+        if (window.showToast) {
+          window.showToast('Please fill in all required fields for GPU: Manufacturer, VRAM Size, Brand, Model, VRAM Type', 'warning');
+        }
         return;
       }
     } else if (type === 'motherboard') {
       if (!formData.model || !formData.manufacturer_id || !formData.chipset_id) {
-        alert('Please fill in all required fields for Motherboard:\n- Model\n- Manufacturer\n- Chipset');
+        if (window.showToast) {
+          window.showToast('Please fill in all required fields for Motherboard: Model, Manufacturer, Chipset', 'warning');
+        }
         return;
       }
     } else if (type === 'ram') {
       if (!formData.name) {
-        alert('Please fill in the RAM type name.');
+        if (window.showToast) {
+          window.showToast('Please fill in the RAM type name.', 'warning');
+        }
         return;
       }
     } else if (type === 'disk') {
       if (!formData.name) {
-        alert('Please fill in the disk name.');
+        if (window.showToast) {
+          window.showToast('Please fill in the disk name.', 'warning');
+        }
         return;
       }
     } else if (type === 'os') {
       if (!formData.name) {
-        alert('Please fill in the OS name.');
+        if (window.showToast) {
+          window.showToast('Please fill in the OS name.', 'warning');
+        }
         return;
       }
     }
@@ -1885,22 +1973,45 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
 
       
       console.log('About to submit:', { endpoint, formData, isUpdate: !!item });
+      
+      const itemType = type === 'cpu' ? 'CPU' : 
+                      type === 'gpu' ? 'GPU' : 
+                      type === 'motherboard' ? 'Motherboard' : 
+                      type === 'ram' ? 'RAM Type' : 
+                      type === 'disk' ? 'Disk' : 
+                      type === 'os' ? 'OS' : 
+                      type.charAt(0).toUpperCase() + type.slice(1);
+      
       if (item) {
         // Ensure id is included in the request body for updates
         const updateData = { ...formData, id: item.id };
         console.log('Update data being sent:', updateData);
         await axios.put(`${endpoint}${item.id}`, updateData, { headers });
+        
+        // Show success toast
+        if (window.showToast) {
+          window.showToast(`${itemType} updated successfully`, 'success');
+        }
       } else {
         await axios.post(endpoint, formData, { headers });
+        
+        // Show success toast
+        if (window.showToast) {
+          window.showToast(`${itemType} created successfully`, 'success');
+        }
       }
       onSave();
     } catch (error) {
       console.error('Error saving item:', error);
       // Show user-friendly error message
       if (error.response?.data?.detail) {
-        alert(`Error: ${error.response.data.detail}`);
+        if (window.showToast) {
+          window.showToast(`Error: ${error.response.data.detail}`, 'error');
+        }
       } else {
-        alert('An error occurred while saving. Please try again.');
+        if (window.showToast) {
+          window.showToast('An error occurred while saving. Please try again.', 'error');
+        }
       }
     }
   };
