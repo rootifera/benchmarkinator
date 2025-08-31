@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Home, 
@@ -9,19 +9,21 @@ import {
   FileText, 
   LogOut,
   Sun,
-  Moon
+  Moon,
+  User
 } from 'lucide-react';
 
 const Sidebar = () => {
-  const { isAuthenticated, logout, darkMode, toggleDarkMode } = useAuth();
+  const { user, isAuthenticated, logout, darkMode, toggleDarkMode } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Components', href: '/hardware', icon: Cpu },
-    { name: 'Test Systems', href: '/testsystems', icon: Wrench },
-    { name: 'Benchmarks', href: '/benchmarks', icon: BarChart3 },
-    { name: 'Results', href: '/results', icon: FileText },
+    { name: 'Dashboard', href: '/', icon: Home, protected: true },
+    { name: 'Components', href: '/hardware', icon: Cpu, protected: true },
+    { name: 'Test Systems', href: '/testsystems', icon: Wrench, protected: true },
+    { name: 'Benchmarks', href: '/benchmarks', icon: BarChart3, protected: true },
+    { name: 'Results', href: '/results', icon: FileText, protected: false },
   ];
 
   const isActive = (href) => {
@@ -29,6 +31,19 @@ const Sidebar = () => {
       return location.pathname === '/';
     }
     return location.pathname.startsWith(href);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const handleNavigation = (href, isProtected) => {
+    if (isProtected && !isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    navigate(href);
   };
 
   return (
@@ -49,45 +64,67 @@ const Sidebar = () => {
       <nav className="space-y-2">
         {navigation.map((item) => {
           const Icon = item.icon;
+          const isNavActive = isActive(item.href);
+          const isDisabled = item.protected && !isAuthenticated;
+          
           return (
-            <Link
+            <button
               key={item.name}
-              to={item.href}
+              onClick={() => handleNavigation(item.href, item.protected)}
+              disabled={isDisabled}
               className={`
-                flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                ${isActive(item.href)
+                flex items-center w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                ${isNavActive
                   ? 'bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  : isDisabled
+                  ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer'
                 }
               `}
             >
               <Icon className="w-5 h-5 mr-3" />
               {item.name}
-            </Link>
+            </button>
           );
         })}
       </nav>
 
       <div className="mt-auto pt-8">
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              API Status
-            </span>
-            <div className={`w-2 h-2 rounded-full ${isAuthenticated ? 'bg-green-500' : 'bg-red-500'}`} />
-          </div>
-          
           {isAuthenticated ? (
-            <button
-              onClick={logout}
-              className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              <LogOut className="w-5 h-5 mr-3" />
-              Disconnect
-            </button>
+            <>
+              <div className="flex items-center mb-4 px-3 py-2">
+                <User className="w-5 h-5 mr-3 text-gray-600 dark:text-gray-400" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {user?.username || 'User'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {user?.role || 'Admin'}
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                onClick={handleLogout}
+                className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <LogOut className="w-5 h-5 mr-3" />
+                Logout
+              </button>
+            </>
           ) : (
-            <div className="text-sm text-gray-500 dark:text-gray-400 px-3 py-2">
-              Not connected
+            <div className="px-3 py-2">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                Not authenticated
+              </p>
+              <Link
+                to="/login"
+                className="flex items-center w-full px-3 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+              >
+                <User className="w-5 h-5 mr-3" />
+                Login
+              </Link>
             </div>
           )}
         </div>

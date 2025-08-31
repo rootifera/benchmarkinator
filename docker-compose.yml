@@ -4,11 +4,12 @@ services:
     container_name: benchmarkinator-db
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      MYSQL_DATABASE: benchmarkinator
-      MYSQL_USER: benchmarkinator
-      MYSQL_PASSWORD: benchmarkinatorpassword
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -22,14 +23,30 @@ services:
     image: rootifera/benchmarkinator-api
     container_name: benchmarkinator-api
     environment:
-      DATABASE_URL: mysql+pymysql://benchmarkinator:benchmarkinatorpassword@benchmarkinator-db:3306/benchmarkinator
-      API_KEY: benchmarkinator-dev-key-2024
+      DATABASE_URL: "mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@benchmarkinator-db:${MYSQL_PORT}/${MYSQL_DATABASE}"
+      API_KEY: ${API_KEY}
     ports:
-      - "12345:12345"
+      - "${API_PORT}:12345"
     depends_on:
       benchmarkinator-db:
         condition: service_healthy
-    entrypoint: [ "/app/wait-for-it.sh", "benchmarkinator-db:3306", "--", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "12345" ]
+    entrypoint:
+      [ "/app/wait-for-it.sh", "benchmarkinator-db:${MYSQL_PORT}", "--",
+        "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "12345" ]
+
+  benchmarkinator-webui:
+    build: ./webui
+    image: rootifera/benchmarkinator-webui
+    container_name: benchmarkinator-webui
+    ports:
+      - "4000:80"
+    depends_on:
+      benchmarkinator-api:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      WEBADMIN: ${WEBADMIN}
+      WEBPASSWORD: ${WEBPASSWORD}
 
 volumes:
   mysql_data:

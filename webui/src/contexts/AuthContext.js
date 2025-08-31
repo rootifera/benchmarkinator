@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authenticateUser, validateToken } from '../utils/authService';
 
 const AuthContext = createContext();
 
@@ -11,7 +12,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [apiKey, setApiKey] = useState(localStorage.getItem('apiKey') || '');
+  const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
@@ -19,14 +20,22 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    if (apiKey) {
-      setIsAuthenticated(true);
-      localStorage.setItem('apiKey', apiKey);
-    } else {
-      setIsAuthenticated(false);
-      localStorage.removeItem('apiKey');
+    // Check if user is logged in on app start
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('userData');
+    
+    if (token && userData && validateToken(token)) {
+      try {
+        const user = JSON.parse(userData);
+        setUser(user);
+        setIsAuthenticated(true);
+      } catch (error) {
+        // Invalid user data, clear storage
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+      }
     }
-  }, [apiKey]);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
@@ -37,12 +46,29 @@ export const AuthProvider = ({ children }) => {
     }
   }, [darkMode]);
 
-  const login = (key) => {
-    setApiKey(key);
+  const login = async (username, password) => {
+    try {
+      const result = await authenticateUser(username, password);
+      
+      if (result.success) {
+        setUser(result.user);
+        setIsAuthenticated(true);
+        localStorage.setItem('authToken', result.token);
+        localStorage.setItem('userData', JSON.stringify(result.user));
+        return result;
+      } else {
+        throw new Error('Authentication failed');
+      }
+    } catch (error) {
+      throw error;
+    }
   };
 
   const logout = () => {
-    setApiKey('');
+    setUser(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
   };
 
   const toggleDarkMode = () => {
@@ -50,7 +76,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = {
-    apiKey,
+    user,
     isAuthenticated,
     login,
     logout,
