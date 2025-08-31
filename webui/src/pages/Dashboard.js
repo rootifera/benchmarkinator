@@ -20,6 +20,7 @@ const Dashboard = () => {
     results: 0,
     configurations: 0
   });
+  const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showApiModal, setShowApiModal] = useState(false);
 
@@ -42,6 +43,28 @@ const Dashboard = () => {
         results: results.data.length,
         configurations: configs.data.length
       });
+
+      // Fetch recent activity (latest 5 results)
+      if (results.data.length > 0) {
+        const recentResults = results.data
+          .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+          .slice(0, 5);
+        
+        const activityItems = recentResults.map(result => {
+          const benchmark = benchmarks.data.find(b => b.id === result.benchmark_id);
+          const config = configs.data.find(c => c.id === result.config_id);
+          return {
+            id: result.id,
+            type: 'benchmark_result',
+            title: `New benchmark result: ${benchmark?.name || 'Unknown'}`,
+            subtitle: `Test System: ${config?.name || 'Unknown'}`,
+            timestamp: result.timestamp,
+            value: result.result
+          };
+        });
+        
+        setRecentActivity(activityItems);
+      }
     } catch (error) {
       console.error('Error fetching stats:', error);
     } finally {
@@ -98,13 +121,10 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Dashboard
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Welcome to your benchmark management system
-        </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -138,11 +158,41 @@ const Dashboard = () => {
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
           Recent Activity
         </h2>
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>No recent activity to display</p>
-          <p className="text-sm mt-2">Start by adding some hardware or running benchmarks</p>
-        </div>
+        {recentActivity.length > 0 ? (
+          <div className="space-y-4">
+            {recentActivity.map((activity) => (
+              <div key={activity.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center space-x-4">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                    <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {activity.title}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {activity.subtitle}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    Score: {activity.value}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(activity.timestamp).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>No recent activity to display</p>
+            <p className="text-sm mt-2">Start by adding some hardware or running benchmarks</p>
+          </div>
+        )}
       </div>
 
 

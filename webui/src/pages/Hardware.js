@@ -158,6 +158,25 @@ const Hardware = () => {
         fetchData();
       } catch (error) {
         console.error('Error deleting item:', error);
+        
+        // Provide better error messages for common constraint violations
+        if (error.response?.status === 409) {
+          const itemType = activeTab === 'cpu' ? 'CPU' : 
+                          activeTab === 'gpu' ? 'GPU' : 
+                          activeTab === 'motherboard' ? 'Motherboard' : 
+                          activeTab === 'ram' ? 'RAM Type' : 
+                          activeTab === 'disk' ? 'Disk' : 
+                          activeTab === 'os' ? 'OS' : 
+                          activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+          
+          alert(`Cannot delete this ${itemType}. It is currently being used by one or more test systems.\n\nTo delete it, you must first remove all test systems that reference this ${itemType}.`);
+        } else if (error.response?.status === 404) {
+          alert('Item not found. It may have already been deleted.');
+        } else if (error.response?.data?.detail) {
+          alert(`Error: ${error.response.data.detail}`);
+        } else {
+          alert('An error occurred while deleting the item. Please try again.');
+        }
       }
     }
   };
@@ -200,6 +219,29 @@ const Hardware = () => {
         fetchData();
       } catch (error) {
         console.error('Error deleting lookup item:', error);
+        
+        // Provide better error messages for common constraint violations
+        if (error.response?.status === 409) {
+          const itemType = type === 'brand' ? 'Brand' : 
+                          type === 'family' ? 'Family' : 
+                          type === 'manufacturer' ? 'Manufacturer' : 
+                          type === 'model' ? 'Model' : 
+                          type === 'vram_type' ? 'VRAM Type' : 
+                          type === 'chipset' ? 'Chipset' : 
+                          type === 'ram_type' ? 'RAM Type' : 
+                          type === 'disk_type' ? 'Disk Type' : 
+                          type === 'disk_brand' ? 'Disk Brand' : 
+                          type === 'disk_interface' ? 'Disk Interface' : 
+                          type.charAt(0).toUpperCase() + type.slice(1);
+          
+          alert(`Cannot delete this ${itemType}. It is currently being used by one or more components.\n\nTo delete it, you must first remove all components that reference this ${itemType}.`);
+        } else if (error.response?.status === 404) {
+          alert('Item not found. It may have already been deleted.');
+        } else if (error.response?.data?.detail) {
+          alert(`Error: ${error.response.data.detail}`);
+        } else {
+          alert('An error occurred while deleting the item. Please try again.');
+        }
       }
     }
   };
@@ -1830,6 +1872,12 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
         endpoint = 'http://192.168.1.24:12345/api/disk/';
       } else if (type === 'os') {
         endpoint = 'http://192.168.1.24:12345/api/oses/';
+      } else if (type === 'cpu') {
+        endpoint = 'http://192.168.1.24:12345/api/cpu/';
+      } else if (type === 'gpu') {
+        endpoint = 'http://192.168.1.24:12345/api/gpu/';
+      } else if (type === 'motherboard') {
+        endpoint = 'http://192.168.1.24:12345/api/motherboard/';
       } else {
         endpoint = `http://192.168.1.24:12345/api/${type}`;
       }
@@ -1838,7 +1886,10 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       
       console.log('About to submit:', { endpoint, formData, isUpdate: !!item });
       if (item) {
-        await axios.put(`${endpoint}${item.id}`, formData, { headers });
+        // Ensure id is included in the request body for updates
+        const updateData = { ...formData, id: item.id };
+        console.log('Update data being sent:', updateData);
+        await axios.put(`${endpoint}${item.id}`, updateData, { headers });
       } else {
         await axios.post(endpoint, formData, { headers });
       }
