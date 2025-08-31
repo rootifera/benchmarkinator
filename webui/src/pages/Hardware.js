@@ -1342,50 +1342,145 @@ const Hardware = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Components</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Please add your components using the menus below. Later you can select these components in the Build section to build your benchmark PC.
+            Manage your hardware components including CPUs, GPUs, motherboards, RAM, storage, and operating systems
           </p>
         </div>
 
       </div>
       
-      {/* Hardware Summary */}
-      <div className={`grid gap-4 mb-6 ${activeTab === 'disk' || activeTab === 'os' || activeTab === 'ram' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'}`}>
+      {/* Information Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {activeTab !== 'disk' && activeTab !== 'os' && activeTab !== 'ram' && (
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-            <div className="text-blue-600 dark:text-blue-400 font-medium">
-              {activeTab === 'cpu' ? 'CPU Brands' : activeTab === 'gpu' ? 'GPU Brands' : activeTab === 'motherboard' ? 'Motherboard Manufacturers' : 'Brands'}
-            </div>
-            <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-              {activeTab === 'motherboard' ? (data.lookup?.manufacturers?.length || 0) : (data.lookup?.brands?.length || 0)}
+          <div className="card">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-blue-500 text-white">
+                <Cpu className="w-6 h-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  {activeTab === 'cpu' ? 'CPU Brands' : activeTab === 'gpu' ? 'GPU Manufacturers' : activeTab === 'motherboard' ? 'Motherboard Manufacturers' : 'Brands'}
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {activeTab === 'motherboard' ? (data.lookup?.manufacturers?.length || 0) : (data.lookup?.brands?.length || 0)}
+                </p>
+              </div>
             </div>
           </div>
         )}
         {activeTab !== 'disk' && activeTab !== 'os' && activeTab !== 'ram' && (
-          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-            <div className="text-green-600 dark:text-green-400 font-medium">
-              {activeTab === 'cpu' ? 'CPU Families' : activeTab === 'gpu' ? 'GPU Models' : activeTab === 'motherboard' ? 'Motherboard Chipsets' : activeTab === 'ram' ? 'RAM Types' : 'Models'}
-            </div>
-            <div className="text-2xl font-bold text-green-900 dark:text-green-100">
-              {activeTab === 'cpu' ? (data.lookup?.families?.length || 0) : activeTab === 'gpu' ? (data.lookup?.models?.length || 0) : activeTab === 'motherboard' ? (data.lookup?.chipsets?.length || 0) : activeTab === 'ram' ? (data.lookup?.ram_types?.length || 0) : 'Models'}
+          <div className="card">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-green-500 text-white">
+                <Settings className="w-6 h-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  {activeTab === 'cpu' ? 'CPU Families' : activeTab === 'gpu' ? 'GPU Models' : activeTab === 'motherboard' ? 'Motherboard Chipsets' : 'Models'}
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {activeTab === 'cpu' ? (data.lookup?.families?.length || 0) : activeTab === 'gpu' ? (data.lookup?.models?.length || 0) : activeTab === 'motherboard' ? (data.lookup?.chipsets?.length || 0) : 0}
+                </p>
+              </div>
             </div>
           </div>
         )}
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                      <div className="text-yellow-600 dark:text-yellow-400 font-medium">
-              {activeTab === 'cpu' ? 'CPUs' : activeTab === 'gpu' ? 'GPUs' : activeTab === 'motherboard' ? 'Motherboards' : activeTab === 'ram' ? 'RAM Types' : activeTab === 'disk' ? 'Disks' : activeTab === 'os' ? 'Operating Systems' : 'Features'}
+        <div className="card">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-purple-500 text-white">
+              {activeTab === 'cpu' ? <Cpu className="w-6 h-6" /> : 
+               activeTab === 'gpu' ? <Monitor className="w-6 h-6" /> : 
+               activeTab === 'motherboard' ? <Settings className="w-6 h-6" /> : 
+               activeTab === 'ram' ? <Database className="w-6 h-6" /> : 
+               activeTab === 'disk' ? <HardDrive className="w-6 h-6" /> : 
+               <Monitor className="w-6 h-6" />}
             </div>
-            <div className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
-              {activeTab === 'cpu' ? (data.main?.length || 0) : activeTab === 'gpu' ? (data.main?.length || 0) : activeTab === 'motherboard' ? (data.main?.length || 0) : activeTab === 'ram' ? (data.main?.length || 0) : activeTab === 'disk' ? (data.main?.length || 0) : activeTab === 'os' ? (data.main?.length || 0) : 'Features'}
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                {activeTab === 'cpu' ? 'CPUs' : activeTab === 'gpu' ? 'GPUs' : activeTab === 'motherboard' ? 'Motherboards' : activeTab === 'ram' ? 'RAM Types' : activeTab === 'disk' ? 'Disks' : activeTab === 'os' ? 'Operating Systems' : 'Features'}
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {data.main?.length || 0}
+              </p>
             </div>
+          </div>
         </div>
-
-
-
+        
+        {activeTab === 'gpu' && (
+          <div className="card">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-orange-500 text-white">
+                <Database className="w-6 h-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  VRAM Types
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {data.lookup?.vramTypes?.length || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {activeTab === 'ram' && (
+          <div className="card">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-indigo-500 text-white">
+                <Database className="w-6 h-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  RAM Types
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {data.main?.length || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {activeTab === 'disk' && (
+          <div className="card">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-orange-500 text-white">
+                <HardDrive className="w-6 h-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Disks
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {data.main?.length || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {activeTab === 'os' && (
+          <div className="card">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-indigo-500 text-white">
+                <Monitor className="w-6 h-6" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Operating Systems
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {data.main?.length || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}

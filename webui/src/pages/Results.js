@@ -246,6 +246,73 @@ const Results = () => {
         </p>
       </div>
 
+      {/* Information Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="card">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-blue-500 text-white">
+              <TrendingUp className="w-6 h-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Total Results
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {loading ? '...' : results.length}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="card">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-green-500 text-white">
+              <BarChart3 className="w-6 h-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Benchmarks Used
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {loading ? '...' : new Set(results.map(r => r.benchmark_id)).size}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="card">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-purple-500 text-white">
+              <BarChart3 className="w-6 h-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Configurations Tested
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {loading ? '...' : new Set(results.map(r => r.config_id)).size}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="card">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-orange-500 text-white">
+              <TrendingUp className="w-6 h-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Filtered Results
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {loading ? '...' : filteredResults.length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Filters */}
       {renderFilters()}
 

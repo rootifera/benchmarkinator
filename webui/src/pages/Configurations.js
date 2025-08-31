@@ -320,6 +320,78 @@ const Configurations = () => {
         </button>
       </div>
 
+      {/* Information Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="card">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-blue-500 text-white">
+              <Settings className="w-6 h-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Total Test Systems
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {loading ? '...' : configurations.length}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="card">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-green-500 text-white">
+              <Cpu className="w-6 h-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                CPU Configurations
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {loading ? '...' : configurations.filter(c => c.cpu_id).length}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="card">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-purple-500 text-white">
+              <Monitor className="w-6 h-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                GPU Configurations
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {loading ? '...' : configurations.filter(c => c.gpu_id).length}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="card">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-orange-500 text-white">
+              <Settings className="w-6 h-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                Overclocked Systems
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {loading ? '...' : configurations.filter(c => 
+                  c.cpu_overclock_enabled || 
+                  c.gpu_core_overclock_enabled || 
+                  c.gpu_vram_overclock_enabled || 
+                  c.ram_overclock_enabled
+                ).length}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
       <div className="card">
         {renderTable()}
