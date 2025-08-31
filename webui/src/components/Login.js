@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { User, Eye, EyeOff, Loader2, BarChart3 } from 'lucide-react';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -142,6 +142,17 @@ const Login = () => {
                 'Sign in'
               )}
             </button>
+          </div>
+          
+          {/* See Results Link */}
+          <div className="text-center">
+            <Link
+              to="/results"
+              className="inline-flex items-center text-sm text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 transition-colors"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              See Results (No Login Required)
+            </Link>
           </div>
         </form>
       </div>

@@ -8,6 +8,12 @@ RUN npm install
 
 COPY . .
 
+# Set React environment variables from Docker environment variables
+ARG WEBADMIN
+ARG WEBPASSWORD
+ENV REACT_APP_WEBADMIN=$WEBADMIN
+ENV REACT_APP_WEBPASSWORD=$WEBPASSWORD
+
 RUN npm run build
 
 FROM nginx:alpine

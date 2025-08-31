@@ -35,7 +35,11 @@ services:
         "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "12345" ]
 
   benchmarkinator-webui:
-    build: ./webui
+    build:
+      context: ./webui
+      args:
+        WEBADMIN: ${WEBADMIN}
+        WEBPASSWORD: ${WEBPASSWORD}
     image: rootifera/benchmarkinator-webui
     container_name: benchmarkinator-webui
     ports:
@@ -45,8 +49,6 @@ services:
         condition: service_started
     environment:
       NODE_ENV: production
-      WEBADMIN: ${WEBADMIN}
-      WEBPASSWORD: ${WEBPASSWORD}
 
 volumes:
   mysql_data:
