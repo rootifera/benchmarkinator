@@ -12,4 +12,4 @@ class BenchmarkResult(SQLModel, table=True):
     notes: str = Field(default=None, nullable=True)
 
     benchmark: "Benchmark" = Relationship(back_populates="benchmark_results")
-    config: "Config" = Relationship(back_populates="benchmark_results")  # Add this line
+    config: "Config" = Relationship(back_populates="benchmark_results")

@@ -1,7 +1,6 @@
 from sqlmodel import Field, SQLModel, Relationship
 from typing import List, Optional
 
-
 class BenchmarkTarget(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True)
@@ -13,10 +12,12 @@ class Benchmark(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
 
+    lower_is_better: bool = Field(default=False, nullable=False)
+
     benchmark_target_id: Optional[int] = Field(default=None, foreign_key="benchmarktarget.id")
 
     target: Optional[BenchmarkTarget] = Relationship(back_populates="benchmarks")
-    benchmark_results: List["BenchmarkResult"] = Relationship(back_populates="benchmark")
+    benchmark_results: List["Benchmarks"] = Relationship(back_populates="benchmark")
 
 
 class Benchmarks(SQLModel, table=True):
