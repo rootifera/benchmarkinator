@@ -1,40 +1,49 @@
-// API Configuration
-// For Docker Compose deployment, this uses the service name from docker-compose.yml
+// src/config/api.js
 
-export const API_CONFIG = {
-  // API base URL - hardcoded for Docker environment
-  API_URL: 'benchmarkinator-api',
-  
-  // API port - default for the benchmarkinator API
-  API_PORT: '12345',
-  
-  // API endpoints
-  ENDPOINTS: {
-    // Authentication endpoints
-    LOGIN: '/api/auth/login',
-    REGISTER: '/api/auth/register',
-    ME: '/api/auth/me',
-    
-    // Hardware endpoints
-    CPU: '/api/cpu',
-    GPU: '/api/gpu',
-    MOTHERBOARD: '/api/motherboard',
-    RAM: '/api/ram',
-    DISK: '/api/disk',
-    OS: '/api/oses',
-    
-    // Configuration and benchmark endpoints
-    CONFIG: '/api/config',
-    BENCHMARK: '/api/benchmark',
-    BENCHMARK_RESULTS: '/api/benchmark_results',
+// Keep your existing constants above this…
+
+export const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || "").trim();
+export const API_BASE_PATH = (process.env.REACT_APP_API_BASE_PATH || "/api").trim(); // usually "/api"
+
+// Compute the base once
+const RAW_BASE = API_BASE_URL || API_BASE_PATH;
+
+// JOIN helper: ensures exactly one slash between base and path,
+// and prevents accidental double "/api/api/…"
+export function buildApiUrl(path = "") {
+  const base = RAW_BASE.replace(/\/+$/, "");         // strip trailing slashes
+  let p = String(path);
+
+  // Remove leading slashes
+  p = p.replace(/^\/+/, "");
+
+  // If someone passes "/api/..." or "api/..." normalize to just the remainder
+  if (p.toLowerCase().startsWith("api/")) {
+    p = p.slice(4); // drop "api/"
   }
-};
 
-// Helper function to build full API URLs
-export const buildApiUrl = (endpoint) => {
-  return `http://${API_CONFIG.API_URL}:${API_CONFIG.API_PORT}${endpoint}`;
-};
+  // Done if empty (rare)
+  if (!p) return base || "/";
 
-// Note: This configuration is set for Docker Compose deployment
-// The service name 'benchmarkinator-api' resolves to the correct internal network address
-// If you need different configurations for different environments, you can modify this file
+  return `${base}/${p}`;
+}
+
+// Optional: export canonical endpoints WITHOUT the "/api" prefix.
+// (You can keep using buildApiUrl('/api/…') thanks to the normalization above,
+// but these help prevent regressions.)
+export const API_ENDPOINTS = {
+  AUTH: {
+    LOGIN: "auth/login",
+    REGISTER: "auth/register",
+    ME: "auth/me",
+  },
+  CPU: "cpu",
+  GPU: "gpu",
+  MOTHERBOARD: "motherboard",
+  RAM: "ram",
+  DISK: "disk",
+  OS: "oses",
+  CONFIG: "config",
+  BENCHMARK: "benchmark",
+  BENCHMARK_RESULTS: "benchmark_results",
+};

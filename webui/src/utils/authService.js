@@ -1,43 +1,50 @@
 import { AUTH_CONFIG } from '../config/auth';
 
-// Authentication service for the web UI
-// This simulates backend authentication using environment variables
+// NOTE: This is *client-side* auth intended for simple, non-production setups.
+// Anything in a frontend .env (Create React App) is baked into the bundle and visible to users.
+// For real auth, move checks to the backend.
 
-const getCredentials = () => {
-  // Use the configuration values
-  return {
-    username: AUTH_CONFIG.WEBADMIN,
-    password: AUTH_CONFIG.WEBPASSWORD
-  };
-};
+const TOKEN_PREFIX = 'local-web-token-';
 
+const getCredentials = () => ({
+  // Trim to avoid accidental whitespace mismatches
+  username: (AUTH_CONFIG.WEBADMIN || '').trim(),
+  password: (AUTH_CONFIG.WEBPASSWORD || '').trim(),
+});
+
+/**
+ * Authenticate user by comparing against env-provided credentials.
+ * Returns a synthetic token used only to gate the UI (ProtectedRoute).
+ */
 export const authenticateUser = async (username, password) => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  const credentials = getCredentials();
-  
-  if (username === credentials.username && password === credentials.password) {
-    // Generate a simple token (in production, this would come from the backend)
-    const token = `web-token-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+  // Tiny delay so the UI can show a spinner if it wants to
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  const { username: expectedUser, password: expectedPass } = getCredentials();
+
+  if ((username || '').trim() === expectedUser && (password || '').trim() === expectedPass) {
+    const token =
+      TOKEN_PREFIX +
+      (typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2) + Date.now().toString(36));
+
     return {
       success: true,
       token,
       user: {
-        username: credentials.username,
-        role: 'admin'
-      }
+        username: expectedUser,
+        role: AUTH_CONFIG.ROLE || 'admin',
+      },
     };
-  } else {
-    throw new Error('Invalid username or password');
   }
+
+  throw new Error('Invalid username or password');
 };
 
+/**
+ * Validate a token — purely syntactic check since there’s no backend.
+ */
 export const validateToken = (token) => {
-  // Simple token validation (in production, this would verify with the backend)
-  if (token && token.startsWith('web-token-')) {
-    return true;
-  }
-  return false;
+  return typeof token === 'string' && token.startsWith(TOKEN_PREFIX);
 };

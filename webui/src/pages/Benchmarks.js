@@ -7,6 +7,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import axios from 'axios';
+import { buildApiUrl } from '../config/api';
 
 const Benchmarks = () => {
   const { apiKey } = useAuth();
@@ -23,8 +24,8 @@ const Benchmarks = () => {
     try {
       const headers = { 'X-API-Key': apiKey };
       const [benchmarksRes, targetsRes] = await Promise.all([
-        axios.get('/api/benchmark/', { headers }),
-        axios.get('/api/benchmark/target/', { headers })
+        axios.get(buildApiUrl('/api/benchmark/'), { headers }),
+        axios.get(buildApiUrl('/api/benchmark/target/'), { headers })
       ]);
       setBenchmarks(benchmarksRes.data);
       setBenchmarkTargets(targetsRes.data);
@@ -43,7 +44,7 @@ const Benchmarks = () => {
     if (window.confirm('Are you sure you want to delete this benchmark?')) {
       try {
         const headers = { 'X-API-Key': apiKey };
-        await axios.delete(`/api/benchmark/${id}`, { headers });
+        await axios.delete(buildApiUrl(`/api/benchmark/${id}`), { headers });
         fetchBenchmarks();
       } catch (error) {
         console.error('Error deleting benchmark:', error);
@@ -60,7 +61,7 @@ const Benchmarks = () => {
     if (window.confirm('Are you sure you want to delete this benchmark target?')) {
       try {
         const headers = { 'X-API-Key': apiKey };
-        await axios.delete(`/api/benchmark/target/${id}`, { headers });
+        await axios.delete(buildApiUrl(`/api/benchmark/target/${id}`), { headers });
         fetchBenchmarks();
       } catch (error) {
         console.error('Error deleting benchmark target:', error);
@@ -332,9 +333,9 @@ const BenchmarkForm = ({ benchmark, benchmarkTargets, onClose, onSave }) => {
       const headers = { 'X-API-Key': apiKey };
       
       if (benchmark) {
-        await axios.put(`/api/benchmark/${benchmark.id}`, formData, { headers });
+        await axios.put(buildApiUrl(`/api/benchmark/${benchmark.id}`), formData, { headers });
       } else {
-        await axios.post('/api/benchmark/', formData, { headers });
+        await axios.post(buildApiUrl('/api/benchmark/'), formData, { headers });
       }
       onSave();
     } catch (error) {
@@ -435,9 +436,9 @@ const BenchmarkTargetForm = ({ target, onClose, onSave }) => {
       const headers = { 'X-API-Key': apiKey };
       
       if (target) {
-        await axios.put(`/api/benchmark/target/${target.id}`, formData, { headers });
+        await axios.put(buildApiUrl(`/api/benchmark/target/${target.id}`), formData, { headers });
       } else {
-        await axios.post('/api/benchmark/target/', formData, { headers });
+        await axios.post(buildApiUrl('/api/benchmark/target/'), formData, { headers });
       }
       onSave();
     } catch (error) {

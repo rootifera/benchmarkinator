@@ -13,6 +13,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import axios from 'axios';
+import { buildApiUrl } from '../config/api';
 
 const Hardware = () => {
   const { apiKey } = useAuth();
@@ -49,10 +50,10 @@ const Hardware = () => {
       switch (activeTab) {
         case 'cpu':
           [mainData, lookupData] = await Promise.all([
-            axios.get('/api/cpu/', { headers }),
+            axios.get(buildApiUrl('/api/cpu/'), { headers }),
             Promise.all([
-              axios.get('/api/cpu/brand/', { headers }),
-              axios.get('/api/cpu/family/', { headers })
+              axios.get(buildApiUrl('/api/cpu/brand/'), { headers }),
+              axios.get(buildApiUrl('/api/cpu/family/'), { headers })
             ])
           ]);
           lookupData = {
@@ -63,12 +64,12 @@ const Hardware = () => {
           
         case 'gpu':
           [mainData, lookupData] = await Promise.all([
-            axios.get('/api/gpu/', { headers }),
+            axios.get(buildApiUrl('/api/gpu/'), { headers }),
             Promise.all([
-              axios.get('/api/gpu/manufacturer/', { headers }),
-              axios.get('/api/gpu/brand/', { headers }),
-              axios.get('/api/gpu/model/', { headers }),
-              axios.get('/api/gpu/vram_type/', { headers })
+              axios.get(buildApiUrl('/api/gpu/manufacturer/'), { headers }),
+              axios.get(buildApiUrl('/api/gpu/brand/'), { headers }),
+              axios.get(buildApiUrl('/api/gpu/model/'), { headers }),
+              axios.get(buildApiUrl('/api/gpu/vram_type/'), { headers })
             ])
           ]);
           lookupData = {
@@ -81,10 +82,10 @@ const Hardware = () => {
           
         case 'motherboard':
           [mainData, lookupData] = await Promise.all([
-            axios.get('/api/motherboard/', { headers }),
+            axios.get(buildApiUrl('/api/motherboard/'), { headers }),
             Promise.all([
-              axios.get('/api/motherboard/manufacturer/', { headers }),
-              axios.get('/api/motherboard/chipset/', { headers })
+              axios.get(buildApiUrl('/api/motherboard/manufacturer/'), { headers }),
+              axios.get(buildApiUrl('/api/motherboard/chipset/'), { headers })
             ])
           ]);
           lookupData = {
@@ -94,25 +95,22 @@ const Hardware = () => {
           break;
           
         case 'ram':
-          const ramResponses = await Promise.all([
-            axios.get('http://192.168.1.24:12345/api/ram/', { headers })
-          ]);
-          mainData = ramResponses[0];
+          mainData = await axios.get(buildApiUrl('/api/ram/'), { headers });
           lookupData = {};
           break;
           
         case 'disk':
-          mainData = await axios.get('http://192.168.1.24:12345/api/disk/', { headers });
+          mainData = await axios.get(buildApiUrl('/api/disk/'), { headers });
           lookupData = {};
           break;
           
         case 'os':
-          mainData = await axios.get('http://192.168.1.24:12345/api/oses/', { headers });
+          mainData = await axios.get(buildApiUrl('/api/oses/'), { headers });
           lookupData = {};
           break;
           
         default:
-          mainData = await axios.get(`/api/${activeTab}/`, { headers });
+          mainData = await axios.get(buildApiUrl(`/api/${activeTab}/`), { headers });
           lookupData = {};
       }
       
@@ -175,13 +173,13 @@ const Hardware = () => {
           // Determine the correct delete endpoint
           let deleteEndpoint;
           if (activeTab === 'os') {
-            deleteEndpoint = `http://192.168.1.24:12345/api/oses/${id}`;
+            deleteEndpoint = buildApiUrl(`/api/oses/${id}`);
           } else if (activeTab === 'ram') {
-            deleteEndpoint = `http://192.168.1.24:12345/api/ram/${id}`;
+            deleteEndpoint = buildApiUrl(`/api/ram/${id}`);
           } else if (activeTab === 'disk') {
-            deleteEndpoint = `http://192.168.1.24:12345/api/disk/${id}`;
+            deleteEndpoint = buildApiUrl(`/api/disk/${id}`);
           } else {
-            deleteEndpoint = `http://localhost:12345/api/${activeTab}/${id}`;
+            deleteEndpoint = buildApiUrl(`/api/${activeTab}/${id}`);
           }
           
           await axios.delete(deleteEndpoint, { headers });
@@ -245,29 +243,29 @@ const Hardware = () => {
           // Determine the correct API endpoint based on type
           let endpoint;
           if (type === 'brand' && activeTab === 'cpu') {
-            endpoint = `http://localhost:12345/api/cpu/brand/${id}`;
+            endpoint = buildApiUrl(`/api/cpu/brand/${id}`);
           } else if (type === 'family') {
-            endpoint = `http://localhost:12345/api/cpu/family/${id}`;
+            endpoint = buildApiUrl(`/api/cpu/family/${id}`);
           } else if (type === 'manufacturer' && activeTab === 'gpu') {
-            endpoint = `http://localhost:12345/api/gpu/manufacturer/${id}`;
+            endpoint = buildApiUrl(`/api/gpu/manufacturer/${id}`);
           } else if (type === 'manufacturer' && activeTab === 'motherboard') {
-            endpoint = `http://localhost:12345/api/motherboard/manufacturer/${id}`;
+            endpoint = buildApiUrl(`/api/motherboard/manufacturer/${id}`);
           } else if (type === 'model') {
-            endpoint = `http://localhost:12345/api/gpu/model/${id}`;
+            endpoint = buildApiUrl(`/api/gpu/model/${id}`);
           } else if (type === 'vram_type') {
-            endpoint = `http://localhost:12345/api/gpu/vram_type/${id}`;
+            endpoint = buildApiUrl(`/api/gpu/vram_type/${id}`);
           } else if (type === 'chipset') {
-            endpoint = `http://localhost:12345/api/motherboard/chipset/${id}`;
+            endpoint = buildApiUrl(`/api/motherboard/chipset/${id}`);
           } else if (type === 'ram_type') {
-            endpoint = `http://localhost:12345/api/ram/type/${id}`;
+            endpoint = buildApiUrl(`/api/ram/type/${id}`);
           } else if (type === 'disk_type') {
-            endpoint = `http://localhost:12345/api/disk/type/${id}`;
+            endpoint = buildApiUrl(`/api/disk/type/${id}`);
           } else if (type === 'disk_brand') {
-            endpoint = `http://localhost:12345/api/disk/brand/${id}`;
+            endpoint = buildApiUrl(`/api/disk/brand/${id}`);
           } else if (type === 'disk_interface') {
-            endpoint = `http://localhost:12345/api/disk/interface/${id}`;
+            endpoint = buildApiUrl(`/api/disk/interface/${id}`);
           } else {
-            endpoint = `http://localhost:12345/api/${activeTab}/${type}/${id}`;
+            endpoint = buildApiUrl(`/api/${activeTab}/${type}/${id}`);
           }
           
           await axios.delete(endpoint, { headers });
@@ -1625,33 +1623,33 @@ const LookupForm = ({ type, item, onClose, onSave, activeTab, lookupData }) => {
       // Determine the correct API endpoint based on active tab and type
       let endpoint;
       if (type === 'brand' && activeTab === 'cpu') {
-        endpoint = `http://localhost:12345/api/cpu/brand/`;
+        endpoint = buildApiUrl('/api/cpu/brand/');
       } else if (type === 'brand' && activeTab === 'gpu') {
-        endpoint = `http://localhost:12345/api/gpu/brand/`;
+        endpoint = buildApiUrl('/api/gpu/brand/');
       } else if (type === 'family') {
-        endpoint = `http://localhost:12345/api/cpu/family/`;
+        endpoint = buildApiUrl('/api/cpu/family/');
       } else if (type === 'manufacturer' && activeTab === 'gpu') {
-        endpoint = `http://localhost:12345/api/gpu/manufacturer/`;
+        endpoint = buildApiUrl('/api/gpu/manufacturer/');
       } else if (type === 'manufacturer' && activeTab === 'motherboard') {
-        endpoint = `http://localhost:12345/api/motherboard/manufacturer/`;
+        endpoint = buildApiUrl('/api/motherboard/manufacturer/');
       } else if (type === 'model') {
-        endpoint = `http://localhost:12345/api/gpu/model/`;
+        endpoint = buildApiUrl('/api/gpu/model/');
       } else if (type === 'vram_type') {
-        endpoint = `http://localhost:12345/api/gpu/vram_type/`;
+        endpoint = buildApiUrl('/api/gpu/vram_type/');
       } else if (type === 'chipset') {
-        endpoint = `http://localhost:12345/api/motherboard/chipset/`;
+        endpoint = buildApiUrl('/api/motherboard/chipset/');
       } else if (type === 'ram_type') {
-        endpoint = `http://localhost:12345/api/ram/type/`;
+        endpoint = buildApiUrl('/api/ram/type/');
 
       } else if (type === 'disk_type') {
-        endpoint = `http://localhost:12345/api/disk/type/`;
+        endpoint = buildApiUrl('/api/disk/type/');
       } else if (type === 'disk_brand') {
-        endpoint = `http://localhost:12345/api/disk/brand/`;
+        endpoint = buildApiUrl('/api/disk/brand/');
       } else if (type === 'disk_interface') {
-        endpoint = `http://localhost:12345/api/disk/interface/`;
+        endpoint = buildApiUrl('/api/disk/interface/');
       } else {
         // Fallback for any unmatched combinations
-        endpoint = `http://localhost:12345/api/${activeTab}/${type}/`;
+        endpoint = buildApiUrl(`/api/${activeTab}/${type}/`);
       }
       
       // Debug logging
@@ -1904,19 +1902,19 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       // Determine the correct endpoint for each type
       let endpoint;
       if (type === 'ram') {
-        endpoint = 'http://192.168.1.24:12345/api/ram/';
+        endpoint = buildApiUrl('/api/ram/');
       } else if (type === 'disk') {
-        endpoint = 'http://192.168.1.24:12345/api/disk/';
+        endpoint = buildApiUrl('/api/disk/');
       } else if (type === 'os') {
-        endpoint = 'http://192.168.1.24:12345/api/oses/';
+        endpoint = buildApiUrl('/api/oses/');
       } else if (type === 'cpu') {
-        endpoint = 'http://192.168.1.24:12345/api/cpu/';
+        endpoint = buildApiUrl('/api/cpu/');
       } else if (type === 'gpu') {
-        endpoint = 'http://192.168.1.24:12345/api/gpu/';
+        endpoint = buildApiUrl('/api/gpu/');
       } else if (type === 'motherboard') {
-        endpoint = 'http://192.168.1.24:12345/api/motherboard/';
+        endpoint = buildApiUrl('/api/motherboard/');
       } else {
-        endpoint = `http://192.168.1.24:12345/api/${type}`;
+        endpoint = buildApiUrl(`/api/${type}`);
       }
       
 
@@ -2078,7 +2076,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
     const renderGPUForm = () => (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Manufacturer
         </label>
         <select

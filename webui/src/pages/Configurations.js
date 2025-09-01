@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import SearchableSelect from '../components/SearchableSelect';
+import { buildApiUrl } from '../config/api';
 
 const Configurations = () => {
   const { apiKey } = useAuth();
@@ -49,21 +50,21 @@ const Configurations = () => {
         cpuBrandsRes, cpuFamiliesRes, gpuBrandsRes, gpuModelsRes, gpuVRAMTypesRes, gpuManufacturersRes,
         motherboardManufacturersRes, motherboardChipsetsRes
       ] = await Promise.all([
-        axios.get('/api/config/', { headers }),
-        axios.get('/api/cpu/', { headers }),
-        axios.get('/api/gpu/', { headers }),
-        axios.get('/api/motherboard/', { headers }),
-        axios.get('/api/ram/', { headers }),
-        axios.get('/api/disk/', { headers }),
-        axios.get('/api/oses/', { headers }),
-        axios.get('/api/cpu/brand/', { headers }),
-        axios.get('/api/cpu/family/', { headers }),
-        axios.get('/api/gpu/brand/', { headers }),
-        axios.get('/api/gpu/model/', { headers }),
-        axios.get('/api/gpu/vram_type/', { headers }),
-        axios.get('/api/gpu/manufacturer/', { headers }),
-        axios.get('/api/motherboard/manufacturer/', { headers }),
-        axios.get('/api/motherboard/chipset/', { headers })
+        axios.get(buildApiUrl('/api/config/'), { headers }),
+        axios.get(buildApiUrl('/api/cpu/'), { headers }),
+        axios.get(buildApiUrl('/api/gpu/'), { headers }),
+        axios.get(buildApiUrl('/api/motherboard/'), { headers }),
+        axios.get(buildApiUrl('/api/ram/'), { headers }),
+        axios.get(buildApiUrl('/api/disk/'), { headers }),
+        axios.get(buildApiUrl('/api/oses/'), { headers }),
+        axios.get(buildApiUrl('/api/cpu/brand/'), { headers }),
+        axios.get(buildApiUrl('/api/cpu/family/'), { headers }),
+        axios.get(buildApiUrl('/api/gpu/brand/'), { headers }),
+        axios.get(buildApiUrl('/api/gpu/model/'), { headers }),
+        axios.get(buildApiUrl('/api/gpu/vram_type/'), { headers }),
+        axios.get(buildApiUrl('/api/gpu/manufacturer/'), { headers }),
+        axios.get(buildApiUrl('/api/motherboard/manufacturer/'), { headers }),
+        axios.get(buildApiUrl('/api/motherboard/chipset/'), { headers })
       ]);
 
       setConfigurations(configsRes.data);
@@ -96,7 +97,7 @@ const Configurations = () => {
     if (window.confirm('Are you sure you want to delete this configuration?')) {
       try {
         const headers = { 'X-API-Key': apiKey };
-        await axios.delete(`/api/config/${id}`, { headers });
+        await axios.delete(buildApiUrl(`/api/config/${id}`), { headers });
         fetchData();
       } catch (error) {
         console.error('Error deleting configuration:', error);
@@ -564,7 +565,7 @@ const ConfigurationDetailsModal = ({
 
               {/* GPU Core Overclocking */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">GPU Core Overclocking</label>
+                <label className="block text sm font-medium text-gray-700 dark:text-gray-300">GPU Core Overclocking</label>
                 <div className="mt-1 text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded">
                   {configuration.gpu_core_overclock ? (
                     <div className="space-y-1">
@@ -735,9 +736,9 @@ const ConfigurationForm = ({
     try {
       const headers = { 'X-API-Key': apiKey };
       if (configuration) {
-        await axios.put(`/api/config/${configuration.id}`, formData, { headers });
+        await axios.put(buildApiUrl(`/api/config/${configuration.id}`), formData, { headers });
       } else {
-        await axios.post('/api/config/', formData, { headers });
+        await axios.post(buildApiUrl('/api/config/'), formData, { headers });
       }
       onSave();
     } catch (error) {
@@ -944,8 +945,6 @@ const ConfigurationForm = ({
                 />
               </div>
             
-
-            
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <HardDrive className="w-4 h-4 inline mr-2" />
@@ -964,7 +963,7 @@ const ConfigurationForm = ({
                 />
               </div>
             
-                            <div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <Tv className="w-4 h-4 inline mr-2" />
                   Operating System
@@ -992,60 +991,60 @@ const ConfigurationForm = ({
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                CPU Driver Version
-              </label>
-              <input
-                type="text"
-                value={formData.cpu_driver_version}
-                onChange={(e) => setFormData({ ...formData, cpu_driver_version: e.target.value })}
-                className="input-field"
-                placeholder="e.g., 1.0.0"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  CPU Driver Version
+                </label>
+                <input
+                  type="text"
+                  value={formData.cpu_driver_version}
+                  onChange={(e) => setFormData({ ...formData, cpu_driver_version: e.target.value })}
+                  className="input-field"
+                  placeholder="e.g., 1.0.0"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  GPU Driver Version
+                </label>
+                <input
+                  type="text"
+                  value={formData.gpu_driver_version}
+                  onChange={(e) => setFormData({ ...formData, gpu_driver_version: e.target.value })}
+                  className="input-field"
+                  placeholder="e.g., 23.12.1"
+                />
+              </div>
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                GPU Driver Version
-              </label>
-              <input
-                type="text"
-                value={formData.gpu_driver_version}
-                onChange={(e) => setFormData({ ...formData, gpu_driver_version: e.target.value })}
-                className="input-field"
-                placeholder="e.g., 23.12.1"
-              />
-            </div>
-          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Motherboard Chipset Driver Version
-              </label>
-              <input
-                type="text"
-                value={formData.mb_chipset_driver_version}
-                onChange={(e) => setFormData({ ...formData, mb_chipset_driver_version: e.target.value })}
-                className="input-field"
-                placeholder="e.g., 2.1.0"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                RAM Size
-              </label>
-              <input
-                type="text"
-                value={formData.ram_size}
-                onChange={(e) => setFormData({ ...formData, ram_size: e.target.value })}
-                className="input-field"
-                placeholder="e.g., 512MB, 8GB"
-                required
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Motherboard Chipset Driver Version
+                </label>
+                <input
+                  type="text"
+                  value={formData.mb_chipset_driver_version}
+                  onChange={(e) => setFormData({ ...formData, mb_chipset_driver_version: e.target.value })}
+                  className="input-field"
+                  placeholder="e.g., 2.1.0"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  RAM Size
+                </label>
+                <input
+                  type="text"
+                  value={formData.ram_size}
+                  onChange={(e) => setFormData({ ...formData, ram_size: e.target.value })}
+                  className="input-field"
+                  placeholder="e.g., 512MB, 8GB"
+                  required
+                />
+              </div>
             </div>
           </div>
           
@@ -1057,202 +1056,202 @@ const ConfigurationForm = ({
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="cpu_overclock"
-                checked={formData.cpu_overclock || false}
-                onChange={(e) => setFormData({ ...formData, cpu_overclock: e.target.checked })}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <label htmlFor="cpu_overclock" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                CPU Overclocked
-              </label>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="cpu_overclock"
+                  checked={formData.cpu_overclock || false}
+                  onChange={(e) => setFormData({ ...formData, cpu_overclock: e.target.checked })}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <label htmlFor="cpu_overclock" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  CPU Overclocked
+                </label>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="gpu_core_overclock"
+                  checked={formData.gpu_core_overclock || false}
+                  onChange={(e) => setFormData({ ...formData, gpu_core_overclock: e.target.checked })}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <label htmlFor="gpu_core_overclock" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  GPU Core Overclocked
+                </label>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="gpu_vram_overclock"
+                  checked={formData.gpu_vram_overclock || false}
+                  onChange={(e) => setFormData({ ...formData, gpu_vram_overclock: e.target.checked })}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <label htmlFor="gpu_vram_overclock" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  GPU VRAM Overclocked
+                </label>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="ram_overclock"
+                  checked={formData.ram_overclock || false}
+                  onChange={(e) => setFormData({ ...formData, ram_overclock: e.target.checked })}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <label htmlFor="ram_overclock" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  RAM Overclocked
+                </label>
+              </div>
             </div>
-            
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="gpu_core_overclock"
-                checked={formData.gpu_core_overclock || false}
-                onChange={(e) => setFormData({ ...formData, gpu_core_overclock: e.target.checked })}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <label htmlFor="gpu_core_overclock" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                GPU Core Overclocked
-              </label>
-            </div>
-            
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="gpu_vram_overclock"
-                checked={formData.gpu_vram_overclock || false}
-                onChange={(e) => setFormData({ ...formData, gpu_vram_overclock: e.target.checked })}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <label htmlFor="gpu_vram_overclock" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                GPU VRAM Overclocked
-              </label>
-            </div>
-            
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="ram_overclock"
-                checked={formData.ram_overclock || false}
-                onChange={(e) => setFormData({ ...formData, ram_overclock: e.target.checked })}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-              />
-              <label htmlFor="ram_overclock" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                RAM Overclocked
-              </label>
-            </div>
-          </div>
           
-          {(formData.cpu_overclock || formData.gpu_core_overclock || formData.gpu_vram_overclock || formData.ram_overclock) && (
-            <div className="space-y-6">
-              {formData.cpu_overclock && (
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3 flex items-center">
-                    <Cpu className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
-                    CPU Overclocking Settings
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Base Clock (MHz)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.cpu_baseclock || ''}
-                        onChange={(e) => setFormData({ ...formData, cpu_baseclock: parseInt(e.target.value) || null })}
-                        className="input-field"
-                        placeholder="e.g., 3500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Current Clock (MHz)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.cpu_currentclock || ''}
-                        onChange={(e) => setFormData({ ...formData, cpu_currentclock: parseInt(e.target.value) || null })}
-                        className="input-field"
-                        placeholder="e.g., 4200"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {formData.gpu_core_overclock && (
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3 flex items-center">
-                    <Monitor className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" />
-                    GPU Core Overclocking Settings
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Base Clock (MHz)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.gpu_core_baseclock || ''}
-                        onChange={(e) => setFormData({ ...formData, gpu_core_baseclock: parseInt(e.target.value) || null })}
-                        className="input-field"
-                        placeholder="e.g., 1800"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Current Clock (MHz)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.gpu_core_currentclock || ''}
-                        onChange={(e) => setFormData({ ...formData, gpu_core_currentclock: parseInt(e.target.value) || null })}
-                        className="input-field"
-                        placeholder="e.g., 2100"
-                      />
+            {(formData.cpu_overclock || formData.gpu_core_overclock || formData.gpu_vram_overclock || formData.ram_overclock) && (
+              <div className="space-y-6">
+                {formData.cpu_overclock && (
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                      <Cpu className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
+                      CPU Overclocking Settings
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Base Clock (MHz)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.cpu_baseclock || ''}
+                          onChange={(e) => setFormData({ ...formData, cpu_baseclock: parseInt(e.target.value) || null })}
+                          className="input-field"
+                          placeholder="e.g., 3500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Current Clock (MHz)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.cpu_currentclock || ''}
+                          onChange={(e) => setFormData({ ...formData, cpu_currentclock: parseInt(e.target.value) || null })}
+                          className="input-field"
+                          placeholder="e.g., 4200"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-              
-              {formData.gpu_vram_overclock && (
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3 flex items-center">
-                    <Monitor className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />
-                    GPU VRAM Overclocking Settings
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Base Clock (MHz)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.gpu_vram_baseclock || ''}
-                        onChange={(e) => setFormData({ ...formData, gpu_vram_baseclock: parseInt(e.target.value) || null })}
-                        className="input-field"
-                        placeholder="e.g., 8000"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Current Clock (MHz)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.gpu_vram_currentclock || ''}
-                        onChange={(e) => setFormData({ ...formData, gpu_vram_currentclock: parseInt(e.target.value) || null })}
-                        className="input-field"
-                        placeholder="e.g., 9000"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {formData.ram_overclock && (
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3 flex items-center">
-                    <Database className="w-4 h-4 mr-2 text-orange-600 dark:text-orange-400" />
-                    RAM Overclocking Settings
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Base Clock (MHz)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.ram_baseclock || ''}
-                        onChange={(e) => setFormData({ ...formData, ram_baseclock: parseInt(e.target.value) || null })}
-                        className="input-field"
-                        placeholder="e.g., 3200"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Current Clock (MHz)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.ram_currentclock || ''}
-                        onChange={(e) => setFormData({ ...formData, ram_currentclock: parseInt(e.target.value) || null })}
-                        className="input-field"
-                        placeholder="e.g., 3600"
-                      />
+                )}
+                
+                {formData.gpu_core_overclock && (
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                      <Monitor className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" />
+                      GPU Core Overclocking Settings
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Base Clock (MHz)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.gpu_core_baseclock || ''}
+                          onChange={(e) => setFormData({ ...formData, gpu_core_baseclock: parseInt(e.target.value) || null })}
+                          className="input-field"
+                          placeholder="e.g., 1800"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Current Clock (MHz)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.gpu_core_currentclock || ''}
+                          onChange={(e) => setFormData({ ...formData, gpu_core_currentclock: parseInt(e.target.value) || null })}
+                          className="input-field"
+                          placeholder="e.g., 2100"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+                
+                {formData.gpu_vram_overclock && (
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                      <Monitor className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />
+                      GPU VRAM Overclocking Settings
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Base Clock (MHz)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.gpu_vram_baseclock || ''}
+                          onChange={(e) => setFormData({ ...formData, gpu_vram_baseclock: parseInt(e.target.value) || null })}
+                          className="input-field"
+                          placeholder="e.g., 8000"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Current Clock (MHz)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.gpu_vram_currentclock || ''}
+                          onChange={(e) => setFormData({ ...formData, gpu_vram_currentclock: parseInt(e.target.value) || null })}
+                          className="input-field"
+                          placeholder="e.g., 9000"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {formData.ram_overclock && (
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                      <Database className="w-4 h-4 mr-2 text-orange-600 dark:text-orange-400" />
+                      RAM Overclocking Settings
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Base Clock (MHz)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.ram_baseclock || ''}
+                          onChange={(e) => setFormData({ ...formData, ram_baseclock: parseInt(e.target.value) || null })}
+                          className="input-field"
+                          placeholder="e.g., 3200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Current Clock (MHz)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.ram_currentclock || ''}
+                          onChange={(e) => setFormData({ ...formData, ram_currentclock: parseInt(e.target.value) || null })}
+                          className="input-field"
+                          placeholder="e.g., 3600"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           {/* Notes */}
