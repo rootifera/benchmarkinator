@@ -60,8 +60,7 @@ def delete_benchmark_target(target_id: int, db: Session = Depends(get_db)):
 @router.post("/", response_model=Benchmark)
 def create_benchmark(benchmark: Benchmark, db: Session = Depends(get_db)):
     benchmark.name = validate_and_normalize_name(benchmark.name, db, Benchmark)
-
-    db.add(benchmark)
+    db.add(benchmark)            
     db.commit()
     db.refresh(benchmark)
     return benchmark
@@ -91,10 +90,12 @@ def update_benchmark(benchmark_id: int, benchmark: Benchmark, db: Session = Depe
 
     db_benchmark.name = benchmark.name
     db_benchmark.benchmark_target_id = benchmark.benchmark_target_id
+    db_benchmark.lower_is_better = benchmark.lower_is_better
 
     db.commit()
     db.refresh(db_benchmark)
     return db_benchmark
+
 
 
 @router.delete("/{benchmark_id}")

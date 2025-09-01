@@ -137,19 +137,34 @@ def compare_configs(config_id_1: int, config_id_2: int, db: Session = Depends(ge
     results_2 = db.exec(select(BenchmarkResult).where(BenchmarkResult.config_id == config_id_2)).all()
 
     if not results_1 or not results_2:
-        raise HTTPException(status_code=404, detail="Benchmark results for one or both configurations not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Benchmark results for one or both configurations not found"
+        )
 
     comparison = []
 
     for result_1 in results_1:
         result_2 = next((r for r in results_2 if r.benchmark_id == result_1.benchmark_id), None)
         if result_2:
+            benchmark = db.get(Benchmark, result_1.benchmark_id)
+            if not benchmark:
+                continue
+
             percentage_change = calculate_percentage_change(result_1.result, result_2.result)
+
+            # Flip if lower numbers are better
+            if benchmark.lower_is_better:
+                percentage_change = -percentage_change
+
             comparison.append({
                 "benchmark_id": result_1.benchmark_id,
+                "benchmark_name": benchmark.name,
+                "lower_is_better": benchmark.lower_is_better,
                 "config_1_result": result_1.result,
                 "config_2_result": result_2.result,
                 "percentage_change": round(percentage_change, 2),
             })
 
     return comparison
+

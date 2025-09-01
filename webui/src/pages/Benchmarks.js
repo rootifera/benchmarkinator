@@ -109,6 +109,11 @@ const Benchmarks = () => {
               <tr key={benchmark.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                   {benchmark.name}
+                  {benchmark.lower_is_better && (
+                    <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+                      lower is better
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border border-primary-200 dark:border-primary-700">
@@ -118,7 +123,7 @@ const Benchmarks = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
-                    onClick={() => setEditingItem(benchmark)}
+                    onClick={() => { setEditingItem(benchmark); setShowForm(true); }}
                     className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3 p-1 rounded hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
                     title="Edit benchmark"
                   >
@@ -152,7 +157,6 @@ const Benchmarks = () => {
             Create and manage benchmark tests for CPU, GPU, memory, storage, and system performance evaluation
           </p>
         </div>
-
       </div>
 
       {/* Information Cards */}
@@ -309,20 +313,23 @@ const Benchmarks = () => {
 const BenchmarkForm = ({ benchmark, benchmarkTargets, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: '',
-    benchmark_target_id: ''
+    benchmark_target_id: '',
+    lower_is_better: false,
   });
   const { apiKey } = useAuth();
 
   useEffect(() => {
     if (benchmark) {
       setFormData({
-        name: benchmark.name,
-        benchmark_target_id: benchmark.benchmark_target_id
+        name: benchmark.name ?? '',
+        benchmark_target_id: benchmark.benchmark_target_id ?? '',
+        lower_is_better: !!benchmark.lower_is_better,
       });
     } else {
       setFormData({
         name: '',
-        benchmark_target_id: ''
+        benchmark_target_id: '',
+        lower_is_better: false,
       });
     }
   }, [benchmark]);
@@ -331,11 +338,18 @@ const BenchmarkForm = ({ benchmark, benchmarkTargets, onClose, onSave }) => {
     e.preventDefault();
     try {
       const headers = { 'X-API-Key': apiKey };
-      
+
+      const payload = {
+        name: formData.name,
+        benchmark_target_id:
+          formData.benchmark_target_id === '' ? null : formData.benchmark_target_id,
+        lower_is_better: !!formData.lower_is_better,
+      };
+
       if (benchmark) {
-        await axios.put(buildApiUrl(`/api/benchmark/${benchmark.id}`), formData, { headers });
+        await axios.put(buildApiUrl(`/api/benchmark/${benchmark.id}`), payload, { headers });
       } else {
-        await axios.post(buildApiUrl('/api/benchmark/'), formData, { headers });
+        await axios.post(buildApiUrl('/api/benchmark/'), payload, { headers });
       }
       onSave();
     } catch (error) {
@@ -382,7 +396,7 @@ const BenchmarkForm = ({ benchmark, benchmarkTargets, onClose, onSave }) => {
                 </label>
                 <select
                   value={formData.benchmark_target_id || ''}
-                  onChange={(e) => setFormData({ ...formData, benchmark_target_id: e.target.value ? parseInt(e.target.value) : null })}
+                  onChange={(e) => setFormData({ ...formData, benchmark_target_id: e.target.value ? parseInt(e.target.value) : '' })}
                   className="input-field"
                 >
                   <option value="">Select a target (optional)</option>
@@ -393,6 +407,23 @@ const BenchmarkForm = ({ benchmark, benchmarkTargets, onClose, onSave }) => {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Lower is better */}
+            <div className="flex items-center space-x-3 pt-2">
+              <input
+                id="lower_is_better"
+                type="checkbox"
+                checked={!!formData.lower_is_better}
+                onChange={(e) => setFormData({ ...formData, lower_is_better: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              <label
+                htmlFor="lower_is_better"
+                className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none"
+              >
+                Lower is better (e.g., latency, compression time)
+              </label>
             </div>
           </div>
           

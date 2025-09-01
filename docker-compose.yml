@@ -1,6 +1,6 @@
 services:
   benchmarkinator-db:
-    image: mysql:8.0
+    image: mysql:8.4
     container_name: benchmarkinator-db
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
@@ -33,6 +33,7 @@ services:
     entrypoint:
       [ "/app/wait-for-it.sh", "benchmarkinator-db:${MYSQL_PORT}", "--",
         "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "12345" ]
+    pull_policy: never
 
   benchmarkinator-webui:
     build:
@@ -49,6 +50,7 @@ services:
         condition: service_started
     environment:
       NODE_ENV: production
+    pull_policy: never
 
 volumes:
   mysql_data:
