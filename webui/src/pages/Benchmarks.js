@@ -4,7 +4,9 @@ import {
   Edit,
   Trash2,
   Target,
-  BarChart3
+  BarChart3,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import axios from 'axios';
 import { buildApiUrl } from '../config/api';
@@ -18,6 +20,10 @@ const Benchmarks = () => {
   const [showTargetForm, setShowTargetForm] = useState(false);
   const [editingTarget, setEditingTarget] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
+  const [expandedSections, setExpandedSections] = useState({
+    benchmarkTargets: false, // Collapsed by default
+    benchmarks: true         // Expanded by default
+  });
 
   const fetchBenchmarks = useCallback(async () => {
     setLoading(true);
@@ -39,6 +45,13 @@ const Benchmarks = () => {
   useEffect(() => {
     fetchBenchmarks();
   }, [fetchBenchmarks]);
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this benchmark?')) {
@@ -198,21 +211,32 @@ const Benchmarks = () => {
       <div className="space-y-6">
         {/* Benchmark Targets Section */}
         <div className="card">
-          <div className="flex items-center justify-between mb-4">
+          <div 
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => toggleSection('benchmarkTargets')}
+          >
             <div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">Benchmark Targets</h3>
               <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Define what components benchmarks can target (CPU, GPU, Memory, etc.)
               </div>
             </div>
-            <button
-              onClick={() => setShowTargetForm(true)}
-              className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
-            >
-              Add Target
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowTargetForm(true);
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
+              >
+                Add Target
+              </button>
+              {expandedSections.benchmarkTargets ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronRight className="w-5 h-5 text-gray-500" />}
+            </div>
           </div>
-          <div className="overflow-x-auto">
+          {expandedSections.benchmarkTargets && (
+            <div className="mt-4">
+              <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
@@ -250,26 +274,42 @@ const Benchmarks = () => {
                 ))}
               </tbody>
             </table>
-          </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Benchmarks Section */}
         <div className="card">
-          <div className="flex items-center justify-between mb-4">
+          <div 
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => toggleSection('benchmarks')}
+          >
             <div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">Benchmarks</h3>
               <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Manage benchmark tests for performance evaluation
               </div>
             </div>
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
-            >
-              Add Benchmark
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowForm(true);
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
+              >
+                Add Benchmark
+              </button>
+              {expandedSections.benchmarks ? <ChevronDown className="w-5 h-5 text-gray-500" /> : <ChevronRight className="w-5 h-5 text-gray-500" />}
+            </div>
           </div>
-          {renderTable()}
+          
+          {expandedSections.benchmarks && (
+            <div className="mt-4">
+              {renderTable()}
+            </div>
+          )}
         </div>
       </div>
 
