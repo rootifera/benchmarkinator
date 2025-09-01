@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-
+import { buildApiUrl } from '../config/api';
 
 const Dashboard = () => {
   const { apiKey, isAuthenticated } = useAuth();
@@ -24,16 +24,15 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showApiModal, setShowApiModal] = useState(false);
 
-
   const fetchStats = useCallback(async () => {
     try {
       const headers = { 'X-API-Key': apiKey };
       const [cpus, gpus, benchmarks, results, configs] = await Promise.all([
-        axios.get('/api/cpu/', { headers }),
-        axios.get('/api/gpu/', { headers }),
-        axios.get('/api/benchmark/', { headers }),
-        axios.get('/api/benchmark_results/', { headers }),
-        axios.get('/api/config/', { headers })
+        axios.get(buildApiUrl('/api/cpu/'), { headers }),
+        axios.get(buildApiUrl('/api/gpu/'), { headers }),
+        axios.get(buildApiUrl('/api/benchmark/'), { headers }),
+        axios.get(buildApiUrl('/api/benchmark_results/'), { headers }),
+        axios.get(buildApiUrl('/api/config/'), { headers })
       ]);
 
       setStats({
@@ -44,12 +43,16 @@ const Dashboard = () => {
         configurations: configs.data.length
       });
 
-      // Fetch recent activity (latest 5 results)
+      // Recent activity: latest 5 results (if timestamps are valid)
       if (results.data.length > 0) {
         const recentResults = results.data
+          .filter(r => {
+            const d = new Date(r.timestamp);
+            return !isNaN(d.getTime()) && d.getTime() > 0;
+          })
           .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
           .slice(0, 5);
-        
+
         const activityItems = recentResults.map(result => {
           const benchmark = benchmarks.data.find(b => b.id === result.benchmark_id);
           const config = configs.data.find(c => c.id === result.config_id);
@@ -62,7 +65,7 @@ const Dashboard = () => {
             value: result.result
           };
         });
-        
+
         setRecentActivity(activityItems);
       }
     } catch (error) {
@@ -80,15 +83,11 @@ const Dashboard = () => {
     }
   }, [isAuthenticated, fetchStats]);
 
-
-
   const statCards = [
-            { name: 'Test Systems', value: stats.configurations, icon: Settings, color: 'bg-indigo-500', href: '/testsystems' },
+    { name: 'Test Systems', value: stats.configurations, icon: Settings, color: 'bg-indigo-500', href: '/testsystems' },
     { name: 'Benchmarks', value: stats.benchmarks, icon: BarChart3, color: 'bg-purple-500', href: '/benchmarks' },
     { name: 'Results', value: stats.results, icon: TrendingUp, color: 'bg-orange-500', href: '/results' },
   ];
-
-
 
   if (!isAuthenticated) {
     return (
@@ -151,8 +150,6 @@ const Dashboard = () => {
         })}
       </div>
 
-
-
       {/* Recent Activity */}
       <div className="card">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
@@ -194,19 +191,8 @@ const Dashboard = () => {
           </div>
         )}
       </div>
-
-
-          </div>
-    );
-  };
-
-
-
-
-
-
-
-
-
+    </div>
+  );
+};
 
 export default Dashboard;

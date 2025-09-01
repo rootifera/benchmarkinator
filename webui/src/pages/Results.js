@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
+import { buildApiUrl } from '../config/api';
 
 const Results = () => {
   const { apiKey, isAuthenticated } = useAuth();
@@ -40,18 +40,20 @@ const Results = () => {
     setLoading(true);
     try {
       const headers = { 'X-API-Key': apiKey };
-      
-      const [resultsRes, benchmarksRes, configsRes, cpusRes, gpusRes, cpuBrandsRes, cpuFamiliesRes, gpuManufacturersRes, gpuBrandsRes, gpuModelsRes] = await Promise.all([
-        axios.get('/api/benchmark_results/', { headers }),
-        axios.get('/api/benchmark/', { headers }),
-        axios.get('/api/config/', { headers }),
-        axios.get('/api/cpu/', { headers }),
-        axios.get('/api/gpu/', { headers }),
-        axios.get('/api/cpu/brand/', { headers }),
-        axios.get('/api/cpu/family/', { headers }),
-        axios.get('/api/gpu/manufacturer/', { headers }),
-        axios.get('/api/gpu/brand/', { headers }),
-        axios.get('/api/gpu/model/', { headers })
+      const [
+        resultsRes, benchmarksRes, configsRes, cpusRes, gpusRes,
+        cpuBrandsRes, cpuFamiliesRes, gpuManufacturersRes, gpuBrandsRes, gpuModelsRes
+      ] = await Promise.all([
+        axios.get(buildApiUrl('/api/benchmark_results/'), { headers }),
+        axios.get(buildApiUrl('/api/benchmark/'), { headers }),
+        axios.get(buildApiUrl('/api/config/'), { headers }),
+        axios.get(buildApiUrl('/api/cpu/'), { headers }),
+        axios.get(buildApiUrl('/api/gpu/'), { headers }),
+        axios.get(buildApiUrl('/api/cpu/brand/'), { headers }),
+        axios.get(buildApiUrl('/api/cpu/family/'), { headers }),
+        axios.get(buildApiUrl('/api/gpu/manufacturer/'), { headers }),
+        axios.get(buildApiUrl('/api/gpu/brand/'), { headers }),
+        axios.get(buildApiUrl('/api/gpu/model/'), { headers })
       ]);
 
       setResults(resultsRes.data);
@@ -94,8 +96,7 @@ const Results = () => {
     if (window.confirm('Are you sure you want to delete this result?')) {
       try {
         const headers = { 'X-API-Key': apiKey };
-        await axios.delete(`/api/benchmark_results/${resultId}`, { headers });
-        // Refresh the data
+        await axios.delete(buildApiUrl(`/api/benchmark_results/${resultId}`), { headers });
         fetchData();
         fetchFilteredResults();
       } catch (error) {
@@ -113,75 +114,59 @@ const Results = () => {
 
     try {
       const headers = { 'X-API-Key': apiKey };
-      let endpoint = '/api/benchmark_results/';
+      let endpoint = buildApiUrl('/api/benchmark_results/');
       let filtered = [];
-      
-      // Start with the most specific endpoint if available
+
       if (filters.configuration) {
-        endpoint = `/api/benchmark_results/config/${filters.configuration}`;
+        endpoint = buildApiUrl(`/api/benchmark_results/config/${filters.configuration}`);
         const response = await axios.get(endpoint, { headers });
         filtered = response.data;
-        
-        // Apply benchmark filter if also selected
         if (filters.benchmark) {
-          filtered = filtered.filter(result => result.benchmark_id === parseInt(filters.benchmark));
+          filtered = filtered.filter(r => r.benchmark_id === parseInt(filters.benchmark));
         }
       } else if (filters.cpu && filters.gpu) {
-        endpoint = `/api/benchmark_results/cpu-gpu/${filters.cpu}/${filters.gpu}`;
+        endpoint = buildApiUrl(`/api/benchmark_results/cpu-gpu/${filters.cpu}/${filters.gpu}`);
         const response = await axios.get(endpoint, { headers });
         filtered = response.data;
-        
-        // Apply benchmark filter if also selected
         if (filters.benchmark) {
-          filtered = filtered.filter(result => result.benchmark_id === parseInt(filters.benchmark));
+          filtered = filtered.filter(r => r.benchmark_id === parseInt(filters.benchmark));
         }
       } else if (filters.cpu) {
-        endpoint = `/api/benchmark_results/cpu/${filters.cpu}`;
+        endpoint = buildApiUrl(`/api/benchmark_results/cpu/${filters.cpu}`);
         const response = await axios.get(endpoint, { headers });
         filtered = response.data;
-        
-        // Apply benchmark filter if also selected
         if (filters.benchmark) {
-          filtered = filtered.filter(result => result.benchmark_id === parseInt(filters.benchmark));
+          filtered = filtered.filter(r => r.benchmark_id === parseInt(filters.benchmark));
         }
       } else if (filters.gpu) {
-        endpoint = `/api/benchmark_results/gpu/${filters.gpu}`;
+        endpoint = buildApiUrl(`/api/benchmark_results/gpu/${filters.gpu}`);
         const response = await axios.get(endpoint, { headers });
         filtered = response.data;
-        
-        // Apply benchmark filter if also selected
         if (filters.benchmark) {
-          filtered = filtered.filter(result => result.benchmark_id === parseInt(filters.benchmark));
+          filtered = filtered.filter(r => r.benchmark_id === parseInt(filters.benchmark));
         }
       } else {
-        // Use general endpoint and apply all filters
         const response = await axios.get(endpoint, { headers });
         filtered = response.data;
-        
         if (filters.benchmark) {
-          filtered = filtered.filter(result => result.benchmark_id === parseInt(filters.benchmark));
+          filtered = filtered.filter(r => r.benchmark_id === parseInt(filters.benchmark));
         }
       }
 
-      // Apply date filters to all results
       if (filters.dateFrom) {
         filtered = filtered.filter(result => {
           try {
-            const resultDate = new Date(result.timestamp);
-            return resultDate.getTime() > 0 && resultDate >= new Date(filters.dateFrom);
-          } catch (e) {
-            return false;
-          }
+            const d = new Date(result.timestamp);
+            return d.getTime() > 0 && d >= new Date(filters.dateFrom);
+          } catch { return false; }
         });
       }
       if (filters.dateTo) {
         filtered = filtered.filter(result => {
           try {
-            const resultDate = new Date(result.timestamp);
-            return resultDate.getTime() > 0 && resultDate <= new Date(filters.dateTo);
-          } catch (e) {
-            return false;
-          }
+            const d = new Date(result.timestamp);
+            return d.getTime() > 0 && d <= new Date(filters.dateTo);
+          } catch { return false; }
         });
       }
 
@@ -195,8 +180,6 @@ const Results = () => {
   useEffect(() => {
     fetchFilteredResults();
   }, [fetchFilteredResults]);
-
-
 
   const renderFilters = () => (
     <div className="card mb-6">
@@ -320,12 +303,8 @@ const Results = () => {
           </button>
         </div>
       </div>
-      
-
     </div>
   );
-
-
 
   const renderResultsTable = () => {
     if (loading) {
@@ -356,10 +335,10 @@ const Results = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Test System
               </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Result
-                  </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Result
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -391,13 +370,8 @@ const Results = () => {
                     {(() => {
                       try {
                         const date = new Date(result.timestamp);
-                        // Check if it's a valid date (not epoch 0)
-                        if (date.getTime() > 0) {
-                          return date.toLocaleDateString();
-                        } else {
-                          return 'No date';
-                        }
-                      } catch (e) {
+                        return date.getTime() > 0 ? date.toLocaleDateString() : 'No date';
+                      } catch {
                         return 'Invalid date';
                       }
                     })()}
@@ -514,8 +488,6 @@ const Results = () => {
       {/* Filters */}
       {renderFilters()}
 
-
-
       {/* Results Table */}
       <div className="card">
         <div className="flex items-center justify-between mb-6">
@@ -594,17 +566,14 @@ const ResultForm = ({ result, onClose, onSave, benchmarks, configurations }) => 
     e.preventDefault();
     try {
       const headers = { 'X-API-Key': apiKey };
-      
-      // Ensure timestamp is set for new results
       const dataToSend = {
         ...formData,
         timestamp: formData.timestamp || new Date().toISOString()
       };
-      
       if (result) {
-        await axios.put(`/api/benchmark_results/${result.id}`, dataToSend, { headers });
+        await axios.put(buildApiUrl(`/api/benchmark_results/${result.id}`), dataToSend, { headers });
       } else {
-        await axios.post('/api/benchmark_results/', dataToSend, { headers });
+        await axios.post(buildApiUrl('/api/benchmark_results/'), dataToSend, { headers });
       }
       onSave();
     } catch (error) {
@@ -738,7 +707,6 @@ const CompareForm = ({ configurations, benchmarks, onClose }) => {
       alert('Please select both test systems to compare');
       return;
     }
-    
     if (formData.config_id_1 === formData.config_id_2) {
       alert('Please select two different test systems to compare');
       return;
@@ -747,10 +715,10 @@ const CompareForm = ({ configurations, benchmarks, onClose }) => {
     setLoading(true);
     try {
       const headers = { 'X-API-Key': apiKey };
-      const response = await axios.get(
-        `/api/benchmark_results/compare/configs?config_id_1=${formData.config_id_1}&config_id_2=${formData.config_id_2}`,
-        { headers }
+      const url = buildApiUrl(
+        `/api/benchmark_results/compare/configs?config_id_1=${formData.config_id_1}&config_id_2=${formData.config_id_2}`
       );
+      const response = await axios.get(url, { headers });
       setComparisonResults(response.data);
     } catch (error) {
       console.error('Error fetching comparison:', error);
@@ -874,16 +842,8 @@ const CompareForm = ({ configurations, benchmarks, onClose }) => {
                         value === 'config_1_result' ? getConfigName(formData.config_id_1) : getConfigName(formData.config_id_2)
                       }
                     />
-                    <Bar 
-                      dataKey="config_1_result" 
-                      fill="#3b82f6" 
-                      name="config_1_result"
-                    />
-                    <Bar 
-                      dataKey="config_2_result" 
-                      fill="#10b981" 
-                      name="config_2_result"
-                    />
+                    <Bar dataKey="config_1_result" fill="#3b82f6" name="config_1_result" />
+                    <Bar dataKey="config_2_result" fill="#10b981" name="config_2_result" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
