@@ -41,6 +41,7 @@ services:
       args:
         WEBADMIN: ${WEBADMIN}
         WEBPASSWORD: ${WEBPASSWORD}
+        API_KEY: ${API_KEY}
     image: rootifera/benchmarkinator-webui
     container_name: benchmarkinator-webui
     ports:

@@ -12,8 +12,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 from pydantic import BaseModel
 
-#app = FastAPI(dependencies=[Depends(authenticate)])
-app = FastAPI()
+app = FastAPI(dependencies=[Depends(authenticate)])
+#app = FastAPI()
 
 
 app.add_middleware(

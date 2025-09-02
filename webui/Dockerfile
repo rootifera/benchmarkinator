@@ -11,8 +11,10 @@ COPY . .
 # Set React environment variables from Docker environment variables
 ARG WEBADMIN
 ARG WEBPASSWORD
+ARG API_KEY
 ENV REACT_APP_WEBADMIN=$WEBADMIN
 ENV REACT_APP_WEBPASSWORD=$WEBPASSWORD
+ENV REACT_APP_API_KEY=$API_KEY
 
 RUN npm run build
 

@@ -6,6 +6,7 @@ export const AUTH_CONFIG = {
   // Read from React environment variables with fallbacks
   WEBADMIN: process.env.REACT_APP_WEBADMIN || 'admin',
   WEBPASSWORD: process.env.REACT_APP_WEBPASSWORD || 'admin123',
+  API_KEY: process.env.REACT_APP_API_KEY || 'benchmarkinator-dev-key-2024',
 };
 
 // Note: In a production environment, these credentials would be:
