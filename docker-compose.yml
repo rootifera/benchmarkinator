@@ -13,10 +13,11 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root" ]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot $${MYSQL_ROOT_PASSWORD:+-p$${MYSQL_ROOT_PASSWORD}} > /dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
+
 
   benchmarkinator-api:
     build: .
@@ -25,11 +26,15 @@ services:
     environment:
       DATABASE_URL: "mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@benchmarkinator-db:${MYSQL_PORT}/${MYSQL_DATABASE}"
       API_KEY: ${API_KEY}
+      LOAD_HARDWARE_DATA: ${LOAD_HARDWARE_DATA}
+      HARDWARE_ERA: ${HARDWARE_ERA}
     ports:
       - "${API_PORT}:12345"
     depends_on:
       benchmarkinator-db:
         condition: service_healthy
+    volumes:
+      - ./extras/sql:/app/extras/sql:ro
     entrypoint:
       [ "/app/wait-for-it.sh", "benchmarkinator-db:${MYSQL_PORT}", "--",
         "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "12345" ]
