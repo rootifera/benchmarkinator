@@ -96,7 +96,9 @@ INSERT INTO gpumodel (name, gpu_brand_id) VALUES
 ('GeForce 16 Series', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
 ('GeForce 20 Series (RTX 2000)', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
 ('GeForce 30 Series (RTX 3000)', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
-('GeForce 40 Series (RTX 4000)', (SELECT id FROM gpubrand WHERE name='NVIDIA'))
+('GeForce 40 Series (RTX 4000)', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
+('GeForce 40 Series (RTX 5000)', (SELECT id FROM gpubrand WHERE name='NVIDIA'))
+
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 -- AMD Radeon

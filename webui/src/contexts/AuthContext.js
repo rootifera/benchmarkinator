@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authenticateUser, validateToken } from '../utils/authService';
+import { AUTH_CONFIG } from '../config/auth';
 
 const AuthContext = createContext();
 
@@ -81,7 +82,8 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     darkMode,
-    toggleDarkMode
+    toggleDarkMode,
+    apiKey: AUTH_CONFIG.API_KEY
   };
 
   return (
