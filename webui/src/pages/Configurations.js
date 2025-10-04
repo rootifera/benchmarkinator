@@ -947,6 +947,21 @@ const ConfigurationForm = ({
             
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <Database className="w-4 h-4 inline mr-2" />
+                  RAM Size
+                </label>
+                <input
+                  type="text"
+                  value={formData.ram_size}
+                  onChange={(e) => setFormData({ ...formData, ram_size: e.target.value })}
+                  className="input-field"
+                  placeholder="e.g., 512MB, 8GB"
+                  required
+                />
+              </div>
+            
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <HardDrive className="w-4 h-4 inline mr-2" />
                   Storage (Disk)
                 </label>
@@ -1016,9 +1031,7 @@ const ConfigurationForm = ({
                   placeholder="e.g., 23.12.1"
                 />
               </div>
-            </div>
-          
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Motherboard Chipset Driver Version
@@ -1029,20 +1042,6 @@ const ConfigurationForm = ({
                   onChange={(e) => setFormData({ ...formData, mb_chipset_driver_version: e.target.value })}
                   className="input-field"
                   placeholder="e.g., 2.1.0"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  RAM Size
-                </label>
-                <input
-                  type="text"
-                  value={formData.ram_size}
-                  onChange={(e) => setFormData({ ...formData, ram_size: e.target.value })}
-                  className="input-field"
-                  placeholder="e.g., 512MB, 8GB"
-                  required
                 />
               </div>
             </div>
