@@ -232,7 +232,7 @@ Benchmarkinator includes pre-loaded hardware data:
 - **Connection Pooling**: Optimal resource utilization
 
 ### Web Interface
-- **React 18**: Modern, fast user interface
+- **React 19**: Modern, fast user interface
 - **Responsive Design**: Works on all screen sizes
 - **Progressive Loading**: Smooth user experience
 - **Caching**: Reduced server load and faster responses

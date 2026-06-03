@@ -1,10 +1,10 @@
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm ci
 
 COPY . .
 
@@ -12,15 +12,15 @@ COPY . .
 ARG WEBADMIN
 ARG WEBPASSWORD
 ARG API_KEY
-ENV REACT_APP_WEBADMIN=$WEBADMIN
-ENV REACT_APP_WEBPASSWORD=$WEBPASSWORD
-ENV REACT_APP_API_KEY=$API_KEY
+ENV VITE_WEBADMIN=$WEBADMIN
+ENV VITE_WEBPASSWORD=$WEBPASSWORD
+ENV VITE_API_KEY=$API_KEY
 
 RUN npm run build
 
 FROM nginx:alpine
 
-COPY --from=builder /app/build /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 COPY nginx.conf /etc/nginx/nginx.conf
 

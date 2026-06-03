@@ -27,7 +27,7 @@ WEBPASSWORD=admin1234
 ### How It Works
 
 1. **Build Time**: During Docker build, the credentials from the parent `.env` file are passed as build arguments
-2. **React Environment**: The Dockerfile converts these to `REACT_APP_*` variables for React
+2. **Vite Environment**: The Dockerfile converts these to `VITE_*` variables for the web build
 3. **Runtime**: The web UI reads these variables to validate login attempts
 
 ### Docker Compose Integration
@@ -62,8 +62,8 @@ benchmarkinator-webui:
 ### For Developers
 
 1. **Change Credentials**: Update the parent `.env` file
-2. **Rebuild Container**: Run `docker-compose build benchmarkinator-webui`
-3. **Restart Services**: Run `docker-compose up -d`
+2. **Rebuild Container**: Run `docker compose build benchmarkinator-webui`
+3. **Restart Services**: Run `docker compose up -d`
 
 ## Troubleshooting
 

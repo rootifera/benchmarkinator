@@ -1,7 +1,7 @@
 import { AUTH_CONFIG } from '../config/auth';
 
 // NOTE: This is *client-side* auth intended for simple, non-production setups.
-// Anything in a frontend .env (Create React App) is baked into the bundle and visible to users.
+// Anything in a frontend env file is baked into the bundle and visible to users.
 // For real auth, move checks to the backend.
 
 const TOKEN_PREFIX = 'local-web-token-';

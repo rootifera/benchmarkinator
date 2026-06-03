@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import Session, select
 from utils.helper import validate_and_normalize_name
 from models.disk import Disk
+from models.config import Config
 from database import get_db
 
 router = APIRouter()
@@ -53,6 +54,13 @@ def delete_disk(disk_id: int, db: Session = Depends(get_db)):
     disk = db.get(Disk, disk_id)
     if disk is None:
         raise HTTPException(status_code=404, detail="Disk not found")
+
+    in_config = db.exec(select(Config).where(Config.disk_id == disk_id)).first()
+    if in_config:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete disk because it is referenced by one or more config records."
+        )
 
     db.delete(disk)
     db.commit()

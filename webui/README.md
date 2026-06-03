@@ -14,7 +14,7 @@ A modern React-based web interface for the Benchmarkinator benchmark management 
 
 ## Prerequisites
 
-- Node.js 16+ and npm
+- Node.js 22+ and npm
 - Running Benchmarkinator API backend (default: http://localhost:12345)
 
 ## Installation
@@ -38,7 +38,7 @@ The web UI will open in your browser at http://localhost:4000
 
 ## Configuration
 
-The web UI is configured to proxy API requests to your backend at `http://localhost:12345`. If your backend is running on a different port or host, update the `proxy` field in `package.json`.
+By default the web UI calls `/api`, which is proxied to the backend by the production nginx config. For local development against a separate backend, set `VITE_API_BASE_URL` or `VITE_API_BASE_PATH`.
 
 The web UI runs on port 4000 and is bound to 0.0.0.0, making it accessible from other devices on your network.
 
@@ -59,11 +59,12 @@ To create a production build:
 npm run build
 ```
 
-The built files will be in the `build/` directory.
+The built files will be in the `dist/` directory.
 
 ## Development
 
-- **React 18**: Modern React with hooks and functional components
+- **Vite**: Fast development server and production build
+- **React 19**: Modern React with hooks and functional components
 - **Tailwind CSS**: Utility-first CSS framework for rapid UI development
 - **Lucide React**: Beautiful, customizable icons
 - **Recharts**: Composable charting library for React
@@ -78,8 +79,8 @@ webui/
 │   ├── components/        # Reusable UI components
 │   ├── contexts/          # React contexts (auth, etc.)
 │   ├── pages/            # Page components
-│   ├── App.js            # Main app component
-│   └── index.js          # Entry point
+│   ├── App.jsx           # Main app component
+│   └── index.jsx         # Entry point
 ├── package.json           # Dependencies and scripts
 └── tailwind.config.js     # Tailwind CSS configuration
 ```
