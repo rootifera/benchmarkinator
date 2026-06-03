@@ -886,11 +886,13 @@ const Hardware = () => {
                 </div>
                 <button 
                   onClick={() => {
-                    if (!data.lookup?.brands?.length || !data.lookup?.models?.length || !data.lookup?.vramTypes?.length) {
-                      alert('Please create at least one GPU brand, model, and VRAM type before adding GPUs.');
-                      return;
-                    }
-                    setShowForm(true);
+                if (!data.lookup?.brands?.length || !data.lookup?.models?.length || !data.lookup?.vramTypes?.length) {
+                  if (window.showToast) {
+                    window.showToast('Please create at least one GPU brand, model, and VRAM type before adding GPUs.', 'warning');
+                  }
+                  return;
+                }
+                setShowForm(true);
                   }}
                   className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={!data.lookup?.brands?.length || !data.lookup?.models?.length || !data.lookup?.vramTypes?.length}
@@ -1141,7 +1143,9 @@ const Hardware = () => {
                 <button 
                   onClick={() => {
                     if (!data.lookup?.manufacturers?.length || !data.lookup?.chipsets?.length) {
-                      alert('Please create at least one motherboard manufacturer and chipset before adding motherboards.');
+                      if (window.showToast) {
+                        window.showToast('Please create at least one motherboard manufacturer and chipset before adding motherboards.', 'warning');
+                      }
                       return;
                     }
                     setShowForm(true);
@@ -1652,9 +1656,6 @@ const LookupForm = ({ type, item, onClose, onSave, activeTab, lookupData }) => {
         endpoint = buildApiUrl(`/api/${activeTab}/${type}/`);
       }
       
-      // Debug logging
-      console.log('LookupForm Debug:', { type, activeTab, endpoint, formData });
-      
       if (!endpoint) {
         console.error('No endpoint determined for:', { type, activeTab });
         if (window.showToast) {
@@ -1850,8 +1851,6 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    console.log('Form submission - type:', type, 'formData:', formData);
-    
     // Validate required fields based on type
     if (type === 'cpu') {
       if (!formData.model || !formData.speed || !formData.core_count || !formData.cpu_brand_id || !formData.cpu_family_id) {
@@ -1919,8 +1918,6 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       
 
       
-      console.log('About to submit:', { endpoint, formData, isUpdate: !!item });
-      
       const itemType = type === 'cpu' ? 'CPU' : 
                       type === 'gpu' ? 'GPU' : 
                       type === 'motherboard' ? 'Motherboard' : 
@@ -1932,7 +1929,6 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       if (item) {
         // Ensure id is included in the request body for updates
         const updateData = { ...formData, id: item.id };
-        console.log('Update data being sent:', updateData);
         await axios.put(`${endpoint}${item.id}`, updateData, { headers });
         
         // Show success toast
@@ -2366,10 +2362,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
           {item ? 'Edit' : 'Add New'} {type === 'cpu' ? 'CPU' : type === 'gpu' ? 'GPU' : type === 'ram' ? 'RAM Type' : type === 'os' ? 'OS' : type.charAt(0).toUpperCase() + type.slice(1)}
         </h2>
         
-        <form onSubmit={(e) => {
-          console.log('Form submitted!');
-          handleSubmit(e);
-        }} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {renderFormContent()}
           
           <div className="flex space-x-3">

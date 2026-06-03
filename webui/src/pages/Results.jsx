@@ -11,6 +11,12 @@ import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { buildApiUrl } from '../config/api';
 
+const notify = (message, type = 'warning', duration) => {
+  if (window.showToast) {
+    window.showToast(message, type, duration);
+  }
+};
+
 const Results = () => {
   const { apiKey, isAuthenticated } = useAuth();
   const [results, setResults] = useState([]);
@@ -81,7 +87,7 @@ const Results = () => {
 
   const handleEditResult = (result) => {
     if (!isAuthenticated) {
-      alert('Please log in to edit results');
+      notify('Please log in to edit results');
       return;
     }
     setEditingItem(result);
@@ -90,7 +96,7 @@ const Results = () => {
 
   const handleDeleteResult = async (resultId) => {
     if (!isAuthenticated) {
-      alert('Please log in to delete results');
+      notify('Please log in to delete results');
       return;
     }
     if (window.confirm('Are you sure you want to delete this result?')) {
@@ -101,7 +107,7 @@ const Results = () => {
         fetchFilteredResults();
       } catch (error) {
         console.error('Error deleting result:', error);
-        alert('Failed to delete result');
+        notify('Failed to delete result', 'error');
       }
     }
   };
@@ -432,7 +438,7 @@ const Results = () => {
           <button
             onClick={() => {
               if (!isAuthenticated) {
-                alert('Please log in to compare test systems');
+                notify('Please log in to compare test systems');
                 return;
               }
               setShowCompareForm(true);
@@ -449,7 +455,7 @@ const Results = () => {
           <button
             onClick={() => {
               if (!isAuthenticated) {
-                alert('Please log in to add new results');
+                notify('Please log in to add new results');
                 return;
               }
               setShowForm(true);
@@ -704,11 +710,11 @@ const CompareForm = ({ configurations, benchmarks, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.config_id_1 || !formData.config_id_2) {
-      alert('Please select both test systems to compare');
+      notify('Please select both test systems to compare');
       return;
     }
     if (formData.config_id_1 === formData.config_id_2) {
-      alert('Please select two different test systems to compare');
+      notify('Please select two different test systems to compare');
       return;
     }
 
