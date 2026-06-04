@@ -132,7 +132,15 @@ def calculate_percentage_change(old_value: float, new_value: float) -> float:
 
 
 @router.get("/compare/configs", response_model=list)
-def compare_configs(config_id_1: int, config_id_2: int, db: Session = Depends(get_db)):
+def compare_configs(
+    config_id_1: int,
+    config_id_2: int,
+    benchmark_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    if benchmark_id is not None and not db.get(Benchmark, benchmark_id):
+        raise HTTPException(status_code=404, detail="Benchmark not found")
+
     results_1 = db.exec(select(BenchmarkResult).where(BenchmarkResult.config_id == config_id_1)).all()
     results_2 = db.exec(select(BenchmarkResult).where(BenchmarkResult.config_id == config_id_2)).all()
 
@@ -145,6 +153,9 @@ def compare_configs(config_id_1: int, config_id_2: int, db: Session = Depends(ge
     comparison = []
 
     for result_1 in results_1:
+        if benchmark_id is not None and result_1.benchmark_id != benchmark_id:
+            continue
+
         result_2 = next((r for r in results_2 if r.benchmark_id == result_1.benchmark_id), None)
         if result_2:
             benchmark = db.get(Benchmark, result_1.benchmark_id)
@@ -166,5 +177,10 @@ def compare_configs(config_id_1: int, config_id_2: int, db: Session = Depends(ge
                 "percentage_change": round(percentage_change, 2),
             })
 
-    return comparison
+    if benchmark_id is not None and not comparison:
+        raise HTTPException(
+            status_code=404,
+            detail="Benchmark results for the selected benchmark were not found for both configurations"
+        )
 
+    return comparison

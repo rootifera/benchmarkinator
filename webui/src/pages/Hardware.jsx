@@ -14,12 +14,20 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { buildApiUrl } from '../config/api';
+import {
+  getHardwareConfig,
+  getLookupConfig,
+  hasRequiredFields,
+  showRequestError,
+  showToast,
+} from './hardwareConfig';
 
 const Hardware = () => {
   const { apiKey } = useAuth();
   const [activeTab, setActiveTab] = useState('cpu');
-  const [data, setData] = useState([]);
+  const [data, setData] = useState({ main: [], lookup: {} });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [expandedSections, setExpandedSections] = useState({});
@@ -41,6 +49,7 @@ const Hardware = () => {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const headers = { 'X-API-Key': apiKey };
       
@@ -117,6 +126,7 @@ const Hardware = () => {
       setData({ main: mainData.data, lookup: lookupData });
     } catch (error) {
       console.error(`Error fetching ${activeTab}:`, error);
+      setError(`Could not load ${getHardwareConfig(activeTab).pluralLabel}.`);
     } finally {
       setLoading(false);
     }
@@ -152,13 +162,7 @@ const Hardware = () => {
   }, [activeTab]);
 
   const handleDelete = async (id) => {
-    const itemType = activeTab === 'cpu' ? 'CPU' : 
-                    activeTab === 'gpu' ? 'GPU' : 
-                    activeTab === 'motherboard' ? 'Motherboard' : 
-                    activeTab === 'ram' ? 'RAM Type' : 
-                    activeTab === 'disk' ? 'Disk' : 
-                    activeTab === 'os' ? 'OS' : 
-                    activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+    const itemType = getHardwareConfig(activeTab).label;
     
     setConfirmModalConfig({
       title: `Delete ${itemType}`,
@@ -169,46 +173,21 @@ const Hardware = () => {
       onConfirm: async () => {
         try {
           const headers = { 'X-API-Key': apiKey };
-          
-          // Determine the correct delete endpoint
-          let deleteEndpoint;
-          if (activeTab === 'os') {
-            deleteEndpoint = buildApiUrl(`/api/oses/${id}`);
-          } else if (activeTab === 'ram') {
-            deleteEndpoint = buildApiUrl(`/api/ram/${id}`);
-          } else if (activeTab === 'disk') {
-            deleteEndpoint = buildApiUrl(`/api/disk/${id}`);
-          } else {
-            deleteEndpoint = buildApiUrl(`/api/${activeTab}/${id}`);
-          }
+          const deleteEndpoint = buildApiUrl(`${getHardwareConfig(activeTab).endpoint}${id}`);
           
           await axios.delete(deleteEndpoint, { headers });
           fetchData();
           
-          // Show success toast
-          if (window.showToast) {
-            window.showToast(`${itemType} deleted successfully`, 'success');
-          }
+          showToast(`${itemType} deleted successfully`, 'success');
         } catch (error) {
           console.error('Error deleting item:', error);
           
-          // Provide better error messages for common constraint violations
           if (error.response?.status === 409) {
-            if (window.showToast) {
-              window.showToast(`Cannot delete this ${itemType}. It is currently being used by one or more test systems.`, 'error', 8000);
-            }
+            showToast(`Cannot delete this ${itemType}. It is currently being used by one or more test systems.`, 'error', 8000);
           } else if (error.response?.status === 404) {
-            if (window.showToast) {
-              window.showToast('Item not found. It may have already been deleted.', 'warning');
-            }
-          } else if (error.response?.data?.detail) {
-            if (window.showToast) {
-              window.showToast(`Error: ${error.response.data.detail}`, 'error');
-            }
+            showToast('Item not found. It may have already been deleted.', 'warning');
           } else {
-            if (window.showToast) {
-              window.showToast('An error occurred while deleting the item. Please try again.', 'error');
-            }
+            showRequestError(error, 'An error occurred while deleting the item. Please try again.');
           }
         }
         setShowConfirmModal(false);
@@ -218,17 +197,8 @@ const Hardware = () => {
   };
 
   const handleLookupDelete = async (type, id) => {
-    const itemType = type === 'brand' ? 'Brand' : 
-                    type === 'family' ? 'Family' : 
-                    type === 'manufacturer' ? 'Manufacturer' : 
-                    type === 'model' ? 'Model' : 
-                    type === 'vram_type' ? 'VRAM Type' : 
-                    type === 'chipset' ? 'Chipset' : 
-                    type === 'ram_type' ? 'RAM Type' : 
-                    type === 'disk_type' ? 'Disk Type' : 
-                    type === 'disk_brand' ? 'Disk Brand' : 
-                    type === 'disk_interface' ? 'Disk Interface' : 
-                    type.charAt(0).toUpperCase() + type.slice(1);
+    const lookupConfig = getLookupConfig(activeTab, type);
+    const itemType = lookupConfig?.label || type.charAt(0).toUpperCase() + type.slice(1);
     
     setConfirmModalConfig({
       title: `Delete ${itemType}`,
@@ -239,62 +209,25 @@ const Hardware = () => {
       onConfirm: async () => {
         try {
           const headers = { 'X-API-Key': apiKey };
-          
-          // Determine the correct API endpoint based on type
-          let endpoint;
-          if (type === 'brand' && activeTab === 'cpu') {
-            endpoint = buildApiUrl(`/api/cpu/brand/${id}`);
-          } else if (type === 'family') {
-            endpoint = buildApiUrl(`/api/cpu/family/${id}`);
-          } else if (type === 'manufacturer' && activeTab === 'gpu') {
-            endpoint = buildApiUrl(`/api/gpu/manufacturer/${id}`);
-          } else if (type === 'manufacturer' && activeTab === 'motherboard') {
-            endpoint = buildApiUrl(`/api/motherboard/manufacturer/${id}`);
-          } else if (type === 'model') {
-            endpoint = buildApiUrl(`/api/gpu/model/${id}`);
-          } else if (type === 'vram_type') {
-            endpoint = buildApiUrl(`/api/gpu/vram_type/${id}`);
-          } else if (type === 'chipset') {
-            endpoint = buildApiUrl(`/api/motherboard/chipset/${id}`);
-          } else if (type === 'ram_type') {
-            endpoint = buildApiUrl(`/api/ram/type/${id}`);
-          } else if (type === 'disk_type') {
-            endpoint = buildApiUrl(`/api/disk/type/${id}`);
-          } else if (type === 'disk_brand') {
-            endpoint = buildApiUrl(`/api/disk/brand/${id}`);
-          } else if (type === 'disk_interface') {
-            endpoint = buildApiUrl(`/api/disk/interface/${id}`);
-          } else {
-            endpoint = buildApiUrl(`/api/${activeTab}/${type}/${id}`);
+          if (!lookupConfig) {
+            showToast(`Could not determine API endpoint for ${itemType}.`, 'error');
+            return;
           }
+          const endpoint = buildApiUrl(`${lookupConfig.endpoint}${id}`);
           
           await axios.delete(endpoint, { headers });
           fetchData();
           
-          // Show success toast
-          if (window.showToast) {
-            window.showToast(`${itemType} deleted successfully`, 'success');
-          }
+          showToast(`${itemType} deleted successfully`, 'success');
         } catch (error) {
           console.error('Error deleting lookup item:', error);
           
-          // Provide better error messages for common constraint violations
           if (error.response?.status === 409) {
-            if (window.showToast) {
-              window.showToast(`Cannot delete this ${itemType}. It is currently being used by one or more components.`, 'error', 8000);
-            }
+            showToast(`Cannot delete this ${itemType}. It is currently being used by one or more components.`, 'error', 8000);
           } else if (error.response?.status === 404) {
-            if (window.showToast) {
-              window.showToast('Item not found. It may have already been deleted.', 'warning');
-            }
-          } else if (error.response?.data?.detail) {
-            if (window.showToast) {
-              window.showToast(`Error: ${error.response.data.detail}`, 'error');
-            }
+            showToast('Item not found. It may have already been deleted.', 'warning');
           } else {
-            if (window.showToast) {
-              window.showToast('An error occurred while deleting the item. Please try again.', 'error');
-            }
+            showRequestError(error, 'An error occurred while deleting the item. Please try again.');
           }
         }
         setShowConfirmModal(false);
@@ -500,9 +433,7 @@ const Hardware = () => {
             <button 
               onClick={() => {
                 if (!data.lookup?.brands?.length || !data.lookup?.families?.length) {
-                  if (window.showToast) {
-                    window.showToast('Please create at least one CPU brand and family before adding CPUs.', 'warning');
-                  }
+                  showToast('Please create at least one CPU brand and family before adding CPUs.', 'warning');
                   return;
                 }
                 setShowForm(true);
@@ -886,11 +817,11 @@ const Hardware = () => {
                 </div>
                 <button 
                   onClick={() => {
-                    if (!data.lookup?.brands?.length || !data.lookup?.models?.length || !data.lookup?.vramTypes?.length) {
-                      alert('Please create at least one GPU brand, model, and VRAM type before adding GPUs.');
-                      return;
-                    }
-                    setShowForm(true);
+                if (!data.lookup?.brands?.length || !data.lookup?.models?.length || !data.lookup?.vramTypes?.length) {
+                  showToast('Please create at least one GPU brand, model, and VRAM type before adding GPUs.', 'warning');
+                  return;
+                }
+                setShowForm(true);
                   }}
                   className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={!data.lookup?.brands?.length || !data.lookup?.models?.length || !data.lookup?.vramTypes?.length}
@@ -1141,7 +1072,7 @@ const Hardware = () => {
                 <button 
                   onClick={() => {
                     if (!data.lookup?.manufacturers?.length || !data.lookup?.chipsets?.length) {
-                      alert('Please create at least one motherboard manufacturer and chipset before adding motherboards.');
+                      showToast('Please create at least one motherboard manufacturer and chipset before adding motherboards.', 'warning');
                       return;
                     }
                     setShowForm(true);
@@ -1418,6 +1349,23 @@ const Hardware = () => {
       );
     }
 
+    if (error) {
+      return (
+        <div className="card">
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
+            <button
+              type="button"
+              onClick={fetchData}
+              className="btn-primary mt-4"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'cpu':
         return renderCPUSection();
@@ -1606,6 +1554,8 @@ const Hardware = () => {
 const LookupForm = ({ type, item, onClose, onSave, activeTab, lookupData }) => {
   const [formData, setFormData] = useState({});
   const { apiKey } = useAuth();
+  const lookupConfig = getLookupConfig(activeTab, type);
+  const itemType = lookupConfig?.label || 'Item';
 
   useEffect(() => {
     if (item) {
@@ -1619,96 +1569,30 @@ const LookupForm = ({ type, item, onClose, onSave, activeTab, lookupData }) => {
     e.preventDefault();
     try {
       const headers = { 'X-API-Key': apiKey };
-      
-      // Determine the correct API endpoint based on active tab and type
-      let endpoint;
-      if (type === 'brand' && activeTab === 'cpu') {
-        endpoint = buildApiUrl('/api/cpu/brand/');
-      } else if (type === 'brand' && activeTab === 'gpu') {
-        endpoint = buildApiUrl('/api/gpu/brand/');
-      } else if (type === 'family') {
-        endpoint = buildApiUrl('/api/cpu/family/');
-      } else if (type === 'manufacturer' && activeTab === 'gpu') {
-        endpoint = buildApiUrl('/api/gpu/manufacturer/');
-      } else if (type === 'manufacturer' && activeTab === 'motherboard') {
-        endpoint = buildApiUrl('/api/motherboard/manufacturer/');
-      } else if (type === 'model') {
-        endpoint = buildApiUrl('/api/gpu/model/');
-      } else if (type === 'vram_type') {
-        endpoint = buildApiUrl('/api/gpu/vram_type/');
-      } else if (type === 'chipset') {
-        endpoint = buildApiUrl('/api/motherboard/chipset/');
-      } else if (type === 'ram_type') {
-        endpoint = buildApiUrl('/api/ram/type/');
 
-      } else if (type === 'disk_type') {
-        endpoint = buildApiUrl('/api/disk/type/');
-      } else if (type === 'disk_brand') {
-        endpoint = buildApiUrl('/api/disk/brand/');
-      } else if (type === 'disk_interface') {
-        endpoint = buildApiUrl('/api/disk/interface/');
-      } else {
-        // Fallback for any unmatched combinations
-        endpoint = buildApiUrl(`/api/${activeTab}/${type}/`);
-      }
-      
-      // Debug logging
-      console.log('LookupForm Debug:', { type, activeTab, endpoint, formData });
-      
-      if (!endpoint) {
-        console.error('No endpoint determined for:', { type, activeTab });
-        if (window.showToast) {
-          window.showToast(`Error: Could not determine API endpoint for ${type} in ${activeTab} tab`, 'error');
-        }
+      if (!lookupConfig) {
+        showToast(`Error: Could not determine API endpoint for ${type} in ${activeTab} tab`, 'error');
         return;
       }
-      
-      const itemType = getTypeLabel();
+
+      const endpoint = buildApiUrl(lookupConfig.endpoint);
       
       if (item) {
         await axios.put(`${endpoint}${item.id}`, formData, { headers });
-        // Show success toast
-        if (window.showToast) {
-          window.showToast(`${itemType} updated successfully`, 'success');
-        }
+        showToast(`${itemType} updated successfully`, 'success');
       } else {
         await axios.post(endpoint, formData, { headers });
-        // Show success toast
-        if (window.showToast) {
-          window.showToast(`${itemType} created successfully`, 'success');
-        }
+        showToast(`${itemType} created successfully`, 'success');
       }
       onSave();
     } catch (error) {
       console.error('Error saving lookup item:', error);
-      // Show user-friendly error message
-      if (error.response?.data?.detail) {
-        if (window.showToast) {
-          window.showToast(`Error: ${error.response.data.detail}`, 'error');
-        }
-      } else {
-        if (window.showToast) {
-          window.showToast('An error occurred while saving. Please try again.', 'error');
-        }
-      }
+      showRequestError(error, 'An error occurred while saving. Please try again.');
     }
   };
 
   const getTypeLabel = () => {
-    switch (type) {
-      case 'brand': return 'Brand';
-      case 'family': return 'Family';
-      case 'manufacturer': return 'Manufacturer';
-      case 'model': return 'Model';
-      case 'vram_type': return 'VRAM Type';
-      case 'chipset': return 'Chipset';
-      case 'ram_type': return 'RAM Type';
-
-      case 'disk_type': return 'Disk Type';
-      case 'disk_brand': return 'Disk Brand';
-      case 'disk_interface': return 'Disk Interface';
-      default: return 'Item';
-    }
+    return itemType;
   };
 
   return (
@@ -1838,6 +1722,7 @@ const LookupForm = ({ type, item, onClose, onSave, activeTab, lookupData }) => {
 const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
   const [formData, setFormData] = useState({});
   const { apiKey } = useAuth();
+  const hardwareConfig = getHardwareConfig(type);
 
   useEffect(() => {
     if (item) {
@@ -1849,117 +1734,29 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    console.log('Form submission - type:', type, 'formData:', formData);
-    
-    // Validate required fields based on type
-    if (type === 'cpu') {
-      if (!formData.model || !formData.speed || !formData.core_count || !formData.cpu_brand_id || !formData.cpu_family_id) {
-        if (window.showToast) {
-          window.showToast('Please fill in all required fields for CPU.', 'warning');
-        }
-        return;
-      }
-    } else if (type === 'gpu') {
-      if (!formData.gpu_manufacturer_id || !formData.vram_size || !formData.gpu_brand_id || !formData.gpu_model_id || !formData.gpu_vram_type_id) {
-        if (window.showToast) {
-          window.showToast('Please fill in all required fields for GPU: Manufacturer, VRAM Size, Brand, Model, VRAM Type', 'warning');
-        }
-        return;
-      }
-    } else if (type === 'motherboard') {
-      if (!formData.model || !formData.manufacturer_id || !formData.chipset_id) {
-        if (window.showToast) {
-          window.showToast('Please fill in all required fields for Motherboard: Model, Manufacturer, Chipset', 'warning');
-        }
-        return;
-      }
-    } else if (type === 'ram') {
-      if (!formData.name) {
-        if (window.showToast) {
-          window.showToast('Please fill in the RAM type name.', 'warning');
-        }
-        return;
-      }
-    } else if (type === 'disk') {
-      if (!formData.name) {
-        if (window.showToast) {
-          window.showToast('Please fill in the disk name.', 'warning');
-        }
-        return;
-      }
-    } else if (type === 'os') {
-      if (!formData.name) {
-        if (window.showToast) {
-          window.showToast('Please fill in the OS name.', 'warning');
-        }
-        return;
-      }
+
+    if (!hasRequiredFields(hardwareConfig.requiredFields, formData)) {
+      showToast(hardwareConfig.missingFieldsMessage, 'warning');
+      return;
     }
     
     try {
       const headers = { 'X-API-Key': apiKey };
-      // Determine the correct endpoint for each type
-      let endpoint;
-      if (type === 'ram') {
-        endpoint = buildApiUrl('/api/ram/');
-      } else if (type === 'disk') {
-        endpoint = buildApiUrl('/api/disk/');
-      } else if (type === 'os') {
-        endpoint = buildApiUrl('/api/oses/');
-      } else if (type === 'cpu') {
-        endpoint = buildApiUrl('/api/cpu/');
-      } else if (type === 'gpu') {
-        endpoint = buildApiUrl('/api/gpu/');
-      } else if (type === 'motherboard') {
-        endpoint = buildApiUrl('/api/motherboard/');
-      } else {
-        endpoint = buildApiUrl(`/api/${type}`);
-      }
-      
-
-      
-      console.log('About to submit:', { endpoint, formData, isUpdate: !!item });
-      
-      const itemType = type === 'cpu' ? 'CPU' : 
-                      type === 'gpu' ? 'GPU' : 
-                      type === 'motherboard' ? 'Motherboard' : 
-                      type === 'ram' ? 'RAM Type' : 
-                      type === 'disk' ? 'Disk' : 
-                      type === 'os' ? 'OS' : 
-                      type.charAt(0).toUpperCase() + type.slice(1);
+      const endpoint = buildApiUrl(hardwareConfig.endpoint);
+      const itemType = hardwareConfig.label;
       
       if (item) {
-        // Ensure id is included in the request body for updates
         const updateData = { ...formData, id: item.id };
-        console.log('Update data being sent:', updateData);
         await axios.put(`${endpoint}${item.id}`, updateData, { headers });
-        
-        // Show success toast
-        if (window.showToast) {
-          window.showToast(`${itemType} updated successfully`, 'success');
-        }
+        showToast(`${itemType} updated successfully`, 'success');
       } else {
         await axios.post(endpoint, formData, { headers });
-        
-        // Show success toast
-        if (window.showToast) {
-          window.showToast(`${itemType} created successfully`, 'success');
-        }
+        showToast(`${itemType} created successfully`, 'success');
       }
       onSave();
     } catch (error) {
       console.error('Error saving item:', error);
-      // Show user-friendly error message
-      if (error.response?.data?.detail) {
-        if (window.showToast) {
-          window.showToast(`Error: ${error.response.data.detail}`, 'error');
-        }
-      } else {
-        if (window.showToast) {
-          window.showToast('An error occurred while saving. Please try again.', 'error');
-        }
-      }
+      showRequestError(error, 'An error occurred while saving. Please try again.');
     }
   };
 
@@ -2076,7 +1873,7 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
     const renderGPUForm = () => (
     <div className="space-y-4">
       <div>
-        <label className="block text sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Manufacturer
         </label>
         <select
@@ -2363,13 +2160,10 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
       <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
       <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {item ? 'Edit' : 'Add New'} {type === 'cpu' ? 'CPU' : type === 'gpu' ? 'GPU' : type === 'ram' ? 'RAM Type' : type === 'os' ? 'OS' : type.charAt(0).toUpperCase() + type.slice(1)}
+          {item ? 'Edit' : 'Add New'} {hardwareConfig.label}
         </h2>
         
-        <form onSubmit={(e) => {
-          console.log('Form submitted!');
-          handleSubmit(e);
-        }} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {renderFormContent()}
           
           <div className="flex space-x-3">

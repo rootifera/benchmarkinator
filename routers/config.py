@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import Session, select
 from sqlalchemy.exc import IntegrityError
 from utils.helper import validate_and_normalize_name
@@ -9,6 +9,7 @@ from models.motherboard import Motherboard
 from models.gpu import GPU
 from models.disk import Disk
 from models.oses import OS
+from models.benchmark_results import BenchmarkResult
 from database import get_db
 
 router = APIRouter()
@@ -128,6 +129,14 @@ def delete_config(config_id: int, db: Session = Depends(get_db)):
     config = db.get(Config, config_id)
     if config is None:
         raise HTTPException(status_code=404, detail="Config not found")
+
+    has_results = db.exec(select(BenchmarkResult).where(BenchmarkResult.config_id == config_id)).first()
+    if has_results:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete config because it is referenced by one or more benchmark results."
+        )
+
     db.delete(config)
     db.commit()
     return {"message": "Config deleted successfully"}

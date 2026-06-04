@@ -6,10 +6,17 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from sqlalchemy.sql import text
+from sqlmodel import Session, select
 
 from routers import cpu, gpu, motherboard, ram, disk, oses, config, benchmark, benchmark_results
-from utils.auth import authenticate
+from models.benchmark import Benchmark
+from models.benchmark_results import BenchmarkResult
+from models.config import Config
+from models.cpu import CPU, CPUBrand, CPUFamily
+from models.gpu import GPU, GPUBrand, GPUManufacturer, GPUModel
+from utils.auth import authenticate, authenticate_credentials, TOKEN_TTL_SECONDS
 from utils.hardware_loader import run_if_enabled
 from database import init_db, engine
 
@@ -40,6 +47,52 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+auth_app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+@auth_app.post("/login")
+def login(payload: LoginRequest):
+    token = authenticate_credentials(payload.username, payload.password)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_in": TOKEN_TTL_SECONDS,
+        "user": {
+            "username": payload.username,
+            "role": "admin",
+        },
+    }
+
+
+app.mount("/api/auth", auth_app)
+
+public_app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
+
+
+@public_app.get("/results-data")
+def public_results_data():
+    with Session(engine) as session:
+        return {
+            "results": session.exec(select(BenchmarkResult)).all(),
+            "benchmarks": session.exec(select(Benchmark)).all(),
+            "configurations": session.exec(select(Config)).all(),
+            "cpus": session.exec(select(CPU)).all(),
+            "gpus": session.exec(select(GPU)).all(),
+            "cpuBrands": session.exec(select(CPUBrand)).all(),
+            "cpuFamilies": session.exec(select(CPUFamily)).all(),
+            "gpuManufacturers": session.exec(select(GPUManufacturer)).all(),
+            "gpuBrands": session.exec(select(GPUBrand)).all(),
+            "gpuModels": session.exec(select(GPUModel)).all(),
+        }
+
+
+app.mount("/api/public", public_app)
 
 # Routers
 app.include_router(cpu.router, prefix="/api/cpu", tags=["CPU"])

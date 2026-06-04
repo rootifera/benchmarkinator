@@ -2,8 +2,10 @@
 
 // Keep your existing constants above this…
 
-export const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || "").trim();
-export const API_BASE_PATH = (process.env.REACT_APP_API_BASE_PATH || "/api").trim(); // usually "/api"
+const env = import.meta.env;
+
+export const API_BASE_URL = (env.VITE_API_BASE_URL || "").trim();
+export const API_BASE_PATH = (env.VITE_API_BASE_PATH || "/api").trim(); // usually "/api"
 
 // Compute the base once
 const RAW_BASE = API_BASE_URL || API_BASE_PATH;

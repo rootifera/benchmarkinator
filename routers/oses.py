@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import Session, select
 from utils.helper import validate_and_normalize_name
 from models.oses import OS
+from models.config import Config
 from database import get_db
 
 router = APIRouter()
@@ -47,6 +48,14 @@ def delete_os(os_id: int, db: Session = Depends(get_db)):
     os = db.get(OS, os_id)
     if os is None:
         raise HTTPException(status_code=404, detail="OS not found")
+
+    in_config = db.exec(select(Config).where(Config.os_id == os_id)).first()
+    if in_config:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete OS because it is referenced by one or more config records."
+        )
+
     db.delete(os)
     db.commit()
     return {"message": "OS deleted successfully"}

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import Session, select
 from utils.helper import validate_and_normalize_name
 from models.benchmark import Benchmark, BenchmarkTarget
+from models.benchmark_results import BenchmarkResult
 from database import get_db
 
 router = APIRouter()
@@ -52,6 +53,13 @@ def delete_benchmark_target(target_id: int, db: Session = Depends(get_db)):
     if benchmark_target is None:
         raise HTTPException(status_code=404, detail="Benchmark target not found")
 
+    has_benchmark = db.exec(select(Benchmark).where(Benchmark.benchmark_target_id == target_id)).first()
+    if has_benchmark:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete benchmark target with existing benchmarks."
+        )
+
     db.delete(benchmark_target)
     db.commit()
     return {"message": "Benchmark target deleted successfully"}
@@ -60,6 +68,9 @@ def delete_benchmark_target(target_id: int, db: Session = Depends(get_db)):
 @router.post("/", response_model=Benchmark)
 def create_benchmark(benchmark: Benchmark, db: Session = Depends(get_db)):
     benchmark.name = validate_and_normalize_name(benchmark.name, db, Benchmark)
+    if benchmark.benchmark_target_id is not None and not db.get(BenchmarkTarget, benchmark.benchmark_target_id):
+        raise HTTPException(status_code=400, detail="Invalid benchmark target")
+
     db.add(benchmark)            
     db.commit()
     db.refresh(benchmark)
@@ -87,6 +98,8 @@ def update_benchmark(benchmark_id: int, benchmark: Benchmark, db: Session = Depe
         raise HTTPException(status_code=404, detail="Benchmark not found")
 
     benchmark.name = validate_and_normalize_name(benchmark.name, db, Benchmark, current_id=benchmark_id)
+    if benchmark.benchmark_target_id is not None and not db.get(BenchmarkTarget, benchmark.benchmark_target_id):
+        raise HTTPException(status_code=400, detail="Invalid benchmark target")
 
     db_benchmark.name = benchmark.name
     db_benchmark.benchmark_target_id = benchmark.benchmark_target_id
@@ -103,6 +116,13 @@ def delete_benchmark(benchmark_id: int, db: Session = Depends(get_db)):
     benchmark = db.get(Benchmark, benchmark_id)
     if benchmark is None:
         raise HTTPException(status_code=404, detail="Benchmark not found")
+
+    has_results = db.exec(select(BenchmarkResult).where(BenchmarkResult.benchmark_id == benchmark_id)).first()
+    if has_results:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete benchmark because it is referenced by one or more benchmark results."
+        )
 
     db.delete(benchmark)
     db.commit()

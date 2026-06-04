@@ -10,16 +10,25 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { buildApiUrl } from '../config/api';
+import ConfirmModal from '../components/ConfirmModal';
+
+const notify = (message, type = 'warning', duration) => {
+  if (window.showToast) {
+    window.showToast(message, type, duration);
+  }
+};
 
 const Benchmarks = () => {
   const { apiKey } = useAuth();
   const [benchmarks, setBenchmarks] = useState([]);
   const [benchmarkTargets, setBenchmarkTargets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showTargetForm, setShowTargetForm] = useState(false);
   const [editingTarget, setEditingTarget] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [expandedSections, setExpandedSections] = useState({
     benchmarkTargets: false, // Collapsed by default
     benchmarks: true         // Expanded by default
@@ -27,6 +36,7 @@ const Benchmarks = () => {
 
   const fetchBenchmarks = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const headers = { 'X-API-Key': apiKey };
       const [benchmarksRes, targetsRes] = await Promise.all([
@@ -37,6 +47,7 @@ const Benchmarks = () => {
       setBenchmarkTargets(targetsRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
+      setError('Could not load benchmarks.');
     } finally {
       setLoading(false);
     }
@@ -53,14 +64,31 @@ const Benchmarks = () => {
     }));
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this benchmark?')) {
-      try {
-        const headers = { 'X-API-Key': apiKey };
-        await axios.delete(buildApiUrl(`/api/benchmark/${id}`), { headers });
-        fetchBenchmarks();
-      } catch (error) {
-        console.error('Error deleting benchmark:', error);
+  const requestDelete = (type, id) => {
+    setDeleteTarget({ type, id });
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+
+    const isTarget = deleteTarget.type === 'target';
+    const endpoint = isTarget
+      ? `/api/benchmark/target/${deleteTarget.id}`
+      : `/api/benchmark/${deleteTarget.id}`;
+    const label = isTarget ? 'Benchmark target' : 'Benchmark';
+
+    try {
+      const headers = { 'X-API-Key': apiKey };
+      await axios.delete(buildApiUrl(endpoint), { headers });
+      setDeleteTarget(null);
+      fetchBenchmarks();
+      notify(`${label} deleted successfully`, 'success');
+    } catch (error) {
+      console.error(`Error deleting ${label.toLowerCase()}:`, error);
+      if (error.response?.status === 409) {
+        notify(`Cannot delete this ${label.toLowerCase()} because it is currently being used.`, 'error', 8000);
+      } else {
+        notify(`Failed to delete ${label.toLowerCase()}`, 'error');
       }
     }
   };
@@ -70,23 +98,26 @@ const Benchmarks = () => {
     setShowTargetForm(true);
   };
 
-  const handleDeleteTarget = async (id) => {
-    if (window.confirm('Are you sure you want to delete this benchmark target?')) {
-      try {
-        const headers = { 'X-API-Key': apiKey };
-        await axios.delete(buildApiUrl(`/api/benchmark/target/${id}`), { headers });
-        fetchBenchmarks();
-      } catch (error) {
-        console.error('Error deleting benchmark target:', error);
-      }
-    }
-  };
-
   const renderTable = () => {
     if (loading) {
       return (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
+          <button
+            type="button"
+            onClick={fetchBenchmarks}
+            className="btn-primary mt-4"
+          >
+            Retry
+          </button>
         </div>
       );
     }
@@ -143,7 +174,7 @@ const Benchmarks = () => {
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(benchmark.id)}
+                    onClick={() => requestDelete('benchmark', benchmark.id)}
                     className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     title="Delete benchmark"
                   >
@@ -263,7 +294,7 @@ const Benchmarks = () => {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteTarget(target.id)}
+                          onClick={() => requestDelete('target', target.id)}
                           className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -345,6 +376,21 @@ const Benchmarks = () => {
           }}
         />
       )}
+
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title={deleteTarget?.type === 'target' ? 'Delete Benchmark Target' : 'Delete Benchmark'}
+        message={
+          deleteTarget?.type === 'target'
+            ? 'Are you sure you want to delete this benchmark target? This action cannot be undone.'
+            : 'Are you sure you want to delete this benchmark? This action cannot be undone.'
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

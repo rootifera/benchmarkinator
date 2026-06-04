@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import Session, select
 from utils.helper import validate_and_normalize_name
 from models.gpu import GPU, GPUManufacturer, GPUBrand, GPUModel, GPUVRAMType
+from models.config import Config
 from database import get_db
 
 router = APIRouter()
@@ -311,6 +312,13 @@ def delete_gpu(gpu_id: int, db: Session = Depends(get_db)):
     g = db.get(GPU, gpu_id)
     if not g:
         raise HTTPException(status_code=404, detail="GPU not found")
+
+    in_config = db.exec(select(Config).where(Config.gpu_id == gpu_id)).first()
+    if in_config:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete GPU because it is referenced by one or more config records."
+        )
 
     db.delete(g)
     db.commit()
