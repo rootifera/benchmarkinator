@@ -102,7 +102,7 @@ def authenticate(request: Request):
     if API_KEY and api_key and secrets.compare_digest(api_key, API_KEY):
         return True
 
-    token = bearer or api_key or cookie_token
+    token = bearer or cookie_token or api_key
     if token and verify_access_token(token):
         return True
 

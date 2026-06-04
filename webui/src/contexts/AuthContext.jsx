@@ -14,6 +14,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
@@ -21,13 +22,17 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const restoreSession = async () => {
-      const result = await fetchSession();
-      if (result.success && result.user) {
-        setUser(result.user);
-        setIsAuthenticated(true);
-      } else {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
+      try {
+        const result = await fetchSession();
+        if (result.success && result.user) {
+          setUser(result.user);
+          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
+        }
+      } finally {
+        setAuthLoading(false);
       }
     };
 
@@ -79,6 +84,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     isAuthenticated,
+    authLoading,
     login,
     logout,
     darkMode,
