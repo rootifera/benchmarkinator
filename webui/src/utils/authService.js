@@ -2,7 +2,8 @@ import axios from 'axios';
 import { buildApiUrl } from '../config/api';
 
 /**
- * Authenticate against the backend and store the signed API token client-side.
+ * Authenticate against the backend. The signed token is stored by the backend
+ * in an HttpOnly cookie, not in browser localStorage.
  */
 export const authenticateUser = async (username, password) => {
   try {
@@ -13,11 +14,7 @@ export const authenticateUser = async (username, password) => {
 
     return {
       success: true,
-      token: response.data.access_token,
-      user: {
-        ...(response.data.user || {}),
-        apiToken: response.data.access_token,
-      },
+      user: response.data.user || null,
     };
   } catch (error) {
     if (error.response?.status === 401) {
@@ -27,21 +24,18 @@ export const authenticateUser = async (username, password) => {
   }
 };
 
-/**
- * Validate the signed token shape and client-side expiry.
- */
-export const validateToken = (token) => {
-  if (typeof token !== 'string' || !token.startsWith('bm.')) {
-    return false;
-  }
-
+export const fetchSession = async () => {
   try {
-    const [, payload] = token.split('.');
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
-    const decoded = JSON.parse(atob(padded));
-    return Number(decoded.exp) * 1000 >= Date.now();
+    const response = await axios.get(buildApiUrl('/api/auth/session'));
+    return {
+      success: true,
+      user: response.data.user || null,
+    };
   } catch {
-    return false;
+    return { success: false, user: null };
   }
+};
+
+export const logoutUser = async () => {
+  await axios.post(buildApiUrl('/api/auth/logout'));
 };

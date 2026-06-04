@@ -20,7 +20,7 @@ if [ $? -eq 0 ]; then
     docker images benchmarkinator-webui:latest
     echo ""
     echo "🔧 To run the container:"
-    echo "   docker run -p 4000:80 benchmarkinator-webui:latest"
+    echo "   docker run -p 127.0.0.1:4000:80 benchmarkinator-webui:latest"
     echo ""
     echo "🌐 The web UI will be available at: http://localhost:4000"
     echo ""

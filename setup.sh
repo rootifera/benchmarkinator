@@ -36,6 +36,24 @@ generate_api_key() {
     openssl rand -hex 32
 }
 
+set_env_var() {
+    local key=$1
+    local value=$2
+    local escaped_value=${value//\\/\\\\}
+    escaped_value=${escaped_value//&/\\&}
+    escaped_value=${escaped_value//|/\\|}
+    sed -i "s|^${key}=.*|${key}=${escaped_value}|" .env
+}
+
+display_host_for_url() {
+    local bind_address=$1
+    if [ "$bind_address" = "0.0.0.0" ] || [ "$bind_address" = "127.0.0.1" ] || [ -z "$bind_address" ]; then
+        echo "localhost"
+    else
+        echo "$bind_address"
+    fi
+}
+
 if [ -f ".env" ]; then
     print_error ".env file already exists!"
     print_warning "If you want to reconfigure, please delete the existing .env file first."
@@ -62,10 +80,10 @@ WEBPASSWORD=$(generate_password 16)
 
 print_status "Updating .env file with generated credentials..."
 
-sed -i "s/MYSQL_PASSWORD=.*/MYSQL_PASSWORD=$MYSQL_PASSWORD/" .env
-sed -i "s/MYSQL_ROOT_PASSWORD=.*/MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD/" .env
-sed -i "s/API_KEY=.*/API_KEY=$API_KEY/" .env
-sed -i "s/WEBPASSWORD=.*/WEBPASSWORD=$WEBPASSWORD/" .env
+set_env_var "MYSQL_PASSWORD" "$MYSQL_PASSWORD"
+set_env_var "MYSQL_ROOT_PASSWORD" "$MYSQL_ROOT_PASSWORD"
+set_env_var "API_KEY" "$API_KEY"
+set_env_var "WEBPASSWORD" "$WEBPASSWORD"
 
 print_success "Generated secure credentials:"
 echo "  MySQL Password: $MYSQL_PASSWORD"
@@ -74,13 +92,65 @@ echo "  API Key: $API_KEY"
 echo "  Web Password: $WEBPASSWORD"
 echo ""
 
+print_status "Network and Public Access Configuration"
+echo "Web UI bind address [127.0.0.1]:"
+read -r web_bind_address
+web_bind_address=${web_bind_address:-127.0.0.1}
+set_env_var "WEB_BIND_ADDRESS" "$web_bind_address"
+
+echo "Web UI port [4000]:"
+read -r web_port
+web_port=${web_port:-4000}
+set_env_var "WEB_PORT" "$web_port"
+
+echo "Will the web UI be served through HTTPS by a reverse proxy such as BunkerWeb? (y/n)"
+read -r use_https_proxy
+if [[ $use_https_proxy =~ ^[Yy]$ ]]; then
+    set_env_var "AUTH_COOKIE_SECURE" "true"
+else
+    set_env_var "AUTH_COOKIE_SECURE" "false"
+fi
+
+allowed_origins=""
+echo "Do you want to add allowed browser origins now? (y/n)"
+read -r add_origin
+
+while [[ $add_origin =~ ^[Yy]$ ]]; do
+    echo "Enter allowed origin, for example https://bench.example.com:"
+    read -r origin
+
+    if [ -n "$origin" ]; then
+        if [ -n "$allowed_origins" ]; then
+            allowed_origins="${allowed_origins},${origin}"
+        else
+            allowed_origins="$origin"
+        fi
+        print_status "Added origin: $origin"
+    else
+        print_warning "Blank origin skipped."
+    fi
+
+    echo "Add another allowed origin? (y/n)"
+    read -r add_origin
+done
+
+set_env_var "ALLOWED_ORIGINS" "$allowed_origins"
+
+if [[ $use_https_proxy =~ ^[Yy]$ ]] && [ -z "$allowed_origins" ]; then
+    print_warning "No ALLOWED_ORIGINS were set. Add your public HTTPS origin in .env before exposing the service."
+fi
+
+WEB_URL_HOST=$(display_host_for_url "$web_bind_address")
+
+echo ""
+
 print_status "Hardware Data Configuration"
 echo "Do you want to load hardware data? (y/n)"
 read -r load_hardware
 
 if [[ $load_hardware =~ ^[Yy]$ ]]; then
     print_status "Setting LOAD_HARDWARE_DATA=true"
-    sed -i "s/LOAD_HARDWARE_DATA=.*/LOAD_HARDWARE_DATA=true/" .env
+    set_env_var "LOAD_HARDWARE_DATA" "true"
     
     echo ""
     echo "What hardware era would you like to load?"
@@ -108,10 +178,10 @@ if [[ $load_hardware =~ ^[Yy]$ ]]; then
     esac
     
     print_status "Setting HARDWARE_ERA=$hardware_era"
-    sed -i "s/HARDWARE_ERA=.*/HARDWARE_ERA=$hardware_era/" .env
+    set_env_var "HARDWARE_ERA" "$hardware_era"
 else
     print_status "Hardware data loading disabled"
-    sed -i "s/LOAD_HARDWARE_DATA=.*/LOAD_HARDWARE_DATA=false/" .env
+    set_env_var "LOAD_HARDWARE_DATA" "false"
 fi
 
 echo ""
@@ -180,7 +250,7 @@ if [[ $start_app =~ ^[Yy]$ ]]; then
         print_success "Services started successfully!"
         echo ""
         print_status "Application is now running:"
-        echo "  Web UI: http://localhost:4000"
+        echo "  Web UI: http://$WEB_URL_HOST:$web_port"
         echo "  API: http://localhost:12345"
         echo ""
         print_status "Login credentials:"
@@ -198,7 +268,7 @@ else
     echo ""
     print_status "To start later:"
     echo "1. Start services: docker compose up -d"
-    echo "2. Access web UI: http://localhost:4000"
+    echo "2. Access web UI: http://$WEB_URL_HOST:$web_port"
     echo "3. Login with: admin / $WEBPASSWORD"
 fi
 

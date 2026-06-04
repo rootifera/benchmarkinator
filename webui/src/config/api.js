@@ -1,5 +1,9 @@
 // src/config/api.js
 
+import axios from "axios";
+
+axios.defaults.withCredentials = true;
+
 // Keep your existing constants above this…
 
 const env = import.meta.env;

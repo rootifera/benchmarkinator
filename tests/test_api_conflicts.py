@@ -125,6 +125,21 @@ def test_api_key_is_required():
     token = auth.authenticate_credentials("admin", "test-password")
     token_request = Request({"type": "http", "headers": [(b"x-api-key", token.encode())]})
     bearer_request = Request({"type": "http", "headers": [(b"authorization", f"Bearer {token}".encode())]})
+    cookie_request = Request(
+        {
+            "type": "http",
+            "headers": [(b"cookie", f"{auth.AUTH_COOKIE_NAME}={token}".encode())],
+        },
+    )
+    cookie_with_placeholder_header_request = Request(
+        {
+            "type": "http",
+            "headers": [
+                (b"x-api-key", b"cookie-auth"),
+                (b"cookie", f"{auth.AUTH_COOKIE_NAME}={token}".encode()),
+            ],
+        },
+    )
     tampered_request = Request({"type": "http", "headers": [(b"x-api-key", f"{token}x".encode())]})
 
     with pytest.raises(HTTPException) as missing:
@@ -138,6 +153,8 @@ def test_api_key_is_required():
     assert auth.authenticate(good_key_request) is True
     assert auth.authenticate(token_request) is True
     assert auth.authenticate(bearer_request) is True
+    assert auth.authenticate(cookie_request) is True
+    assert auth.authenticate(cookie_with_placeholder_header_request) is True
 
     with pytest.raises(HTTPException) as tampered:
         auth.authenticate(tampered_request)

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authenticateUser, validateToken } from '../utils/authService';
+import { authenticateUser, fetchSession, logoutUser } from '../utils/authService';
 
 const AuthContext = createContext();
 
@@ -14,27 +14,29 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
 
   useEffect(() => {
-    // Check if user is logged in on app start
-    const token = localStorage.getItem('authToken');
-    const userData = localStorage.getItem('userData');
-    
-    if (token && userData && validateToken(token)) {
+    const restoreSession = async () => {
       try {
-        const user = JSON.parse(userData);
-        setUser(user);
-        setIsAuthenticated(true);
-      } catch (error) {
-        // Invalid user data, clear storage
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
+        const result = await fetchSession();
+        if (result.success && result.user) {
+          setUser(result.user);
+          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('userData');
+        }
+      } finally {
+        setAuthLoading(false);
       }
-    }
+    };
+
+    restoreSession();
   }, []);
 
   useEffect(() => {
@@ -53,7 +55,6 @@ export const AuthProvider = ({ children }) => {
       if (result.success) {
         setUser(result.user);
         setIsAuthenticated(true);
-        localStorage.setItem('authToken', result.token);
         localStorage.setItem('userData', JSON.stringify(result.user));
         return result;
       } else {
@@ -64,7 +65,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await logoutUser();
+    } catch {
+      // Clear local auth state even if the server logout request fails.
+    }
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('authToken');
@@ -78,11 +84,12 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     isAuthenticated,
+    authLoading,
     login,
     logout,
     darkMode,
     toggleDarkMode,
-    apiKey: user?.apiToken || ''
+    apiKey: user ? 'cookie-auth' : ''
   };
 
   return (
