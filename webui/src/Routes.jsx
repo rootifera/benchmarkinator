@@ -20,11 +20,8 @@ const Routes = () => {
     <div className="container mx-auto px-6 py-8">
       <Suspense fallback={<PageFallback />}>
         <RouterRoutes>
-          {/* Public routes - no authentication required */}
           <Route path="/login" element={<Login />} />
-          <Route path="/results" element={<Results />} />
 
-          {/* Protected routes - authentication required */}
           <Route path="/" element={
             <ProtectedRoute>
               <Dashboard />
@@ -38,6 +35,11 @@ const Routes = () => {
           <Route path="/benchmarks" element={
             <ProtectedRoute>
               <Benchmarks />
+            </ProtectedRoute>
+          } />
+          <Route path="/results" element={
+            <ProtectedRoute>
+              <Results />
             </ProtectedRoute>
           } />
           <Route path="/testsystems" element={

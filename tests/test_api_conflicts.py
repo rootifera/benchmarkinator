@@ -98,10 +98,21 @@ def _create_referenced_graph(db):
 
     return {
         "benchmark": benchmark,
+        "chipset": motherboard_chipset,
         "config": config_entry,
+        "cpu": cpu_entry,
+        "cpu_brand": cpu_brand,
+        "cpu_family": cpu_family,
         "disk": disk_entry,
         "gpu": gpu_entry,
+        "gpu_brand": gpu_brand,
+        "gpu_manufacturer": gpu_manufacturer,
+        "gpu_model": gpu_model,
+        "gpu_vram_type": gpu_vram_type,
+        "motherboard": motherboard_entry,
+        "motherboard_manufacturer": motherboard_manufacturer,
         "os": os_entry,
+        "ram": ram_entry,
         "result": result,
         "target": target,
     }
@@ -111,6 +122,10 @@ def test_api_key_is_required():
     missing_key_request = Request({"type": "http", "headers": []})
     wrong_key_request = Request({"type": "http", "headers": [(b"x-api-key", b"wrong")]})
     good_key_request = Request({"type": "http", "headers": [(b"x-api-key", b"test-api-key")]})
+    token = auth.authenticate_credentials("admin", "test-password")
+    token_request = Request({"type": "http", "headers": [(b"x-api-key", token.encode())]})
+    bearer_request = Request({"type": "http", "headers": [(b"authorization", f"Bearer {token}".encode())]})
+    tampered_request = Request({"type": "http", "headers": [(b"x-api-key", f"{token}x".encode())]})
 
     with pytest.raises(HTTPException) as missing:
         auth.authenticate(missing_key_request)
@@ -121,15 +136,32 @@ def test_api_key_is_required():
     assert wrong.value.status_code == 401
 
     assert auth.authenticate(good_key_request) is True
+    assert auth.authenticate(token_request) is True
+    assert auth.authenticate(bearer_request) is True
+
+    with pytest.raises(HTTPException) as tampered:
+        auth.authenticate(tampered_request)
+    assert tampered.value.status_code == 401
 
 
 def test_referenced_records_return_conflict_on_delete(db):
     records = _create_referenced_graph(db)
 
     protected_deletes = [
+        (cpu.delete_cpu, records["cpu"].id),
+        (cpu.delete_cpu_brand, records["cpu_brand"].id),
+        (cpu.delete_cpu_family, records["cpu_family"].id),
         (disk.delete_disk, records["disk"].id),
         (gpu.delete_gpu, records["gpu"].id),
+        (gpu.delete_gpu_brand, records["gpu_brand"].id),
+        (gpu.delete_gpu_manufacturer, records["gpu_manufacturer"].id),
+        (gpu.delete_gpu_model, records["gpu_model"].id),
+        (gpu.delete_gpu_vram_type, records["gpu_vram_type"].id),
+        (motherboard.delete_motherboard, records["motherboard"].id),
+        (motherboard.delete_manufacturer, records["motherboard_manufacturer"].id),
+        (motherboard.delete_chipset, records["chipset"].id),
         (oses.delete_os, records["os"].id),
+        (ram.delete_ram, records["ram"].id),
         (config.delete_config, records["config"].id),
         (benchmark_router.delete_benchmark, records["benchmark"].id),
         (benchmark_router.delete_benchmark_target, records["target"].id),
@@ -151,3 +183,24 @@ def test_benchmark_validates_target_id(db):
 
     assert exc.value.status_code == 400
     assert exc.value.detail == "Invalid benchmark target"
+
+
+def test_cpu_family_must_belong_to_selected_brand(db):
+    intel = cpu.create_cpu_brand(CPUBrand(name="Intel"), db)
+    amd = cpu.create_cpu_brand(CPUBrand(name="AMD"), db)
+    ryzen = cpu.create_cpu_family(CPUFamily(name="Ryzen", cpu_brand_id=amd.id), db)
+
+    with pytest.raises(HTTPException) as exc:
+        cpu.create_cpu(
+            CPU(
+                model="Mismatched CPU",
+                speed="3.0GHz",
+                core_count=8,
+                cpu_brand_id=intel.id,
+                cpu_family_id=ryzen.id,
+            ),
+            db,
+        )
+
+    assert exc.value.status_code == 400
+    assert exc.value.detail == "CPU family does not belong to the specified brand"

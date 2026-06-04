@@ -10,6 +10,7 @@ import {
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { buildApiUrl } from '../config/api';
+import ConfirmModal from '../components/ConfirmModal';
 
 const notify = (message, type = 'warning', duration) => {
   if (window.showToast) {
@@ -30,9 +31,11 @@ const Results = () => {
   const [gpuBrands, setGpuBrands] = useState([]);
   const [gpuModels, setGpuModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showCompareForm, setShowCompareForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [filters, setFilters] = useState({
     benchmark: '',
     configuration: '',
@@ -44,6 +47,7 @@ const Results = () => {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const headers = { 'X-API-Key': apiKey };
       const [
@@ -74,6 +78,7 @@ const Results = () => {
       setGpuModels(gpuModelsRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
+      setError('Could not load benchmark results.');
     } finally {
       setLoading(false);
     }
@@ -94,21 +99,27 @@ const Results = () => {
     setShowForm(true);
   };
 
-  const handleDeleteResult = async (resultId) => {
+  const requestDeleteResult = (resultId) => {
     if (!isAuthenticated) {
       notify('Please log in to delete results');
       return;
     }
-    if (window.confirm('Are you sure you want to delete this result?')) {
-      try {
-        const headers = { 'X-API-Key': apiKey };
-        await axios.delete(buildApiUrl(`/api/benchmark_results/${resultId}`), { headers });
-        fetchData();
-        fetchFilteredResults();
-      } catch (error) {
-        console.error('Error deleting result:', error);
-        notify('Failed to delete result', 'error');
-      }
+    setDeleteTargetId(resultId);
+  };
+
+  const handleDeleteResult = async () => {
+    if (!deleteTargetId) return;
+
+    try {
+      const headers = { 'X-API-Key': apiKey };
+      await axios.delete(buildApiUrl(`/api/benchmark_results/${deleteTargetId}`), { headers });
+      setDeleteTargetId(null);
+      fetchData();
+      fetchFilteredResults();
+      notify('Result deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting result:', error);
+      notify('Failed to delete result', 'error');
     }
   };
 
@@ -321,6 +332,21 @@ const Results = () => {
       );
     }
 
+    if (error) {
+      return (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
+          <button
+            type="button"
+            onClick={fetchData}
+            className="btn-primary mt-4"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
     if (filteredResults.length === 0) {
       return (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -400,7 +426,7 @@ const Results = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteResult(result.id)}
+                        onClick={() => requestDeleteResult(result.id)}
                         disabled={!isAuthenticated}
                         className={`p-1 rounded transition-colors ${
                           isAuthenticated
@@ -533,6 +559,17 @@ const Results = () => {
           onClose={() => setShowCompareForm(false)}
         />
       )}
+
+      <ConfirmModal
+        isOpen={deleteTargetId !== null}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={handleDeleteResult}
+        title="Delete Result"
+        message="Are you sure you want to delete this benchmark result? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

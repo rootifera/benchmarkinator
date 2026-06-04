@@ -6,10 +6,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from sqlalchemy.sql import text
 
 from routers import cpu, gpu, motherboard, ram, disk, oses, config, benchmark, benchmark_results
-from utils.auth import authenticate
+from utils.auth import authenticate, authenticate_credentials, TOKEN_TTL_SECONDS
 from utils.hardware_loader import run_if_enabled
 from database import init_db, engine
 
@@ -40,6 +41,30 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+auth_app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+@auth_app.post("/login")
+def login(payload: LoginRequest):
+    token = authenticate_credentials(payload.username, payload.password)
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_in": TOKEN_TTL_SECONDS,
+        "user": {
+            "username": payload.username,
+            "role": "admin",
+        },
+    }
+
+
+app.mount("/api/auth", auth_app)
 
 # Routers
 app.include_router(cpu.router, prefix="/api/cpu", tags=["CPU"])

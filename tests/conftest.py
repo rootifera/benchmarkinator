@@ -6,6 +6,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 os.environ["API_KEY"] = "test-api-key"
+os.environ["WEBADMIN"] = "admin"
+os.environ["WEBPASSWORD"] = "test-password"
 os.environ["DATABASE_URL"] = f"sqlite:///{tempfile.gettempdir()}/benchmarkinator-tests.db"
 os.environ["LOAD_HARDWARE_DATA"] = "false"
 

@@ -15,6 +15,13 @@ import {
 import axios from 'axios';
 import SearchableSelect from '../components/SearchableSelect';
 import { buildApiUrl } from '../config/api';
+import ConfirmModal from '../components/ConfirmModal';
+
+const notify = (message, type = 'warning', duration) => {
+  if (window.showToast) {
+    window.showToast(message, type, duration);
+  }
+};
 
 const Configurations = () => {
   const { apiKey } = useAuth();
@@ -35,13 +42,16 @@ const Configurations = () => {
   const [motherboardManufacturers, setMotherboardManufacturers] = useState([]);
   const [motherboardChipsets, setMotherboardChipsets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState(null);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const headers = { 'X-API-Key': apiKey };
       
@@ -84,6 +94,7 @@ const Configurations = () => {
       setMotherboardChipsets(motherboardChipsetsRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
+      setError('Could not load test systems.');
     } finally {
       setLoading(false);
     }
@@ -93,14 +104,25 @@ const Configurations = () => {
     fetchData();
   }, [fetchData]);
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this configuration?')) {
-      try {
-        const headers = { 'X-API-Key': apiKey };
-        await axios.delete(buildApiUrl(`/api/config/${id}`), { headers });
-        fetchData();
-      } catch (error) {
-        console.error('Error deleting configuration:', error);
+  const requestDelete = (id) => {
+    setDeleteTargetId(id);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTargetId) return;
+
+    try {
+      const headers = { 'X-API-Key': apiKey };
+      await axios.delete(buildApiUrl(`/api/config/${deleteTargetId}`), { headers });
+      setDeleteTargetId(null);
+      fetchData();
+      notify('Test system deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting configuration:', error);
+      if (error.response?.status === 409) {
+        notify('Cannot delete this test system because it is used by benchmark results.', 'error', 8000);
+      } else {
+        notify('Failed to delete test system', 'error');
       }
     }
   };
@@ -211,6 +233,21 @@ const Configurations = () => {
       );
     }
 
+    if (error) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
+          <button
+            type="button"
+            onClick={fetchData}
+            className="btn-primary mt-4"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
     if (configurations.length === 0) {
       return (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -286,7 +323,7 @@ const Configurations = () => {
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(config.id)}
+                    onClick={() => requestDelete(config.id)}
                     className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                     title="Delete"
                   >
@@ -456,6 +493,17 @@ const Configurations = () => {
           getComponentName={getComponentName}
         />
       )}
+
+      <ConfirmModal
+        isOpen={deleteTargetId !== null}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={handleDelete}
+        title="Delete Test System"
+        message="Are you sure you want to delete this test system? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

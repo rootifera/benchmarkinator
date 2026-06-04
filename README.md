@@ -16,7 +16,7 @@ Benchmarkinator is a powerful tool designed for hardware enthusiasts, system bui
 - **🔧 Hardware Management**: Comprehensive database of CPUs, GPUs, motherboards, RAM, and storage
 - **⚡ Benchmark Tracking**: Record and compare results from any benchmark software
 - **📈 Data Visualization**: Interactive charts and graphs for performance analysis
-- **🔒 Secure Access**: Role-based authentication with API key protection
+- **🔒 Secure Access**: Backend login with signed API tokens and API key protection
 - **💾 Automated Backups**: Daily database backups with easy restoration
 - **🌐 REST API**: Full programmatic access for integration and automation
 - **📱 Mobile Friendly**: Responsive design works on all devices
@@ -209,19 +209,33 @@ Benchmarkinator includes pre-loaded hardware data:
 
 > **⚠️ IMPORTANT SECURITY NOTICE**
 > 
-> **This application is designed for personal LAN usage only. Do NOT expose it to the public internet.** The authentication system is frontend-based and not suitable for public deployment. Use only on trusted local networks.
+> **This application is designed for personal LAN usage only. Do NOT expose it to the public internet.** The web UI now authenticates through the backend, but this is still a single-admin LAN tool rather than a hardened public SaaS login system.
 
 ### Web Interface
 - **Admin Authentication**: Secure login with configurable credentials
-- **Session Management**: Persistent login across browser sessions
-- **Public Access**: Results page accessible without login
+- **Session Management**: Persistent signed-token login across browser sessions
+- **Protected Access**: Dashboard, components, test systems, benchmarks, and results require login
 - **LAN-Only Design**: Intended for trusted local network environments
 
 ### API Security
 - **API Key Authentication**: Secure programmatic access
-- **Rate Limiting**: Protection against abuse
+- **Signed Web Tokens**: Web login receives a time-limited token accepted by protected API routes
 - **CORS Configuration**: Controlled cross-origin access
 - **Local Network Only**: Not designed for public internet exposure
+
+## 🗄️ Database Migrations
+
+The project includes Alembic for schema migrations.
+
+```bash
+# Fresh database
+alembic upgrade head
+
+# Existing database created before Alembic was added
+alembic stamp head
+```
+
+The app still creates missing tables on startup for easy local use. Use Alembic for intentional schema changes going forward.
 
 ## 📈 Performance & Scalability
 

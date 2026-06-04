@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 from utils.helper import validate_and_normalize_name
+from models.config import Config
 from models.cpu import CPU, CPUBrand, CPUFamily
 from database import get_db
 
@@ -202,6 +203,13 @@ def delete_cpu(cpu_id: int, db: Session = Depends(get_db)):
     cpu = db.get(CPU, cpu_id)
     if not cpu:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="CPU not found")
+
+    in_config = db.exec(select(Config).where(Config.cpu_id == cpu_id)).first()
+    if in_config:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot delete CPU because it is referenced by one or more config records."
+        )
 
     try:
         db.delete(cpu)
