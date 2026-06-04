@@ -1,6 +1,6 @@
 # database.py
 from sqlmodel import SQLModel, create_engine, Session
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 import os
 
 # Load .env if available
@@ -67,6 +67,31 @@ def init_db():
     even on an existing database.
     """
     SQLModel.metadata.create_all(bind=engine)
+    _ensure_config_quantity_columns()
+
+
+def _ensure_config_quantity_columns():
+    inspector = inspect(engine)
+    if "config" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("config")}
+    statements = []
+    if "cpu_quantity" not in existing_columns:
+        statements.append("ALTER TABLE config ADD COLUMN cpu_quantity INTEGER NOT NULL DEFAULT 1")
+    if "cpu_component_ids" not in existing_columns:
+        statements.append("ALTER TABLE config ADD COLUMN cpu_component_ids TEXT")
+    if "gpu_quantity" not in existing_columns:
+        statements.append("ALTER TABLE config ADD COLUMN gpu_quantity INTEGER NOT NULL DEFAULT 1")
+    if "gpu_component_ids" not in existing_columns:
+        statements.append("ALTER TABLE config ADD COLUMN gpu_component_ids TEXT")
+
+    if not statements:
+        return
+
+    with engine.begin() as conn:
+        for statement in statements:
+            conn.execute(text(statement))
 
 
 def get_db():

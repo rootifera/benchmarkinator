@@ -76,8 +76,10 @@ def _create_referenced_graph(db):
         Config(
             name="Main rig",
             cpu_id=cpu_entry.id,
+            cpu_quantity=1,
             motherboard_id=motherboard_entry.id,
             gpu_id=gpu_entry.id,
+            gpu_quantity=1,
             disk_id=disk_entry.id,
             os_id=os_entry.id,
             ram_id=ram_entry.id,
@@ -221,6 +223,88 @@ def test_cpu_family_must_belong_to_selected_brand(db):
 
     assert exc.value.status_code == 400
     assert exc.value.detail == "CPU family does not belong to the specified brand"
+
+
+def test_config_supports_multi_cpu_and_multi_gpu_quantities(db):
+    records = _create_referenced_graph(db)
+    second_cpu = cpu.create_cpu(
+        CPU(
+            model="Xeon E5-2690",
+            speed="2.9GHz",
+            core_count=8,
+            cpu_brand_id=records["cpu_brand"].id,
+            cpu_family_id=records["cpu_family"].id,
+        ),
+        db,
+    )
+    second_gpu = gpu.create_gpu(
+        GPU(
+            vram_size="12GB",
+            gpu_manufacturer_id=records["gpu_manufacturer"].id,
+            gpu_brand_id=records["gpu_brand"].id,
+            gpu_model_id=records["gpu_model"].id,
+            gpu_vram_type_id=records["gpu_vram_type"].id,
+        ),
+        db,
+    )
+
+    multi_config = config.create_config(
+        Config(
+            name="Dual CPU Quad GPU rig",
+            cpu_id=records["cpu"].id,
+            cpu_component_ids=f"[{records['cpu'].id},{second_cpu.id}]",
+            motherboard_id=records["motherboard"].id,
+            gpu_id=records["gpu"].id,
+            gpu_component_ids=f"[{records['gpu'].id},{second_gpu.id},{records['gpu'].id}]",
+            disk_id=records["disk"].id,
+            os_id=records["os"].id,
+            ram_id=records["ram"].id,
+            ram_size="64GB",
+        ),
+        db,
+    )
+
+    assert multi_config.cpu_quantity == 2
+    assert multi_config.cpu_id == records["cpu"].id
+    assert multi_config.gpu_quantity == 3
+    assert multi_config.gpu_id == records["gpu"].id
+    assert multi_config.cpu_component_ids == f"[{records['cpu'].id},{second_cpu.id}]"
+    assert multi_config.gpu_component_ids == f"[{records['gpu'].id},{second_gpu.id},{records['gpu'].id}]"
+
+    secondary_gpu_results = benchmark_results.get_results_by_gpu(second_gpu.id, db)
+    assert secondary_gpu_results == []
+
+    benchmark_results.create_benchmark_result(
+        BenchmarkResult(
+            benchmark_id=records["benchmark"].id,
+            config_id=multi_config.id,
+            result=999,
+        ),
+        db,
+    )
+
+    secondary_gpu_results = benchmark_results.get_results_by_gpu(second_gpu.id, db)
+    assert [result.config_id for result in secondary_gpu_results] == [multi_config.id]
+
+    with pytest.raises(HTTPException) as exc:
+        config.create_config(
+            Config(
+                name="Invalid quantity rig",
+                cpu_id=records["cpu"].id,
+                cpu_component_ids="[]",
+                motherboard_id=records["motherboard"].id,
+                gpu_id=records["gpu"].id,
+                gpu_component_ids=f"[{records['gpu'].id}]",
+                disk_id=records["disk"].id,
+                os_id=records["os"].id,
+                ram_id=records["ram"].id,
+                ram_size="64GB",
+            ),
+            db,
+        )
+
+    assert exc.value.status_code == 400
+    assert exc.value.detail == "At least one CPU is required"
 
 
 def test_compare_configs_can_filter_to_one_benchmark(db):
