@@ -18,6 +18,25 @@ const notify = (message, type = 'warning', duration) => {
   }
 };
 
+const parseComponentIds = (raw, fallbackId, fallbackQuantity = 1) => {
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map((value) => parseInt(value, 10)).filter(Boolean);
+      }
+    } catch {
+      // Fall back to legacy fields below.
+    }
+  }
+
+  if (!fallbackId) return [];
+  return Array.from(
+    { length: Math.max(parseInt(fallbackQuantity, 10) || 1, 1) },
+    () => fallbackId
+  );
+};
+
 const Results = () => {
   const { apiKey, isAuthenticated } = useAuth();
   const [results, setResults] = useState([]);
@@ -116,13 +135,13 @@ const Results = () => {
     }
     if (filters.cpu) {
       const configIds = configurations
-        .filter(config => config.cpu_id === parseInt(filters.cpu))
+        .filter(config => parseComponentIds(config.cpu_component_ids, config.cpu_id, config.cpu_quantity).includes(parseInt(filters.cpu)))
         .map(config => config.id);
       filtered = filtered.filter(r => configIds.includes(r.config_id));
     }
     if (filters.gpu) {
       const configIds = configurations
-        .filter(config => config.gpu_id === parseInt(filters.gpu))
+        .filter(config => parseComponentIds(config.gpu_component_ids, config.gpu_id, config.gpu_quantity).includes(parseInt(filters.gpu)))
         .map(config => config.id);
       filtered = filtered.filter(r => configIds.includes(r.config_id));
     }

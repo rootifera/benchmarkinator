@@ -90,14 +90,20 @@ ON DUPLICATE KEY UPDATE name = VALUES(name);
 -- GPU MODELS / SERIES (modern)
 -- Keep at series/umbrella granularity for simplicity.
 -- =======================
--- NVIDIA (DX12+ era)
+-- NVIDIA (2009+ GeForce desktop eras)
 INSERT INTO gpumodel (name, gpu_brand_id) VALUES
+('GeForce 200 Series', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
+('GeForce 400 Series', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
+('GeForce 500 Series', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
+('GeForce 600 Series', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
+('GeForce 700 Series', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
+('GeForce 900 Series', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
 ('GeForce 10 Series', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
 ('GeForce 16 Series', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
 ('GeForce 20 Series (RTX 2000)', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
 ('GeForce 30 Series (RTX 3000)', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
 ('GeForce 40 Series (RTX 4000)', (SELECT id FROM gpubrand WHERE name='NVIDIA')),
-('GeForce 40 Series (RTX 5000)', (SELECT id FROM gpubrand WHERE name='NVIDIA'))
+('GeForce 50 Series (RTX 5000)', (SELECT id FROM gpubrand WHERE name='NVIDIA'))
 
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
@@ -115,7 +121,8 @@ INSERT INTO gpumodel (name, gpu_brand_id) VALUES
 ('Radeon RX Vega',       (SELECT id FROM gpubrand WHERE name='AMD')),
 ('Radeon RX 5000 Series', (SELECT id FROM gpubrand WHERE name='AMD')),
 ('Radeon RX 6000 Series', (SELECT id FROM gpubrand WHERE name='AMD')),
-('Radeon RX 7000 Series', (SELECT id FROM gpubrand WHERE name='AMD'))
+('Radeon RX 7000 Series', (SELECT id FROM gpubrand WHERE name='AMD')),
+('Radeon RX 9000 Series', (SELECT id FROM gpubrand WHERE name='AMD'))
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 -- Intel graphics (modern/discrete & iGPU)
@@ -126,7 +133,9 @@ INSERT INTO gpumodel (name, gpu_brand_id) VALUES
 ('Intel Iris Pro',             (SELECT id FROM gpubrand WHERE name='Intel')),
 ('Intel Iris Xe',              (SELECT id FROM gpubrand WHERE name='Intel')),
 ('Intel Arc A-Series',         (SELECT id FROM gpubrand WHERE name='Intel')),
-('Intel Arc Pro A-Series',     (SELECT id FROM gpubrand WHERE name='Intel'))
+('Intel Arc Pro A-Series',     (SELECT id FROM gpubrand WHERE name='Intel')),
+('Intel Arc B-Series',         (SELECT id FROM gpubrand WHERE name='Intel')),
+('Intel Arc Pro B-Series',     (SELECT id FROM gpubrand WHERE name='Intel'))
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 -- =======================

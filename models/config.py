@@ -6,8 +6,12 @@ class Config(SQLModel, table=True):
     name: str = Field(unique=True)
 
     cpu_id: Optional[int] = Field(default=None, foreign_key="cpu.id")
+    cpu_quantity: int = Field(default=1, ge=1)
+    cpu_component_ids: Optional[str] = None
     motherboard_id: Optional[int] = Field(default=None, foreign_key="motherboard.id")
     gpu_id: Optional[int] = Field(default=None, foreign_key="gpu.id")
+    gpu_quantity: int = Field(default=1, ge=1)
+    gpu_component_ids: Optional[str] = None
     disk_id: Optional[int] = Field(default=None, foreign_key="disk.id")
     os_id: Optional[int] = Field(default=None, foreign_key="os.id")
     ram_id: Optional[int] = Field(default=None, foreign_key="ram.id")

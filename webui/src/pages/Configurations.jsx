@@ -10,7 +10,8 @@ import {
   Database,
   HardDrive,
   Tv,
-  Search
+  Search,
+  Plus
 } from 'lucide-react';
 import axios from 'axios';
 import SearchableSelect from '../components/SearchableSelect';
@@ -131,6 +132,63 @@ const Configurations = () => {
     const component = components.find(c => c.id === id);
     return component ? component[field] : 'Unknown';
   };
+
+  const parseComponentIds = (raw, fallbackId, fallbackQuantity = 1) => {
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.map((value) => parseInt(value, 10)).filter(Boolean);
+        }
+      } catch {
+        // Fall back to legacy fields below.
+      }
+    }
+
+    if (!fallbackId) return [];
+    return Array.from(
+      { length: Math.max(parseInt(fallbackQuantity, 10) || 1, 1) },
+      () => fallbackId
+    );
+  };
+
+  const formatComponentLines = (ids, getName) => {
+    if (!ids.length) return ['Unknown'];
+    const counts = ids.reduce((acc, id) => {
+      acc[id] = (acc[id] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(counts)
+      .map(([id, count]) => {
+        const label = getName(parseInt(id, 10));
+        return count > 1 ? `${count}x ${label}` : label;
+      });
+  };
+
+  const getConfigCPUDisplay = (config) => {
+    return formatComponentLines(
+      parseComponentIds(config.cpu_component_ids, config.cpu_id, config.cpu_quantity),
+      getCPUDisplayName
+    );
+  };
+
+  const getConfigGPUDisplay = (config) => {
+    return formatComponentLines(
+      parseComponentIds(config.gpu_component_ids, config.gpu_id, config.gpu_quantity),
+      getGPUDisplayName
+    );
+  };
+
+  const renderComponentLines = (lines) => (
+    <span className="space-y-1">
+      {lines.map((line, index) => (
+        <span key={`${line}-${index}`} className="block break-words">
+          {line}
+        </span>
+      ))}
+    </span>
+  );
 
   // Enhanced component name resolution for hierarchical display
   // Format: Brand Family Model [Speed - N Cores][Serial if exists] 
@@ -259,81 +317,67 @@ const Configurations = () => {
     }
 
     return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                CPU
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                GPU
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Motherboard
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                RAM
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {configurations.map((config) => (
-              <tr key={config.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                  {config.name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  {getCPUDisplayName(config.cpu_id)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  {getGPUDisplayName(config.gpu_id)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  {getMotherboardDisplayName(config.motherboard_id)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+      <div className="space-y-3">
+        {configurations.map((config) => (
+          <div
+            key={config.id}
+            className="rounded-md border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+          >
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(120px,0.8fr)_minmax(220px,1.5fr)_minmax(220px,1.5fr)_minmax(180px,1fr)_minmax(140px,0.8fr)_auto]">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Name</p>
+                <p className="mt-1 break-words text-sm font-semibold text-gray-900 dark:text-white">{config.name}</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">CPU</p>
+                <p className="mt-1 text-sm text-gray-900 dark:text-white">{renderComponentLines(getConfigCPUDisplay(config))}</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">GPU</p>
+                <p className="mt-1 text-sm text-gray-900 dark:text-white">{renderComponentLines(getConfigGPUDisplay(config))}</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Motherboard</p>
+                <p className="mt-1 break-words text-sm text-gray-900 dark:text-white">{getMotherboardDisplayName(config.motherboard_id)}</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">RAM</p>
+                <p className="mt-1 break-words text-sm text-gray-900 dark:text-white">
                   {getComponentName(config.ram_id, ramTypes, 'name')} - {config.ram_size}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => {
-                      setSelectedConfig(config);
-                      setShowDetails(true);
-                    }}
-                    className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
-                    title="Show Details"
-                  >
-                    <Search className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingItem(config);
-                      setShowForm(true);
-                    }}
-                    className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
-                    title="Edit"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => requestDelete(config.id)}
-                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </p>
+              </div>
+              <div className="flex items-start justify-end gap-3 xl:pt-5">
+                <button
+                  onClick={() => {
+                    setSelectedConfig(config);
+                    setShowDetails(true);
+                  }}
+                  className="rounded p-1 text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
+                  title="Show Details"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingItem(config);
+                    setShowForm(true);
+                  }}
+                  className="rounded p-1 text-primary-600 transition-colors hover:bg-primary-50 hover:text-primary-900 dark:text-primary-400 dark:hover:bg-primary-900/20 dark:hover:text-primary-300"
+                  title="Edit"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => requestDelete(config.id)}
+                  className="rounded p-1 text-red-600 transition-colors hover:bg-red-50 hover:text-red-900 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   };
@@ -489,6 +533,9 @@ const Configurations = () => {
           motherboardChipsets={motherboardChipsets}
           getCPUDisplayName={getCPUDisplayName}
           getGPUDisplayName={getGPUDisplayName}
+          getConfigCPUDisplay={getConfigCPUDisplay}
+          getConfigGPUDisplay={getConfigGPUDisplay}
+          renderComponentLines={renderComponentLines}
           getMotherboardDisplayName={getMotherboardDisplayName}
           getComponentName={getComponentName}
         />
@@ -512,8 +559,9 @@ const Configurations = () => {
 const ConfigurationDetailsModal = ({ 
   configuration, 
   onClose,
-  getCPUDisplayName,
-  getGPUDisplayName,
+  getConfigCPUDisplay,
+  getConfigGPUDisplay,
+  renderComponentLines,
   getMotherboardDisplayName,
   getComponentName,
   ramTypes,
@@ -540,14 +588,14 @@ const ConfigurationDetailsModal = ({
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">CPU</label>
                 <p className="mt-1 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  {getCPUDisplayName(configuration.cpu_id)}
+                  {renderComponentLines(getConfigCPUDisplay(configuration))}
                 </p>
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">GPU</label>
                 <p className="mt-1 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  {getGPUDisplayName(configuration.gpu_id)}
+                  {renderComponentLines(getConfigGPUDisplay(configuration))}
                 </p>
               </div>
               
@@ -599,10 +647,10 @@ const ConfigurationDetailsModal = ({
                         Enabled
                       </span>
                       {configuration.cpu_baseclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Base: {configuration.cpu_baseclock}MHz</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Reference: {configuration.cpu_baseclock}MHz</p>
                       )}
                       {configuration.cpu_currentclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Current: {configuration.cpu_currentclock}MHz</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Measured: {configuration.cpu_currentclock}MHz</p>
                       )}
                     </div>
                   ) : (
@@ -613,7 +661,7 @@ const ConfigurationDetailsModal = ({
 
               {/* GPU Core Overclocking */}
               <div>
-                <label className="block text sm font-medium text-gray-700 dark:text-gray-300">GPU Core Overclocking</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">GPU Core Overclocking</label>
                 <div className="mt-1 text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded">
                   {configuration.gpu_core_overclock ? (
                     <div className="space-y-1">
@@ -621,10 +669,10 @@ const ConfigurationDetailsModal = ({
                         Enabled
                       </span>
                       {configuration.gpu_core_baseclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Base: {configuration.gpu_core_baseclock}MHz</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Reference: {configuration.gpu_core_baseclock}MHz</p>
                       )}
                       {configuration.gpu_core_currentclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Current: {configuration.gpu_core_currentclock}MHz</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Measured: {configuration.gpu_core_currentclock}MHz</p>
                       )}
                     </div>
                   ) : (
@@ -643,10 +691,10 @@ const ConfigurationDetailsModal = ({
                         Enabled
                       </span>
                       {configuration.gpu_vram_baseclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Base: {configuration.gpu_vram_baseclock}MHz</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Reference: {configuration.gpu_vram_baseclock}MHz</p>
                       )}
                       {configuration.gpu_vram_currentclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Current: {configuration.gpu_vram_currentclock}MHz</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Measured: {configuration.gpu_vram_currentclock}MHz</p>
                       )}
                     </div>
                   ) : (
@@ -665,10 +713,10 @@ const ConfigurationDetailsModal = ({
                         Enabled
                       </span>
                       {configuration.ram_baseclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Base: {configuration.ram_baseclock}MHz</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Reference: {configuration.ram_baseclock}MHz</p>
                       )}
                       {configuration.ram_currentclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Current: {configuration.ram_currentclock}MHz</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">Measured: {configuration.ram_currentclock}MHz</p>
                       )}
                     </div>
                   ) : (
@@ -771,11 +819,39 @@ const ConfigurationForm = ({
     ram_currentclock: null,
     notes: ''
   });
+  const [cpuSelections, setCpuSelections] = useState(['']);
+  const [gpuSelections, setGpuSelections] = useState(['']);
   const { apiKey } = useAuth();
+
+  const parseComponentIds = (raw, fallbackId, fallbackQuantity = 1) => {
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((value) => parseInt(value, 10)).filter(Boolean);
+        }
+      } catch {
+        // Use legacy fields below.
+      }
+    }
+
+    if (!fallbackId) return [''];
+    return Array.from(
+      { length: Math.max(parseInt(fallbackQuantity, 10) || 1, 1) },
+      () => fallbackId
+    );
+  };
 
   useEffect(() => {
     if (configuration) {
-      setFormData(configuration);
+      setFormData({
+        ...configuration,
+      });
+      setCpuSelections(parseComponentIds(configuration.cpu_component_ids, configuration.cpu_id, configuration.cpu_quantity));
+      setGpuSelections(parseComponentIds(configuration.gpu_component_ids, configuration.gpu_id, configuration.gpu_quantity));
+    } else {
+      setCpuSelections(['']);
+      setGpuSelections(['']);
     }
   }, [configuration]);
 
@@ -783,10 +859,21 @@ const ConfigurationForm = ({
     e.preventDefault();
     try {
       const headers = { 'X-API-Key': apiKey };
+      const cpuIds = cpuSelections.map((id) => parseInt(id, 10)).filter(Boolean);
+      const gpuIds = gpuSelections.map((id) => parseInt(id, 10)).filter(Boolean);
+      const payload = {
+        ...formData,
+        cpu_id: cpuIds[0] || '',
+        gpu_id: gpuIds[0] || '',
+        cpu_quantity: cpuIds.length,
+        gpu_quantity: gpuIds.length,
+        cpu_component_ids: JSON.stringify(cpuIds),
+        gpu_component_ids: JSON.stringify(gpuIds),
+      };
       if (configuration) {
-        await axios.put(buildApiUrl(`/api/config/${configuration.id}`), formData, { headers });
+        await axios.put(buildApiUrl(`/api/config/${configuration.id}`), payload, { headers });
       } else {
-        await axios.post(buildApiUrl('/api/config/'), formData, { headers });
+        await axios.post(buildApiUrl('/api/config/'), payload, { headers });
       }
       onSave();
     } catch (error) {
@@ -909,43 +996,102 @@ const ConfigurationForm = ({
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">Core Components</h3>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <Cpu className="w-4 h-4 inline mr-2" />
-                  Processor (CPU)
-                </label>
-                <SearchableSelect
-                  value={formData.cpu_id}
-                  onChange={(value) => setFormData({ ...formData, cpu_id: value })}
-                  options={cpus.map(cpu => ({
-                    id: cpu.id,
-                    name: getCPUOptionText(cpu)
-                  }))}
-                  placeholder="Select CPU"
-                  searchPlaceholder="Search CPUs..."
-                  required
-                />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-3 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <Cpu className="w-4 h-4 inline mr-2" />
+                    Processors
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setCpuSelections([...cpuSelections, ''])}
+                    className="btn-secondary inline-flex items-center gap-2 px-3 py-1 text-xs"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add CPU
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {cpuSelections.map((cpuId, index) => (
+                    <div key={`cpu-${index}`} className="grid grid-cols-[1fr_auto] gap-2">
+                      <SearchableSelect
+                        value={cpuId}
+                        onChange={(value) => {
+                          const next = [...cpuSelections];
+                          next[index] = value;
+                          setCpuSelections(next);
+                        }}
+                        options={cpus.map(cpu => ({
+                          id: cpu.id,
+                          name: getCPUOptionText(cpu)
+                        }))}
+                        placeholder={`Select CPU ${index + 1}`}
+                        searchPlaceholder="Search CPUs..."
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCpuSelections(cpuSelections.filter((_, i) => i !== index))}
+                        disabled={cpuSelections.length === 1}
+                        className="h-10 w-10 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                        title="Remove CPU"
+                      >
+                        <Trash2 className="mx-auto h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <Monitor className="w-4 h-4 inline mr-2" />
-                  Graphics Card (GPU)
-                </label>
-                <SearchableSelect
-                  value={formData.gpu_id}
-                  onChange={(value) => setFormData({ ...formData, gpu_id: value })}
-                  options={gpus.map(gpu => ({
-                    id: gpu.id,
-                    name: getGPUOptionText(gpu)
-                  }))}
-                  placeholder="Select GPU"
-                  searchPlaceholder="Search GPUs..."
-                  required
-                />
+
+              <div className="space-y-3 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <Monitor className="w-4 h-4 inline mr-2" />
+                    Graphics Cards
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setGpuSelections([...gpuSelections, ''])}
+                    className="btn-secondary inline-flex items-center gap-2 px-3 py-1 text-xs"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add GPU
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {gpuSelections.map((gpuId, index) => (
+                    <div key={`gpu-${index}`} className="grid grid-cols-[1fr_auto] gap-2">
+                      <SearchableSelect
+                        value={gpuId}
+                        onChange={(value) => {
+                          const next = [...gpuSelections];
+                          next[index] = value;
+                          setGpuSelections(next);
+                        }}
+                        options={gpus.map(gpu => ({
+                          id: gpu.id,
+                          name: getGPUOptionText(gpu)
+                        }))}
+                        placeholder={`Select GPU ${index + 1}`}
+                        searchPlaceholder="Search GPUs..."
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setGpuSelections(gpuSelections.filter((_, i) => i !== index))}
+                        disabled={gpuSelections.length === 1}
+                        className="h-10 w-10 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                        title="Remove GPU"
+                      >
+                        <Trash2 className="mx-auto h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            
             </div>
           </div>
           
@@ -1166,9 +1312,7 @@ const ConfigurationForm = ({
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Base Clock (MHz)
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reference Clock (MHz, optional)</label>
                         <input
                           type="number"
                           value={formData.cpu_baseclock || ''}
@@ -1178,9 +1322,7 @@ const ConfigurationForm = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Current Clock (MHz)
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Measured/OC Clock (MHz)</label>
                         <input
                           type="number"
                           value={formData.cpu_currentclock || ''}
@@ -1201,9 +1343,7 @@ const ConfigurationForm = ({
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Base Clock (MHz)
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reference Clock (MHz, optional)</label>
                         <input
                           type="number"
                           value={formData.gpu_core_baseclock || ''}
@@ -1213,9 +1353,7 @@ const ConfigurationForm = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Current Clock (MHz)
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Measured/OC Clock (MHz)</label>
                         <input
                           type="number"
                           value={formData.gpu_core_currentclock || ''}
@@ -1236,9 +1374,7 @@ const ConfigurationForm = ({
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Base Clock (MHz)
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reference Clock (MHz, optional)</label>
                         <input
                           type="number"
                           value={formData.gpu_vram_baseclock || ''}
@@ -1248,9 +1384,7 @@ const ConfigurationForm = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Current Clock (MHz)
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Measured/OC Clock (MHz)</label>
                         <input
                           type="number"
                           value={formData.gpu_vram_currentclock || ''}
@@ -1271,9 +1405,7 @@ const ConfigurationForm = ({
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Base Clock (MHz)
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reference Clock (MHz, optional)</label>
                         <input
                           type="number"
                           value={formData.ram_baseclock || ''}
@@ -1283,9 +1415,7 @@ const ConfigurationForm = ({
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Current Clock (MHz)
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Measured/OC Clock (MHz)</label>
                         <input
                           type="number"
                           value={formData.ram_currentclock || ''}
