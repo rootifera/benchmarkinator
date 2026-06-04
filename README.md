@@ -187,6 +187,15 @@ Existing database that already matches the current models:
 alembic stamp head
 ```
 
+Existing database that has tables but no `alembic_version` row:
+
+```bash
+alembic stamp 46cd05edcf1b
+alembic upgrade head
+```
+
+Use this when Alembic tries to create tables that already exist. The first command records the existing baseline schema; the second command applies later migrations.
+
 The app still creates missing tables on startup for local convenience. Use Alembic for schema changes.
 
 ## Backup And Restore

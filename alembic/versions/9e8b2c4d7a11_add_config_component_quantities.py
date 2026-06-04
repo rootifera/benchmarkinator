@@ -17,10 +17,16 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("config", sa.Column("cpu_quantity", sa.Integer(), nullable=False, server_default="1"))
-    op.add_column("config", sa.Column("cpu_component_ids", sa.Text(), nullable=True))
-    op.add_column("config", sa.Column("gpu_quantity", sa.Integer(), nullable=False, server_default="1"))
-    op.add_column("config", sa.Column("gpu_component_ids", sa.Text(), nullable=True))
+    existing_columns = {column["name"] for column in sa.inspect(op.get_bind()).get_columns("config")}
+
+    if "cpu_quantity" not in existing_columns:
+        op.add_column("config", sa.Column("cpu_quantity", sa.Integer(), nullable=False, server_default="1"))
+    if "cpu_component_ids" not in existing_columns:
+        op.add_column("config", sa.Column("cpu_component_ids", sa.Text(), nullable=True))
+    if "gpu_quantity" not in existing_columns:
+        op.add_column("config", sa.Column("gpu_quantity", sa.Integer(), nullable=False, server_default="1"))
+    if "gpu_component_ids" not in existing_columns:
+        op.add_column("config", sa.Column("gpu_component_ids", sa.Text(), nullable=True))
 
 
 def downgrade() -> None:
