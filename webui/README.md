@@ -65,7 +65,7 @@ The built files will be in the `dist/` directory.
 
 - **Vite**: Fast development server and production build
 - **React 19**: Modern React with hooks and functional components
-- **Tailwind CSS**: Utility-first CSS framework for rapid UI development
+- **Tailwind CSS 4**: Utility-first CSS framework integrated through Vite
 - **Lucide React**: Beautiful, customizable icons
 - **Recharts**: Composable charting library for React
 - **Axios**: HTTP client for API requests
@@ -79,10 +79,11 @@ webui/
 │   ├── components/        # Reusable UI components
 │   ├── contexts/          # React contexts (auth, etc.)
 │   ├── pages/            # Page components
+│   ├── index.css         # Tailwind CSS theme and component styles
 │   ├── App.jsx           # Main app component
 │   └── index.jsx         # Entry point
 ├── package.json           # Dependencies and scripts
-└── tailwind.config.js     # Tailwind CSS configuration
+└── vite.config.js         # Vite, React, and Tailwind plugin configuration
 ```
 
 ## Troubleshooting
