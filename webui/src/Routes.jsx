@@ -37,11 +37,7 @@ const Routes = () => {
               <Benchmarks />
             </ProtectedRoute>
           } />
-          <Route path="/results" element={
-            <ProtectedRoute>
-              <Results />
-            </ProtectedRoute>
-          } />
+          <Route path="/results" element={<Results />} />
           <Route path="/testsystems" element={
             <ProtectedRoute>
               <Configurations />

@@ -214,7 +214,7 @@ Benchmarkinator includes pre-loaded hardware data:
 ### Web Interface
 - **Admin Authentication**: Secure login with configurable credentials
 - **Session Management**: Persistent signed-token login across browser sessions
-- **Protected Access**: Dashboard, components, test systems, benchmarks, and results require login
+- **Public Results**: Benchmark results can be viewed without login; editing and management require login
 - **LAN-Only Design**: Intended for trusted local network environments
 
 ### API Security

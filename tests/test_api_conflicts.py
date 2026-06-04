@@ -204,3 +204,51 @@ def test_cpu_family_must_belong_to_selected_brand(db):
 
     assert exc.value.status_code == 400
     assert exc.value.detail == "CPU family does not belong to the specified brand"
+
+
+def test_compare_configs_can_filter_to_one_benchmark(db):
+    records = _create_referenced_graph(db)
+    config_1 = records["config"]
+    benchmark_1 = records["benchmark"]
+    config_2 = config.create_config(
+        Config(
+            name="Second rig",
+            cpu_id=records["cpu"].id,
+            motherboard_id=records["motherboard"].id,
+            gpu_id=records["gpu"].id,
+            disk_id=records["disk"].id,
+            os_id=records["os"].id,
+            ram_id=records["ram"].id,
+            ram_size="32GB",
+        ),
+        db,
+    )
+    benchmark_2 = benchmark_router.create_benchmark(
+        Benchmark(name="SuperPi", benchmark_target_id=records["target"].id, lower_is_better=True),
+        db,
+    )
+
+    benchmark_results.create_benchmark_result(
+        BenchmarkResult(benchmark_id=benchmark_1.id, config_id=config_2.id, result=120),
+        db,
+    )
+    benchmark_results.create_benchmark_result(
+        BenchmarkResult(benchmark_id=benchmark_2.id, config_id=config_1.id, result=10),
+        db,
+    )
+    benchmark_results.create_benchmark_result(
+        BenchmarkResult(benchmark_id=benchmark_2.id, config_id=config_2.id, result=8),
+        db,
+    )
+
+    all_results = benchmark_results.compare_configs(config_1.id, config_2.id, db=db)
+    filtered = benchmark_results.compare_configs(
+        config_1.id,
+        config_2.id,
+        benchmark_id=benchmark_2.id,
+        db=db,
+    )
+
+    assert {result["benchmark_id"] for result in all_results} == {benchmark_1.id, benchmark_2.id}
+    assert [result["benchmark_id"] for result in filtered] == [benchmark_2.id]
+    assert filtered[0]["benchmark_name"] == "SuperPi"

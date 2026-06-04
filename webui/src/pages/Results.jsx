@@ -49,6 +49,21 @@ const Results = () => {
     setLoading(true);
     setError(null);
     try {
+      if (!isAuthenticated || !apiKey) {
+        const response = await axios.get(buildApiUrl('/api/public/results-data'));
+        setResults(response.data.results);
+        setBenchmarks(response.data.benchmarks);
+        setConfigurations(response.data.configurations);
+        setCpus(response.data.cpus);
+        setGpus(response.data.gpus);
+        setCpuBrands(response.data.cpuBrands);
+        setCpuFamilies(response.data.cpuFamilies);
+        setGpuManufacturers(response.data.gpuManufacturers);
+        setGpuBrands(response.data.gpuBrands);
+        setGpuModels(response.data.gpuModels);
+        return;
+      }
+
       const headers = { 'X-API-Key': apiKey };
       const [
         resultsRes, benchmarksRes, configsRes, cpusRes, gpusRes,
@@ -82,13 +97,54 @@ const Results = () => {
     } finally {
       setLoading(false);
     }
-  }, [apiKey]);
+  }, [apiKey, isAuthenticated]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const [filteredResults, setFilteredResults] = useState([]);
+
+  const filterLocalResults = useCallback(() => {
+    let filtered = [...results];
+
+    if (filters.configuration) {
+      filtered = filtered.filter(r => r.config_id === parseInt(filters.configuration));
+    }
+    if (filters.benchmark) {
+      filtered = filtered.filter(r => r.benchmark_id === parseInt(filters.benchmark));
+    }
+    if (filters.cpu) {
+      const configIds = configurations
+        .filter(config => config.cpu_id === parseInt(filters.cpu))
+        .map(config => config.id);
+      filtered = filtered.filter(r => configIds.includes(r.config_id));
+    }
+    if (filters.gpu) {
+      const configIds = configurations
+        .filter(config => config.gpu_id === parseInt(filters.gpu))
+        .map(config => config.id);
+      filtered = filtered.filter(r => configIds.includes(r.config_id));
+    }
+    if (filters.dateFrom) {
+      filtered = filtered.filter(result => {
+        try {
+          const d = new Date(result.timestamp);
+          return d.getTime() > 0 && d >= new Date(filters.dateFrom);
+        } catch { return false; }
+      });
+    }
+    if (filters.dateTo) {
+      filtered = filtered.filter(result => {
+        try {
+          const d = new Date(result.timestamp);
+          return d.getTime() > 0 && d <= new Date(filters.dateTo);
+        } catch { return false; }
+      });
+    }
+
+    return filtered;
+  }, [configurations, filters, results]);
 
   const handleEditResult = (result) => {
     if (!isAuthenticated) {
@@ -124,6 +180,11 @@ const Results = () => {
   };
 
   const fetchFilteredResults = useCallback(async () => {
+    if (!isAuthenticated || !apiKey) {
+      setFilteredResults(filterLocalResults());
+      return;
+    }
+
     if (!filters.benchmark && !filters.configuration && !filters.cpu && !filters.gpu && !filters.dateFrom && !filters.dateTo) {
       setFilteredResults(results);
       return;
@@ -192,7 +253,7 @@ const Results = () => {
       console.error('Error fetching filtered results:', error);
       setFilteredResults([]);
     }
-  }, [filters, apiKey, results]);
+  }, [filters, apiKey, results, isAuthenticated, filterLocalResults]);
 
   useEffect(() => {
     fetchFilteredResults();
@@ -738,7 +799,8 @@ const ResultForm = ({ result, onClose, onSave, benchmarks, configurations }) => 
 const CompareForm = ({ configurations, benchmarks, onClose }) => {
   const [formData, setFormData] = useState({
     config_id_1: '',
-    config_id_2: ''
+    config_id_2: '',
+    benchmark_id: ''
   });
   const [comparisonResults, setComparisonResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -758,9 +820,14 @@ const CompareForm = ({ configurations, benchmarks, onClose }) => {
     setLoading(true);
     try {
       const headers = { 'X-API-Key': apiKey };
-      const url = buildApiUrl(
-        `/api/benchmark_results/compare/configs?config_id_1=${formData.config_id_1}&config_id_2=${formData.config_id_2}`
-      );
+      const params = new URLSearchParams({
+        config_id_1: formData.config_id_1,
+        config_id_2: formData.config_id_2,
+      });
+      if (formData.benchmark_id) {
+        params.set('benchmark_id', formData.benchmark_id);
+      }
+      const url = buildApiUrl(`/api/benchmark_results/compare/configs?${params.toString()}`);
       const response = await axios.get(url, { headers });
       setComparisonResults(response.data);
     } catch (error) {
@@ -790,7 +857,7 @@ const CompareForm = ({ configurations, benchmarks, onClose }) => {
         </h2>
         
         <form onSubmit={handleSubmit} className="mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Test System 1
@@ -828,6 +895,24 @@ const CompareForm = ({ configurations, benchmarks, onClose }) => {
                 ))}
               </select>
             </div>
+
+            <div className="md:col-span-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Benchmark
+              </label>
+              <select
+                value={formData.benchmark_id}
+                onChange={(e) => setFormData({ ...formData, benchmark_id: e.target.value })}
+                className="input-field"
+              >
+                <option value="">All shared benchmarks</option>
+                {benchmarks.map((benchmark) => (
+                  <option key={benchmark.id} value={benchmark.id}>
+                    {benchmark.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           
           <div className="flex space-x-3">
@@ -853,6 +938,7 @@ const CompareForm = ({ configurations, benchmarks, onClose }) => {
           <div className="border-t pt-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
               Comparison Results: {getConfigName(formData.config_id_1)} vs {getConfigName(formData.config_id_2)}
+              {formData.benchmark_id ? ` - ${getBenchmarkName(parseInt(formData.benchmark_id))}` : ''}
             </h3>
             
             {/* Bar Chart Comparison */}
