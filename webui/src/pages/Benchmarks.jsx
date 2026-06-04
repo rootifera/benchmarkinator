@@ -445,7 +445,7 @@ const BenchmarkForm = ({ benchmark, benchmarkTargets, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           {benchmark ? 'Edit' : 'Add New'} Benchmark
@@ -565,7 +565,7 @@ const BenchmarkTargetForm = ({ target, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           {target ? 'Edit' : 'Add New'} Benchmark Target
