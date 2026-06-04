@@ -4,7 +4,7 @@ import time
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.sql import text
@@ -16,16 +16,35 @@ from models.benchmark_results import BenchmarkResult
 from models.config import Config
 from models.cpu import CPU, CPUBrand, CPUFamily
 from models.gpu import GPU, GPUBrand, GPUManufacturer, GPUModel
-from utils.auth import authenticate, authenticate_credentials, TOKEN_TTL_SECONDS
+from utils.auth import (
+    AUTH_COOKIE_NAME,
+    AUTH_COOKIE_SAMESITE,
+    AUTH_COOKIE_SECURE,
+    TOKEN_TTL_SECONDS,
+    WEBADMIN,
+    authenticate,
+    authenticate_credentials,
+    check_login_rate_limit,
+    clear_login_rate_limit,
+)
 from utils.hardware_loader import run_if_enabled
 from database import init_db, engine
 
 
 def _allowed_origins() -> list[str]:
-    raw = os.getenv("ALLOWED_ORIGINS", "*").strip()
-    if raw == "*" or raw == "":
+    raw = os.getenv("ALLOWED_ORIGINS", "").strip()
+    if raw == "":
+        return []
+    if raw == "*":
         return ["*"]
     return [o.strip() for o in raw.split(",") if o.strip()]
+
+
+def _client_id(request: Request) -> str:
+    forwarded_for = (request.headers.get("X-Forwarded-For") or "").split(",", 1)[0].strip()
+    if forwarded_for:
+        return forwarded_for
+    return request.client.host if request.client else "unknown"
 
 
 @asynccontextmanager
@@ -57,16 +76,50 @@ class LoginRequest(BaseModel):
 
 
 @auth_app.post("/login")
-def login(payload: LoginRequest):
+def login(payload: LoginRequest, request: Request, response: Response):
+    client_id = _client_id(request)
+    check_login_rate_limit(client_id)
     token = authenticate_credentials(payload.username, payload.password)
+    clear_login_rate_limit(client_id)
+    response.set_cookie(
+        key=AUTH_COOKIE_NAME,
+        value=token,
+        max_age=TOKEN_TTL_SECONDS,
+        httponly=True,
+        secure=AUTH_COOKIE_SECURE,
+        samesite=AUTH_COOKIE_SAMESITE,
+        path="/api",
+    )
     return {
-        "access_token": token,
-        "token_type": "bearer",
         "expires_in": TOKEN_TTL_SECONDS,
         "user": {
             "username": payload.username,
             "role": "admin",
         },
+    }
+
+
+@auth_app.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(
+        key=AUTH_COOKIE_NAME,
+        httponly=True,
+        secure=AUTH_COOKIE_SECURE,
+        samesite=AUTH_COOKIE_SAMESITE,
+        path="/api",
+    )
+    return {"status": "ok"}
+
+
+@auth_app.get("/session")
+def session(request: Request):
+    authenticate(request)
+    return {
+        "user": {
+            "username": WEBADMIN,
+            "role": "admin",
+        },
+        "expires_in": TOKEN_TTL_SECONDS,
     }
 
 

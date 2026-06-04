@@ -9,7 +9,7 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
-      - "${MYSQL_PORT}:3306"
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -24,22 +24,28 @@ services:
     image: rootifera/benchmarkinator-api
     container_name: benchmarkinator-api
     environment:
-      DATABASE_URL: "mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@benchmarkinator-db:${MYSQL_PORT}/${MYSQL_DATABASE}"
+      DATABASE_URL: "mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@benchmarkinator-db:3306/${MYSQL_DATABASE}"
       API_KEY: ${API_KEY}
       WEBADMIN: ${WEBADMIN}
       WEBPASSWORD: ${WEBPASSWORD}
       AUTH_TOKEN_TTL_SECONDS: ${AUTH_TOKEN_TTL_SECONDS}
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-benchmarkinator_session}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+      AUTH_COOKIE_SAMESITE: ${AUTH_COOKIE_SAMESITE:-lax}
+      LOGIN_RATE_LIMIT_ATTEMPTS: ${LOGIN_RATE_LIMIT_ATTEMPTS:-5}
+      LOGIN_RATE_LIMIT_WINDOW_SECONDS: ${LOGIN_RATE_LIMIT_WINDOW_SECONDS:-300}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
       LOAD_HARDWARE_DATA: ${LOAD_HARDWARE_DATA}
       HARDWARE_ERA: ${HARDWARE_ERA}
     ports:
-      - "${API_PORT}:12345"
+      - "127.0.0.1:${API_PORT:-12345}:12345"
     depends_on:
       benchmarkinator-db:
         condition: service_healthy
     volumes:
       - ./extras/sql:/app/extras/sql:ro
     entrypoint:
-      [ "/app/wait-for-it.sh", "benchmarkinator-db:${MYSQL_PORT}", "--",
+      [ "/app/wait-for-it.sh", "benchmarkinator-db:3306", "--",
         "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "12345" ]
     pull_policy: never
 
@@ -49,7 +55,7 @@ services:
     image: rootifera/benchmarkinator-webui
     container_name: benchmarkinator-webui
     ports:
-      - "4000:80"
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-4000}:80"
     depends_on:
       benchmarkinator-api:
         condition: service_started

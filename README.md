@@ -15,7 +15,7 @@ It provides:
 - optional hardware seed data
 - backup and restore scripts
 
-This is intended for personal or LAN use. Do not expose it directly to the public internet.
+Default configuration is local-only. For internet access, put the web UI behind HTTPS and keep MySQL and the raw API bound to localhost.
 
 ## Services
 
@@ -29,6 +29,8 @@ Default ports:
 | MySQL | localhost:3306 |
 
 The web UI container serves static files through nginx and proxies `/api` to the API container.
+
+In Docker Compose, MySQL and the API bind to `127.0.0.1` by default. The web UI also binds to `127.0.0.1` unless `WEB_BIND_ADDRESS` is changed.
 
 ## Requirements
 
@@ -78,10 +80,17 @@ Important `.env` values:
 | `MYSQL_ROOT_PASSWORD` | MySQL root password |
 | `MYSQL_PORT` | Host port mapped to MySQL |
 | `API_PORT` | Host port mapped to the API |
+| `WEB_PORT` | Host port mapped to the web UI |
+| `WEB_BIND_ADDRESS` | Host address for the web UI binding |
 | `API_KEY` | API key for protected API routes |
 | `WEBADMIN` | Web login username |
 | `WEBPASSWORD` | Web login password |
 | `AUTH_TOKEN_TTL_SECONDS` | Lifetime of web login tokens |
+| `AUTH_COOKIE_SECURE` | Set to `true` when the web UI is served over HTTPS |
+| `AUTH_COOKIE_SAMESITE` | Browser SameSite policy for the session cookie |
+| `LOGIN_RATE_LIMIT_ATTEMPTS` | Failed login attempts allowed per window |
+| `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | Login rate-limit window |
+| `ALLOWED_ORIGINS` | Comma-separated CORS allowlist for direct API browser access |
 | `LOAD_HARDWARE_DATA` | Whether to load seed hardware data on startup |
 | `HARDWARE_ERA` | Seed data set: `retro`, `retroextended`, or `modern` |
 
@@ -91,11 +100,59 @@ The API also accepts `DATABASE_URL`; Docker Compose sets it automatically.
 
 The web UI logs in through the backend using `WEBADMIN` and `WEBPASSWORD`.
 
-Successful login returns a signed token. The protected API routes accept either:
+Successful login sets a signed, HttpOnly session cookie. The protected API routes accept either:
 - the configured raw `API_KEY`
 - a valid signed web token
 
+The raw `API_KEY` is for trusted scripts or local administration. Do not publish it in frontend code or share it with users.
+
 Benchmark results can be viewed without logging in through the public results route. Editing data requires login.
+
+## Public Deployment
+
+Use a reverse proxy such as Caddy, nginx, Traefik, or Cloudflare Tunnel in front of the web UI. Terminate HTTPS there.
+
+If the reverse proxy runs on the same host as Benchmarkinator:
+
+```env
+WEB_BIND_ADDRESS=127.0.0.1
+WEB_PORT=4000
+AUTH_COOKIE_SECURE=true
+AUTH_COOKIE_SAMESITE=lax
+ALLOWED_ORIGINS=https://your-domain.example
+```
+
+Proxy HTTPS traffic to:
+
+```text
+http://127.0.0.1:4000
+```
+
+If the reverse proxy runs on another machine and Benchmarkinator runs at `192.168.1.23`:
+
+```env
+WEB_BIND_ADDRESS=192.168.1.23
+WEB_PORT=4000
+AUTH_COOKIE_SECURE=true
+AUTH_COOKIE_SAMESITE=lax
+ALLOWED_ORIGINS=https://your-domain.example
+```
+
+Proxy HTTPS traffic to:
+
+```text
+http://192.168.1.23:4000
+```
+
+Recommended network shape:
+- expose only the reverse proxy to the internet
+- allow access to `WEB_PORT` only from the reverse proxy host
+- keep MySQL on `127.0.0.1:${MYSQL_PORT}`
+- keep the direct API on `127.0.0.1:${API_PORT}`
+- use long random values for `API_KEY`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`, and `WEBPASSWORD`
+- keep `.env`, `backups/`, and database ports out of public web roots
+
+This is reasonable for a small private service if you use HTTPS and strong credentials. It is not a full multi-user SaaS security model: there is one admin login, no MFA, no password reset flow, and no account-level permissions.
 
 ## Hardware Seed Data
 
