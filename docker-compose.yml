@@ -26,6 +26,9 @@ services:
     environment:
       DATABASE_URL: "mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@benchmarkinator-db:${MYSQL_PORT}/${MYSQL_DATABASE}"
       API_KEY: ${API_KEY}
+      WEBADMIN: ${WEBADMIN}
+      WEBPASSWORD: ${WEBPASSWORD}
+      AUTH_TOKEN_TTL_SECONDS: ${AUTH_TOKEN_TTL_SECONDS}
       LOAD_HARDWARE_DATA: ${LOAD_HARDWARE_DATA}
       HARDWARE_ERA: ${HARDWARE_ERA}
     ports:

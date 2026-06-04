@@ -1,0 +1,12 @@
+.git
+.agents
+.codex
+.pytest_cache
+.venv
+__pycache__
+*.pyc
+.env
+backups
+webui/node_modules
+webui/dist
+webui/build
