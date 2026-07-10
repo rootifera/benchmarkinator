@@ -271,6 +271,14 @@ def test_config_supports_multi_cpu_and_multi_gpu_quantities(db):
     assert multi_config.cpu_component_ids == f"[{records['cpu'].id},{second_cpu.id}]"
     assert multi_config.gpu_component_ids == f"[{records['gpu'].id},{second_gpu.id},{records['gpu'].id}]"
 
+    with pytest.raises(HTTPException) as cpu_delete_exc:
+        cpu.delete_cpu(second_cpu.id, db)
+    assert cpu_delete_exc.value.status_code == 409
+
+    with pytest.raises(HTTPException) as gpu_delete_exc:
+        gpu.delete_gpu(second_gpu.id, db)
+    assert gpu_delete_exc.value.status_code == 409
+
     secondary_gpu_results = benchmark_results.get_results_by_gpu(second_gpu.id, db)
     assert secondary_gpu_results == []
 

@@ -2,6 +2,10 @@
 
 A modern React-based web interface for the Benchmarkinator benchmark management system.
 
+The same source is built in two modes for Docker Compose:
+- `admin`: management UI for hardware, benchmarks, test systems, and results
+- `public`: read-only results and dedicated test-system comparison pages
+
 ## Features
 
 - **Dashboard**: Overview of system statistics and quick actions
@@ -34,13 +38,13 @@ A modern React-based web interface for the Benchmarkinator benchmark management 
    npm start
    ```
 
-The web UI will open in your browser at http://localhost:4000
+The development server opens at http://localhost:4000.
 
 ## Configuration
 
 By default the web UI calls `/api`, which is proxied to the backend by the production nginx config. For local development against a separate backend, set `VITE_API_BASE_URL` or `VITE_API_BASE_PATH`.
 
-The web UI runs on port 4000 and is bound to 0.0.0.0, making it accessible from other devices on your network.
+Set `VITE_APP_MODE=public` to build or run the read-only public UI. The default is `admin`.
 
 ## API Authentication
 
@@ -57,6 +61,12 @@ To create a production build:
 
 ```bash
 npm run build
+```
+
+Build the public UI locally with:
+
+```bash
+VITE_APP_MODE=public npm run build
 ```
 
 The built files will be in the `dist/` directory.

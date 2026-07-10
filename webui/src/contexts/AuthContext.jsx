@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authenticateUser, fetchSession, logoutUser } from '../utils/authService';
 
 const AuthContext = createContext();
+const APP_MODE = import.meta.env.VITE_APP_MODE || 'admin';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -17,11 +18,21 @@ export const AuthProvider = ({ children }) => {
   const [authLoading, setAuthLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : false;
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches || false;
   });
 
   useEffect(() => {
     const restoreSession = async () => {
+      if (APP_MODE === 'public') {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+        setAuthLoading(false);
+        return;
+      }
+
       try {
         const result = await fetchSession();
         if (result.success && result.user) {

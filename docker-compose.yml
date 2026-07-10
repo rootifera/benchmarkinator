@@ -35,6 +35,7 @@ services:
       LOGIN_RATE_LIMIT_ATTEMPTS: ${LOGIN_RATE_LIMIT_ATTEMPTS:-5}
       LOGIN_RATE_LIMIT_WINDOW_SECONDS: ${LOGIN_RATE_LIMIT_WINDOW_SECONDS:-300}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      PUBLIC_RESULTS_CACHE_SECONDS: ${PUBLIC_RESULTS_CACHE_SECONDS:-15}
       LOAD_HARDWARE_DATA: ${LOAD_HARDWARE_DATA}
       HARDWARE_ERA: ${HARDWARE_ERA}
     ports:
@@ -49,13 +50,33 @@ services:
         "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "12345" ]
     pull_policy: never
 
-  benchmarkinator-webui:
+  benchmarkinator-admin:
     build:
       context: ./webui
-    image: rootifera/benchmarkinator-webui
-    container_name: benchmarkinator-webui
+      args:
+        VITE_APP_MODE: admin
+        NGINX_CONF: nginx.conf
+    image: rootifera/benchmarkinator-admin
+    container_name: benchmarkinator-admin
     ports:
-      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-4000}:80"
+      - "${ADMIN_BIND_ADDRESS:-127.0.0.1}:${ADMIN_PORT:-8001}:80"
+    depends_on:
+      benchmarkinator-api:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+    pull_policy: never
+
+  benchmarkinator-public:
+    build:
+      context: ./webui
+      args:
+        VITE_APP_MODE: public
+        NGINX_CONF: nginx.public.conf
+    image: rootifera/benchmarkinator-public
+    container_name: benchmarkinator-public
+    ports:
+      - "${PUBLIC_BIND_ADDRESS:-127.0.0.1}:${PUBLIC_PORT:-8002}:80"
     depends_on:
       benchmarkinator-api:
         condition: service_started

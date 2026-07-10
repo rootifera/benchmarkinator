@@ -1,47 +1,13 @@
-import json
-
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from utils.helper import validate_and_normalize_name
+from utils.config_components import config_has_cpu, config_has_gpu
 from models.benchmark_results import BenchmarkResult
 from models.config import Config
 from models.benchmark import Benchmark
 from database import get_db
 
 router = APIRouter()
-
-
-def _component_ids(raw: str | None, fallback_id: int | None) -> set[int]:
-    ids = set()
-    if fallback_id is not None:
-        ids.add(int(fallback_id))
-    if not raw:
-        return ids
-    try:
-        values = json.loads(raw)
-    except json.JSONDecodeError:
-        return ids
-    if not isinstance(values, list):
-        return ids
-    for value in values:
-        try:
-            ids.add(int(value))
-        except (TypeError, ValueError):
-            continue
-    return ids
-
-
-def _config_has_cpu(config: Config | None, cpu_id: int) -> bool:
-    if config is None:
-        return False
-    return cpu_id in _component_ids(config.cpu_component_ids, config.cpu_id)
-
-
-def _config_has_gpu(config: Config | None, gpu_id: int) -> bool:
-    if config is None:
-        return False
-    return gpu_id in _component_ids(config.gpu_component_ids, config.gpu_id)
-
 
 @router.post("/", response_model=BenchmarkResult)
 def create_benchmark_result(benchmark_result: BenchmarkResult, db: Session = Depends(get_db)):
@@ -118,14 +84,22 @@ def get_results_by_config(config_id: int, db: Session = Depends(get_db)):
 def get_results_by_cpu(cpu_id: int, db: Session = Depends(get_db)):
     results = db.exec(select(BenchmarkResult)).all()
     configs = {config.id: config for config in db.exec(select(Config)).all()}
-    return [result for result in results if _config_has_cpu(configs.get(result.config_id), cpu_id)]
+    return [
+        result
+        for result in results
+        if configs.get(result.config_id) is not None and config_has_cpu(configs[result.config_id], cpu_id)
+    ]
 
 
 @router.get("/gpu/{gpu_id}", response_model=list[BenchmarkResult])
 def get_results_by_gpu(gpu_id: int, db: Session = Depends(get_db)):
     results = db.exec(select(BenchmarkResult)).all()
     configs = {config.id: config for config in db.exec(select(Config)).all()}
-    return [result for result in results if _config_has_gpu(configs.get(result.config_id), gpu_id)]
+    return [
+        result
+        for result in results
+        if configs.get(result.config_id) is not None and config_has_gpu(configs[result.config_id], gpu_id)
+    ]
 
 
 @router.get("/cpu-gpu/{cpu_id}/{gpu_id}", response_model=list[BenchmarkResult])
@@ -135,8 +109,9 @@ def get_results_by_cpu_and_gpu(cpu_id: int, gpu_id: int, db: Session = Depends(g
     return [
         result
         for result in results
-        if _config_has_cpu(configs.get(result.config_id), cpu_id)
-        and _config_has_gpu(configs.get(result.config_id), gpu_id)
+        if configs.get(result.config_id) is not None
+        and config_has_cpu(configs[result.config_id], cpu_id)
+        and config_has_gpu(configs[result.config_id], gpu_id)
     ]
 
 
