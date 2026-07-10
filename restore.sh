@@ -45,7 +45,7 @@ print_status "Loading configuration from .env file..."
 source "$SCRIPT_DIR/.env"
 
 # Validate required environment variables
-required_vars=("MYSQL_DATABASE" "MYSQL_USER" "MYSQL_PASSWORD" "MYSQL_PORT")
+required_vars=("MYSQL_DATABASE" "MYSQL_USER" "MYSQL_PASSWORD")
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         print_error "Required environment variable $var is not set in .env file"
@@ -145,16 +145,16 @@ fi
 
 print_status "Starting restore process..."
 
-# Stop API and WebUI containers to prevent data corruption
-print_status "Stopping API and WebUI containers..."
+# Stop API and web containers to prevent data corruption
+print_status "Stopping API and web containers..."
 if docker ps | grep -q "benchmarkinator-api"; then
-    if docker stop benchmarkinator-api benchmarkinator-webui 2>/dev/null; then
+    if docker stop benchmarkinator-api benchmarkinator-admin benchmarkinator-public 2>/dev/null; then
         print_success "Containers stopped successfully"
     else
         print_warning "Failed to stop some containers, continuing anyway..."
     fi
 else
-    print_status "API and WebUI containers are not running"
+    print_status "API and web containers are not running"
 fi
 
 # Check if MySQL container is running
@@ -208,9 +208,9 @@ if [ "$restore_file" != "$selected_backup" ] && [ -f "$restore_file" ]; then
     rm -f "$restore_file"
 fi
 
-# Restart API and WebUI containers
-print_status "Starting API and WebUI containers..."
-if docker compose up -d benchmarkinator-api benchmarkinator-webui; then
+# Restart API and web containers
+print_status "Starting API and web containers..."
+if docker compose up -d benchmarkinator-api benchmarkinator-admin benchmarkinator-public; then
     print_success "Containers started successfully!"
 else
     print_warning "Failed to start some containers. You may need to start them manually:"
@@ -228,6 +228,8 @@ echo ""
 print_status "Services status:"
 echo "  Database: $(docker ps --filter name=benchmarkinator-db --format 'table {{.Status}}' | tail -n +2)"
 echo "  API: $(docker ps --filter name=benchmarkinator-api --format 'table {{.Status}}' | tail -n +2)"
-echo "  WebUI: $(docker ps --filter name=benchmarkinator-webui --format 'table {{.Status}}' | tail -n +2)"
+echo "  Admin UI: $(docker ps --filter name=benchmarkinator-admin --format 'table {{.Status}}' | tail -n +2)"
+echo "  Public UI: $(docker ps --filter name=benchmarkinator-public --format 'table {{.Status}}' | tail -n +2)"
 echo ""
-print_status "You can now access the web UI at: http://localhost:4000"
+print_status "You can now access the admin UI at: http://localhost:${ADMIN_PORT:-8001}"
+print_status "You can now access the public UI at: http://localhost:${PUBLIC_PORT:-8002}"

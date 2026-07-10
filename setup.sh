@@ -47,8 +47,18 @@ set_env_var() {
 
 display_host_for_url() {
     local bind_address=$1
-    if [ "$bind_address" = "0.0.0.0" ] || [ "$bind_address" = "127.0.0.1" ] || [ -z "$bind_address" ]; then
+    if [ "$bind_address" = "127.0.0.1" ] || [ -z "$bind_address" ]; then
         echo "localhost"
+    elif [ "$bind_address" = "0.0.0.0" ]; then
+        local addresses
+        addresses=$(hostname -I 2>/dev/null || true)
+        for address in $addresses; do
+            if [[ "$address" != 127.* ]] && [[ "$address" != "::1" ]]; then
+                echo "$address"
+                return
+            fi
+        done
+        hostname -f 2>/dev/null || echo "localhost"
     else
         echo "$bind_address"
     fi
@@ -132,11 +142,13 @@ else
 fi
 
 allowed_origins=""
-echo "Do you want to add allowed browser origins now? (y/n)"
+echo "Do you need to allow browser origins to call the raw API directly? (y/n)"
+echo "Usually answer 'n' when using the admin/public containers or HAProxy in front of them."
+echo "Only answer 'y' for cross-origin browser calls to API_PORT, for example a separate custom admin frontend."
 read -r add_origin
 
 while [[ $add_origin =~ ^[Yy]$ ]]; do
-    echo "Enter allowed origin, for example https://bench.example.com:"
+    echo "Enter allowed raw-API browser origin, for example https://admin.example.com:"
     read -r origin
 
     if [ -n "$origin" ]; then
@@ -157,7 +169,7 @@ done
 set_env_var "ALLOWED_ORIGINS" "$allowed_origins"
 
 if [[ $use_https_proxy =~ ^[Yy]$ ]] && [ -z "$allowed_origins" ]; then
-    print_warning "No ALLOWED_ORIGINS were set. Add your public HTTPS origin in .env before exposing the service."
+    print_status "No ALLOWED_ORIGINS were set. This is expected if HAProxy sends users to the admin/public containers."
 fi
 
 ADMIN_URL_HOST=$(display_host_for_url "$admin_bind_address")
