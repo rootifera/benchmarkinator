@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
+  Copy,
   Edit,
   Trash2,
   Wrench,
@@ -46,6 +47,7 @@ const Configurations = () => {
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [cloningItem, setCloningItem] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState(null);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
@@ -107,6 +109,29 @@ const Configurations = () => {
 
   const requestDelete = (id) => {
     setDeleteTargetId(id);
+  };
+
+  const getCloneName = (name) => {
+    const baseName = `${name} Copy`;
+    const existingNames = new Set(configurations.map((config) => config.name.toLowerCase()));
+    if (!existingNames.has(baseName.toLowerCase())) {
+      return baseName;
+    }
+
+    let index = 2;
+    while (existingNames.has(`${baseName} ${index}`.toLowerCase())) {
+      index += 1;
+    }
+    return `${baseName} ${index}`;
+  };
+
+  const handleClone = (config) => {
+    setEditingItem(null);
+    setCloningItem({
+      ...config,
+      name: getCloneName(config.name),
+    });
+    setShowForm(true);
   };
 
   const handleDelete = async () => {
@@ -360,12 +385,20 @@ const Configurations = () => {
                 <button
                   onClick={() => {
                     setEditingItem(config);
+                    setCloningItem(null);
                     setShowForm(true);
                   }}
                   className="rounded p-1 text-primary-600 transition-colors hover:bg-primary-50 hover:text-primary-900 dark:text-primary-400 dark:hover:bg-primary-900/20 dark:hover:text-primary-300"
                   title="Edit"
                 >
                   <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleClone(config)}
+                  className="rounded p-1 text-emerald-600 transition-colors hover:bg-emerald-50 hover:text-emerald-900 dark:text-emerald-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-300"
+                  title="Clone"
+                >
+                  <Copy className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => requestDelete(config.id)}
@@ -395,7 +428,11 @@ const Configurations = () => {
           </p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => {
+            setEditingItem(null);
+            setCloningItem(null);
+            setShowForm(true);
+          }}
           className="bg-green-600 hover:bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
         >
           Create Test System
@@ -482,14 +519,17 @@ const Configurations = () => {
       {/* Add/Edit Form Modal */}
       {showForm && (
         <ConfigurationForm
-          configuration={editingItem}
+          configuration={cloningItem || editingItem}
+          isClone={Boolean(cloningItem)}
           onClose={() => {
             setShowForm(false);
             setEditingItem(null);
+            setCloningItem(null);
           }}
           onSave={() => {
             setShowForm(false);
             setEditingItem(null);
+            setCloningItem(null);
             fetchData();
           }}
           cpus={cpus}
@@ -776,6 +816,7 @@ const ConfigurationDetailsModal = ({
 // Configuration Form Component
 const ConfigurationForm = ({ 
   configuration, 
+  isClone = false,
   onClose, 
   onSave, 
   cpus, 
@@ -861,8 +902,9 @@ const ConfigurationForm = ({
       const headers = { 'X-API-Key': apiKey };
       const cpuIds = cpuSelections.map((id) => parseInt(id, 10)).filter(Boolean);
       const gpuIds = gpuSelections.map((id) => parseInt(id, 10)).filter(Boolean);
+      const { id, ...fieldsToSave } = formData;
       const payload = {
-        ...formData,
+        ...fieldsToSave,
         cpu_id: cpuIds[0] || '',
         gpu_id: gpuIds[0] || '',
         cpu_quantity: cpuIds.length,
@@ -870,7 +912,7 @@ const ConfigurationForm = ({
         cpu_component_ids: JSON.stringify(cpuIds),
         gpu_component_ids: JSON.stringify(gpuIds),
       };
-      if (configuration) {
+      if (configuration && !isClone) {
         await axios.put(buildApiUrl(`/api/config/${configuration.id}`), payload, { headers });
       } else {
         await axios.post(buildApiUrl('/api/config/'), payload, { headers });
@@ -971,7 +1013,7 @@ const ConfigurationForm = ({
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-5xl mx-4 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {configuration ? 'Edit' : 'Create'} Test System Configuration
+          {isClone ? 'Clone' : configuration ? 'Edit' : 'Create'} Test System Configuration
         </h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
