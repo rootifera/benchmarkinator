@@ -48,7 +48,7 @@ print_status "Loading configuration from .env file..."
 source "$SCRIPT_DIR/.env"
 
 # Validate required environment variables
-required_vars=("MYSQL_DATABASE" "MYSQL_USER" "MYSQL_PASSWORD" "MYSQL_PORT")
+required_vars=("MYSQL_DATABASE" "MYSQL_USER" "MYSQL_PASSWORD")
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         print_error "Required environment variable $var is not set in .env file"

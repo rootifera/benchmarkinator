@@ -93,7 +93,7 @@ Important `.env` values:
 | `AUTH_COOKIE_SAMESITE` | Browser SameSite policy for the session cookie |
 | `LOGIN_RATE_LIMIT_ATTEMPTS` | Failed login attempts allowed per window |
 | `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | Login rate-limit window |
-| `ALLOWED_ORIGINS` | Comma-separated CORS allowlist for direct API browser access |
+| `ALLOWED_ORIGINS` | Comma-separated CORS allowlist for direct browser calls to the raw API; usually blank when using the admin/public UI containers |
 | `PUBLIC_RESULTS_CACHE_SECONDS` | Backend cache TTL for public results data |
 | `LOAD_HARDWARE_DATA` | Whether to load seed hardware data on startup |
 | `HARDWARE_ERA` | Seed data set: `retro`, `retroextended`, or `modern` |
@@ -118,6 +118,8 @@ The public container rate-limits `/api/public/*` and caches `/api/public/results
 
 Use a reverse proxy such as Caddy, nginx, Traefik, or Cloudflare Tunnel in front of the public UI. Terminate HTTPS there. Keep the admin UI private.
 
+`ALLOWED_ORIGINS` is only for browser calls made directly to the raw API port from a different origin. When users access the admin or public UI containers through HAProxy and those containers proxy `/api`, leave `ALLOWED_ORIGINS` blank.
+
 If the reverse proxy runs on the same host as Benchmarkinator:
 
 ```env
@@ -127,7 +129,7 @@ PUBLIC_BIND_ADDRESS=127.0.0.1
 PUBLIC_PORT=8002
 AUTH_COOKIE_SECURE=true
 AUTH_COOKIE_SAMESITE=lax
-ALLOWED_ORIGINS=https://your-domain.example
+ALLOWED_ORIGINS=
 ```
 
 Proxy HTTPS traffic to:
@@ -145,7 +147,7 @@ PUBLIC_BIND_ADDRESS=192.168.1.23
 PUBLIC_PORT=8002
 AUTH_COOKIE_SECURE=true
 AUTH_COOKIE_SAMESITE=lax
-ALLOWED_ORIGINS=https://your-domain.example
+ALLOWED_ORIGINS=
 ```
 
 Proxy HTTPS traffic to:
@@ -309,7 +311,7 @@ docker compose up -d
 ```
 
 Common checks:
-- Make sure ports `4000`, `12345`, and `3306` are available or change them in `.env`.
+- Make sure `ADMIN_PORT`, `PUBLIC_PORT`, `API_PORT`, and `MYSQL_PORT` are available or change them in `.env`.
 - Make sure `.env` exists.
 - If login fails, check `WEBADMIN`, `WEBPASSWORD`, and `API_KEY`.
 - If the API cannot connect to MySQL, check `MYSQL_*` values and `docker compose logs benchmarkinator-db`.
