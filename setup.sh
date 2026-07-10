@@ -93,6 +93,16 @@ echo "  Web Password: $WEBPASSWORD"
 echo ""
 
 print_status "Network and Public Access Configuration"
+echo "MySQL host port [3306]:"
+read -r mysql_port
+mysql_port=${mysql_port:-3306}
+set_env_var "MYSQL_PORT" "$mysql_port"
+
+echo "API host port [12345]:"
+read -r api_port
+api_port=${api_port:-12345}
+set_env_var "API_PORT" "$api_port"
+
 echo "Admin UI bind address [127.0.0.1]:"
 read -r admin_bind_address
 admin_bind_address=${admin_bind_address:-127.0.0.1}
@@ -150,7 +160,8 @@ if [[ $use_https_proxy =~ ^[Yy]$ ]] && [ -z "$allowed_origins" ]; then
     print_warning "No ALLOWED_ORIGINS were set. Add your public HTTPS origin in .env before exposing the service."
 fi
 
-WEB_URL_HOST=$(display_host_for_url "$web_bind_address")
+ADMIN_URL_HOST=$(display_host_for_url "$admin_bind_address")
+PUBLIC_URL_HOST=$(display_host_for_url "$public_bind_address")
 
 echo ""
 
@@ -260,9 +271,9 @@ if [[ $start_app =~ ^[Yy]$ ]]; then
         print_success "Services started successfully!"
         echo ""
         print_status "Application is now running:"
-        echo "  Admin UI: http://$WEB_URL_HOST:$admin_port"
-        echo "  Public UI: http://$WEB_URL_HOST:$public_port"
-        echo "  API: http://localhost:12345"
+        echo "  Admin UI: http://$ADMIN_URL_HOST:$admin_port"
+        echo "  Public UI: http://$PUBLIC_URL_HOST:$public_port"
+        echo "  API: http://localhost:$api_port"
         echo ""
         print_status "Login credentials:"
         echo "  Username: admin"
@@ -279,8 +290,8 @@ else
     echo ""
     print_status "To start later:"
     echo "1. Start services: docker compose up -d"
-    echo "2. Access admin UI: http://$WEB_URL_HOST:$admin_port"
-    echo "3. Access public UI: http://$WEB_URL_HOST:$public_port"
+    echo "2. Access admin UI: http://$ADMIN_URL_HOST:$admin_port"
+    echo "3. Access public UI: http://$PUBLIC_URL_HOST:$public_port"
     echo "4. Login with: admin / $WEBPASSWORD"
 fi
 
