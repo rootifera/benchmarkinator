@@ -142,13 +142,12 @@ else
 fi
 
 allowed_origins=""
-echo "Do you need to allow browser origins to call the raw API directly? (y/n)"
-echo "Usually answer 'n' when using the admin/public containers or HAProxy in front of them."
-echo "Only answer 'y' for cross-origin browser calls to API_PORT, for example a separate custom admin frontend."
+echo "Allow direct browser access to the raw API from another origin? [n]:"
+echo "Choose 'n' for normal admin/public or HAProxy use."
 read -r add_origin
 
 while [[ $add_origin =~ ^[Yy]$ ]]; do
-    echo "Enter allowed raw-API browser origin, for example https://admin.example.com:"
+    echo "Enter allowed origin, for example https://admin.example.com:"
     read -r origin
 
     if [ -n "$origin" ]; then
@@ -169,7 +168,7 @@ done
 set_env_var "ALLOWED_ORIGINS" "$allowed_origins"
 
 if [[ $use_https_proxy =~ ^[Yy]$ ]] && [ -z "$allowed_origins" ]; then
-    print_status "No ALLOWED_ORIGINS were set. This is expected if HAProxy sends users to the admin/public containers."
+    print_status "ALLOWED_ORIGINS left blank."
 fi
 
 ADMIN_URL_HOST=$(display_host_for_url "$admin_bind_address")
