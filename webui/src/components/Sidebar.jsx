@@ -30,6 +30,9 @@ const Sidebar = () => {
     if (href === '/') {
       return location.pathname === '/';
     }
+    if (href === '/results') {
+      return location.pathname.startsWith('/results') || location.pathname.startsWith('/systems/');
+    }
     return location.pathname.startsWith(href);
   };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Filter,
@@ -11,6 +12,7 @@ import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { buildApiUrl } from '../config/api';
 import ConfirmModal from '../components/ConfirmModal';
+import PublicThemeToggle from '../components/PublicThemeToggle';
 
 const notify = (message, type = 'warning', duration) => {
   if (window.showToast) {
@@ -456,9 +458,11 @@ const Results = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Notes
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Actions
-              </th>
+              {isAuthenticated && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
@@ -471,7 +475,16 @@ const Results = () => {
                     {benchmark?.name || 'Unknown'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {config?.name || 'Unknown'}
+                    {config ? (
+                      <Link
+                        to={`/systems/${config.id}`}
+                        className="font-medium text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+                      >
+                        {config.name}
+                      </Link>
+                    ) : (
+                      'Unknown'
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
@@ -491,34 +504,26 @@ const Results = () => {
                   <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                     {result.notes || 'No notes'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEditResult(result)}
-                        disabled={!isAuthenticated}
-                        className={`p-1 rounded transition-colors ${
-                          isAuthenticated
-                            ? 'text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20'
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={isAuthenticated ? "Edit Result" : "Login required to edit"}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => requestDeleteResult(result.id)}
-                        disabled={!isAuthenticated}
-                        className={`p-1 rounded transition-colors ${
-                          isAuthenticated
-                            ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20'
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={isAuthenticated ? "Delete Result" : "Login required to delete"}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+                  {isAuthenticated && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEditResult(result)}
+                          className="rounded p-1 text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
+                          title="Edit Result"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => requestDeleteResult(result.id)}
+                          className="rounded p-1 text-red-600 transition-colors hover:bg-red-50 hover:text-red-900 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+                          title="Delete Result"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -531,7 +536,7 @@ const Results = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Results
@@ -540,41 +545,24 @@ const Results = () => {
             View and analyze your benchmark results
           </p>
         </div>
-        <div className="flex space-x-3">
-          <button
-            onClick={() => {
-              if (!isAuthenticated) {
-                notify('Please log in to compare test systems');
-                return;
-              }
-              setShowCompareForm(true);
-            }}
-            disabled={!isAuthenticated}
-            className={`text-xs font-medium px-3 py-2 rounded-lg transition-colors ${
-              isAuthenticated 
-                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                : 'bg-gray-400 text-gray-600 cursor-not-allowed'
-            }`}
-          >
-            Compare Test Systems
-          </button>
-          <button
-            onClick={() => {
-              if (!isAuthenticated) {
-                notify('Please log in to add new results');
-                return;
-              }
-              setShowForm(true);
-            }}
-            disabled={!isAuthenticated}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-              isAuthenticated 
-                ? 'bg-green-600 hover:bg-green-700 text-white' 
-                : 'bg-gray-400 text-gray-600 cursor-not-allowed'
-            }`}
-          >
-            Add New Result
-          </button>
+        <div className="flex items-center gap-3">
+          <PublicThemeToggle />
+          {isAuthenticated && (
+            <>
+            <button
+              onClick={() => setShowCompareForm(true)}
+              className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              Compare Test Systems
+            </button>
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-full bg-green-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-green-700"
+            >
+              Add New Result
+            </button>
+            </>
+          )}
         </div>
       </div>
 

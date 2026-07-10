@@ -5,15 +5,16 @@ import Sidebar from './components/Sidebar';
 import Routes from './Routes';
 import ToastContainer from './components/ToastContainer';
 
+const APP_MODE = import.meta.env.VITE_APP_MODE || 'admin';
+
 const AppContent = () => {
   const location = useLocation();
-  
-  // Don't show sidebar on login page
+  const isPublicMode = APP_MODE === 'public';
   const isLoginPage = location.pathname === '/login';
   
-  if (isLoginPage) {
+  if (isLoginPage || isPublicMode) {
     return (
-      <div className="h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Routes />
         <ToastContainer />
       </div>

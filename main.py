@@ -2,6 +2,7 @@
 from datetime import datetime
 import time
 import os
+from threading import Lock
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends, Request, Response
@@ -15,7 +16,11 @@ from models.benchmark import Benchmark
 from models.benchmark_results import BenchmarkResult
 from models.config import Config
 from models.cpu import CPU, CPUBrand, CPUFamily
-from models.gpu import GPU, GPUBrand, GPUManufacturer, GPUModel
+from models.disk import Disk
+from models.gpu import GPU, GPUBrand, GPUManufacturer, GPUModel, GPUVRAMType
+from models.motherboard import Motherboard, MotherboardChipset, MotherboardManufacturer
+from models.oses import OS
+from models.ram import RAM
 from utils.auth import (
     AUTH_COOKIE_NAME,
     AUTH_COOKIE_SAMESITE,
@@ -126,12 +131,27 @@ def session(request: Request):
 app.mount("/api/auth", auth_app)
 
 public_app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
+PUBLIC_RESULTS_CACHE_SECONDS = int(os.getenv("PUBLIC_RESULTS_CACHE_SECONDS", "15"))
+_public_results_cache_lock = Lock()
+_public_results_cache: tuple[float, dict] | None = None
 
 
 @public_app.get("/results-data")
-def public_results_data():
+def public_results_data(response: Response):
+    global _public_results_cache
+
+    now = time.monotonic()
+    with _public_results_cache_lock:
+        if (
+            _public_results_cache is not None
+            and now - _public_results_cache[0] < PUBLIC_RESULTS_CACHE_SECONDS
+        ):
+            response.headers["Cache-Control"] = f"public, max-age={PUBLIC_RESULTS_CACHE_SECONDS}"
+            response.headers["X-Cache"] = "HIT"
+            return _public_results_cache[1]
+
     with Session(engine) as session:
-        return {
+        payload = {
             "results": session.exec(select(BenchmarkResult)).all(),
             "benchmarks": session.exec(select(Benchmark)).all(),
             "configurations": session.exec(select(Config)).all(),
@@ -142,7 +162,21 @@ def public_results_data():
             "gpuManufacturers": session.exec(select(GPUManufacturer)).all(),
             "gpuBrands": session.exec(select(GPUBrand)).all(),
             "gpuModels": session.exec(select(GPUModel)).all(),
+            "gpuVramTypes": session.exec(select(GPUVRAMType)).all(),
+            "motherboards": session.exec(select(Motherboard)).all(),
+            "motherboardManufacturers": session.exec(select(MotherboardManufacturer)).all(),
+            "motherboardChipsets": session.exec(select(MotherboardChipset)).all(),
+            "ramTypes": session.exec(select(RAM)).all(),
+            "disks": session.exec(select(Disk)).all(),
+            "oses": session.exec(select(OS)).all(),
         }
+
+    with _public_results_cache_lock:
+        _public_results_cache = (time.monotonic(), payload)
+
+    response.headers["Cache-Control"] = f"public, max-age={PUBLIC_RESULTS_CACHE_SECONDS}"
+    response.headers["X-Cache"] = "MISS"
+    return payload
 
 
 app.mount("/api/public", public_app)

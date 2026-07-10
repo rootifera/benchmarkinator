@@ -93,17 +93,27 @@ echo "  Web Password: $WEBPASSWORD"
 echo ""
 
 print_status "Network and Public Access Configuration"
-echo "Web UI bind address [127.0.0.1]:"
-read -r web_bind_address
-web_bind_address=${web_bind_address:-127.0.0.1}
-set_env_var "WEB_BIND_ADDRESS" "$web_bind_address"
+echo "Admin UI bind address [127.0.0.1]:"
+read -r admin_bind_address
+admin_bind_address=${admin_bind_address:-127.0.0.1}
+set_env_var "ADMIN_BIND_ADDRESS" "$admin_bind_address"
 
-echo "Web UI port [4000]:"
-read -r web_port
-web_port=${web_port:-4000}
-set_env_var "WEB_PORT" "$web_port"
+echo "Admin UI port [8001]:"
+read -r admin_port
+admin_port=${admin_port:-8001}
+set_env_var "ADMIN_PORT" "$admin_port"
 
-echo "Will the web UI be served through HTTPS by a reverse proxy such as BunkerWeb? (y/n)"
+echo "Public UI bind address [127.0.0.1]:"
+read -r public_bind_address
+public_bind_address=${public_bind_address:-127.0.0.1}
+set_env_var "PUBLIC_BIND_ADDRESS" "$public_bind_address"
+
+echo "Public UI port [8002]:"
+read -r public_port
+public_port=${public_port:-8002}
+set_env_var "PUBLIC_PORT" "$public_port"
+
+echo "Will either UI be served through HTTPS by a reverse proxy such as BunkerWeb? (y/n)"
 read -r use_https_proxy
 if [[ $use_https_proxy =~ ^[Yy]$ ]]; then
     set_env_var "AUTH_COOKIE_SECURE" "true"
@@ -250,7 +260,8 @@ if [[ $start_app =~ ^[Yy]$ ]]; then
         print_success "Services started successfully!"
         echo ""
         print_status "Application is now running:"
-        echo "  Web UI: http://$WEB_URL_HOST:$web_port"
+        echo "  Admin UI: http://$WEB_URL_HOST:$admin_port"
+        echo "  Public UI: http://$WEB_URL_HOST:$public_port"
         echo "  API: http://localhost:12345"
         echo ""
         print_status "Login credentials:"
@@ -268,8 +279,9 @@ else
     echo ""
     print_status "To start later:"
     echo "1. Start services: docker compose up -d"
-    echo "2. Access web UI: http://$WEB_URL_HOST:$web_port"
-    echo "3. Login with: admin / $WEBPASSWORD"
+    echo "2. Access admin UI: http://$WEB_URL_HOST:$admin_port"
+    echo "3. Access public UI: http://$WEB_URL_HOST:$public_port"
+    echo "4. Login with: admin / $WEBPASSWORD"
 fi
 
 echo ""

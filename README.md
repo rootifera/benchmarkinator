@@ -23,14 +23,15 @@ Default ports:
 
 | Service | URL |
 | --- | --- |
-| Web UI | http://localhost:4000 |
+| Admin UI | http://localhost:8001 |
+| Public UI | http://localhost:8002 |
 | API | http://localhost:12345 |
 | API docs | http://localhost:12345/docs |
 | MySQL | localhost:3306 |
 
-The web UI container serves static files through nginx and proxies `/api` to the API container.
+The admin and public UI containers serve static files through nginx. The admin UI proxies `/api` to the API container. The public UI only proxies `/api/public/*`.
 
-In Docker Compose, MySQL and the API bind to `127.0.0.1` by default. The web UI also binds to `127.0.0.1` unless `WEB_BIND_ADDRESS` is changed.
+In Docker Compose, MySQL, the API, and both web UIs bind to `127.0.0.1` by default. Change the bind-address values only for the surfaces you intentionally want reachable from another host.
 
 ## Requirements
 
@@ -80,8 +81,10 @@ Important `.env` values:
 | `MYSQL_ROOT_PASSWORD` | MySQL root password |
 | `MYSQL_PORT` | Host port mapped to MySQL |
 | `API_PORT` | Host port mapped to the API |
-| `WEB_PORT` | Host port mapped to the web UI |
-| `WEB_BIND_ADDRESS` | Host address for the web UI binding |
+| `ADMIN_PORT` | Host port mapped to the admin UI |
+| `ADMIN_BIND_ADDRESS` | Host address for the admin UI binding |
+| `PUBLIC_PORT` | Host port mapped to the public UI |
+| `PUBLIC_BIND_ADDRESS` | Host address for the public UI binding |
 | `API_KEY` | API key for protected API routes |
 | `WEBADMIN` | Web login username |
 | `WEBPASSWORD` | Web login password |
@@ -91,6 +94,7 @@ Important `.env` values:
 | `LOGIN_RATE_LIMIT_ATTEMPTS` | Failed login attempts allowed per window |
 | `LOGIN_RATE_LIMIT_WINDOW_SECONDS` | Login rate-limit window |
 | `ALLOWED_ORIGINS` | Comma-separated CORS allowlist for direct API browser access |
+| `PUBLIC_RESULTS_CACHE_SECONDS` | Backend cache TTL for public results data |
 | `LOAD_HARDWARE_DATA` | Whether to load seed hardware data on startup |
 | `HARDWARE_ERA` | Seed data set: `retro`, `retroextended`, or `modern` |
 
@@ -108,15 +112,19 @@ The raw `API_KEY` is for trusted scripts or local administration. Do not publish
 
 Benchmark results can be viewed without logging in through the public results route. Editing data requires login.
 
+The public container rate-limits `/api/public/*` and caches `/api/public/results-data` at nginx for 30 seconds. The API also keeps a short in-process cache controlled by `PUBLIC_RESULTS_CACHE_SECONDS` so public traffic does not query MySQL on every request.
+
 ## Public Deployment
 
-Use a reverse proxy such as Caddy, nginx, Traefik, or Cloudflare Tunnel in front of the web UI. Terminate HTTPS there.
+Use a reverse proxy such as Caddy, nginx, Traefik, or Cloudflare Tunnel in front of the public UI. Terminate HTTPS there. Keep the admin UI private.
 
 If the reverse proxy runs on the same host as Benchmarkinator:
 
 ```env
-WEB_BIND_ADDRESS=127.0.0.1
-WEB_PORT=4000
+ADMIN_BIND_ADDRESS=127.0.0.1
+ADMIN_PORT=8001
+PUBLIC_BIND_ADDRESS=127.0.0.1
+PUBLIC_PORT=8002
 AUTH_COOKIE_SECURE=true
 AUTH_COOKIE_SAMESITE=lax
 ALLOWED_ORIGINS=https://your-domain.example
@@ -125,14 +133,16 @@ ALLOWED_ORIGINS=https://your-domain.example
 Proxy HTTPS traffic to:
 
 ```text
-http://127.0.0.1:4000
+http://127.0.0.1:8002
 ```
 
 If the reverse proxy runs on another machine and Benchmarkinator runs at `192.168.1.23`:
 
 ```env
-WEB_BIND_ADDRESS=192.168.1.23
-WEB_PORT=4000
+ADMIN_BIND_ADDRESS=127.0.0.1
+ADMIN_PORT=8001
+PUBLIC_BIND_ADDRESS=192.168.1.23
+PUBLIC_PORT=8002
 AUTH_COOKIE_SECURE=true
 AUTH_COOKIE_SAMESITE=lax
 ALLOWED_ORIGINS=https://your-domain.example
@@ -141,12 +151,13 @@ ALLOWED_ORIGINS=https://your-domain.example
 Proxy HTTPS traffic to:
 
 ```text
-http://192.168.1.23:4000
+http://192.168.1.23:8002
 ```
 
 Recommended network shape:
 - expose only the reverse proxy to the internet
-- allow access to `WEB_PORT` only from the reverse proxy host
+- allow access to `PUBLIC_PORT` only from the reverse proxy host or intended public network
+- keep `ADMIN_PORT` private
 - keep MySQL on `127.0.0.1:${MYSQL_PORT}`
 - keep the direct API on `127.0.0.1:${API_PORT}`
 - use long random values for `API_KEY`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`, and `WEBPASSWORD`
