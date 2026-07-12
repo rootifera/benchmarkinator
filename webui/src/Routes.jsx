@@ -1,11 +1,15 @@
 import React, { Suspense, lazy } from 'react';
 import { Navigate, Routes as RouterRoutes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicNav from './components/PublicNav';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Hardware = lazy(() => import('./pages/Hardware'));
 const Benchmarks = lazy(() => import('./pages/Benchmarks'));
 const Results = lazy(() => import('./pages/Results'));
+const PublicDashboard = lazy(() => import('./pages/PublicDashboard'));
+const PublicResults = lazy(() => import('./pages/PublicResults'));
+const PublicSystems = lazy(() => import('./pages/PublicSystems'));
 const PublicSystem = lazy(() => import('./pages/PublicSystem'));
 const Configurations = lazy(() => import('./pages/Configurations'));
 const Login = lazy(() => import('./components/Login'));
@@ -21,16 +25,20 @@ const PageFallback = () => (
 const Routes = () => {
   if (APP_MODE === 'public') {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <Suspense fallback={<PageFallback />}>
-          <RouterRoutes>
-            <Route path="/" element={<Results />} />
-            <Route path="/results" element={<Results />} />
-            <Route path="/systems/:configId" element={<PublicSystem />} />
-            <Route path="*" element={<Navigate to="/results" replace />} />
-          </RouterRoutes>
-        </Suspense>
-      </div>
+      <>
+        <PublicNav />
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <Suspense fallback={<PageFallback />}>
+            <RouterRoutes>
+              <Route path="/" element={<PublicDashboard />} />
+              <Route path="/results" element={<PublicResults />} />
+              <Route path="/systems" element={<PublicSystems />} />
+              <Route path="/systems/:configId" element={<PublicSystem />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </RouterRoutes>
+          </Suspense>
+        </main>
+      </>
     );
   }
 

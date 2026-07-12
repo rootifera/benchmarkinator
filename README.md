@@ -33,6 +33,15 @@ The admin and public UI containers serve static files through nginx. The admin U
 
 In Docker Compose, MySQL, the API, and both web UIs bind to `127.0.0.1` by default. Change the bind-address values only for the surfaces you intentionally want reachable from another host.
 
+Public UI routes:
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Public benchmark dashboard |
+| `/results` | Searchable public benchmark results |
+| `/systems` | Searchable public test-system catalog |
+| `/systems/:id` | Dedicated public test-system profile and comparison view |
+
 ## Requirements
 
 - Docker
@@ -80,6 +89,7 @@ Important `.env` values:
 | `MYSQL_PASSWORD` | MySQL application user password |
 | `MYSQL_ROOT_PASSWORD` | MySQL root password |
 | `MYSQL_PORT` | Host port mapped to MySQL |
+| `MYSQL_POOL_RECYCLE_SECONDS` | API MySQL connection recycle interval; helps avoid stale idle connections |
 | `API_PORT` | Host port mapped to the API |
 | `ADMIN_PORT` | Host port mapped to the admin UI |
 | `ADMIN_BIND_ADDRESS` | Host address for the admin UI binding |

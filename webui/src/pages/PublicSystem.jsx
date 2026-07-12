@@ -14,7 +14,6 @@ import {
   Tv,
 } from 'lucide-react';
 import { buildApiUrl } from '../config/api';
-import PublicThemeToggle from '../components/PublicThemeToggle';
 
 const parseComponentIds = (raw, fallbackId, fallbackQuantity = 1) => {
   if (raw) {
@@ -152,13 +151,33 @@ const PublicSystem = () => {
     return [...validResults].sort((a, b) => compareScores(a, b, benchmark.lower_is_better))[0];
   };
 
-  const calculatePercentageChange = (primaryValue, targetValue, lowerIsBetter) => {
-    if (primaryValue === 0) return 0;
-    let change = ((targetValue - primaryValue) / primaryValue) * 100;
-    if (lowerIsBetter) {
-      change = -change;
+  const calculateComparisonLead = (primaryValue, targetValue, lowerIsBetter) => {
+    if (primaryValue === targetValue) {
+      return { leader: 'tie', margin: 0 };
     }
-    return change;
+
+    const primaryLeads = lowerIsBetter
+      ? primaryValue < targetValue
+      : primaryValue > targetValue;
+    const weakerValue = primaryLeads ? targetValue : primaryValue;
+    const margin = weakerValue === 0
+      ? 0
+      : (Math.abs(primaryValue - targetValue) / Math.abs(weakerValue)) * 100;
+
+    return {
+      leader: primaryLeads ? 'primary' : 'target',
+      margin,
+    };
+  };
+
+  const scoreBadgeClass = (state) => {
+    if (state === 'winner') {
+      return 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/70 dark:text-emerald-100 dark:ring-emerald-800';
+    }
+    if (state === 'loser') {
+      return 'bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/70 dark:text-red-100 dark:ring-red-800';
+    }
+    return 'bg-gray-100 text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:ring-gray-700';
   };
 
   const comparisonRows = useMemo(() => {
@@ -177,7 +196,7 @@ const PublicSystem = () => {
 
         if (!primaryResult || !targetResult) return null;
 
-        const percentageChange = calculatePercentageChange(
+        const lead = calculateComparisonLead(
           Number(primaryResult.result),
           Number(targetResult.result),
           benchmark.lower_is_better
@@ -187,7 +206,7 @@ const PublicSystem = () => {
           benchmark,
           primaryResult,
           targetResult,
-          percentageChange,
+          lead,
         };
       })
       .filter(Boolean)
@@ -248,7 +267,6 @@ const PublicSystem = () => {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Results
           </Link>
-          <PublicThemeToggle />
         </div>
         <div className="rounded-md border border-gray-200 bg-white p-8 text-center dark:border-gray-700 dark:bg-gray-800">
           <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -291,7 +309,6 @@ const PublicSystem = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <PublicThemeToggle />
           <button
             type="button"
             onClick={copyLink}
@@ -436,13 +453,22 @@ const PublicSystem = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Benchmark</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{config.name}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{targetConfig?.name || 'Target'}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Target Advantage</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Leader</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
                   {comparisonRows.map((row) => {
-                    const isTargetAhead = row.percentageChange > 0;
-                    const isTie = Math.abs(row.percentageChange) < 0.01;
+                    const isPrimaryAhead = row.lead.leader === 'primary';
+                    const isTie = row.lead.leader === 'tie' || row.lead.margin < 0.01;
+                    const leaderName = isPrimaryAhead ? config.name : targetConfig?.name || 'Target';
+                    const leaderText = isTie
+                      ? 'Even'
+                      : `${isPrimaryAhead ? 'Primary' : 'Target'} leads by ${row.lead.margin.toFixed(2)}%`;
+                    const leaderTitle = isTie
+                      ? 'Both systems are even'
+                      : `${leaderName} leads by ${row.lead.margin.toFixed(2)}%`;
+                    const primaryScoreState = isTie ? 'tie' : isPrimaryAhead ? 'winner' : 'loser';
+                    const targetScoreState = isTie ? 'tie' : isPrimaryAhead ? 'loser' : 'winner';
                     return (
                       <tr key={row.benchmark.id}>
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
@@ -453,17 +479,28 @@ const PublicSystem = () => {
                             </span>
                           )}
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">{formatScore(row.primaryResult.result)}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">{formatScore(row.targetResult.result)}</td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm">
-                          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${scoreBadgeClass(primaryScoreState)}`}>
+                            {formatScore(row.primaryResult.result)}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm">
+                          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${scoreBadgeClass(targetScoreState)}`}>
+                            {formatScore(row.targetResult.result)}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm">
+                          <span
+                            title={leaderTitle}
+                            className={`inline-flex max-w-64 truncate rounded-full px-2.5 py-0.5 text-xs font-medium ${
                             isTie
                               ? 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300'
-                              : isTargetAhead
+                              : isPrimaryAhead
                                 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
                                 : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                          }`}>
-                            {isTie ? 'Even' : `${isTargetAhead ? '+' : ''}${row.percentageChange.toFixed(2)}%`}
+                          }`}
+                          >
+                            {leaderText}
                           </span>
                         </td>
                       </tr>

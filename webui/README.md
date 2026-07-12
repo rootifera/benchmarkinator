@@ -46,6 +46,13 @@ By default the web UI calls `/api`, which is proxied to the backend by the produ
 
 Set `VITE_APP_MODE=public` to build or run the read-only public UI. The default is `admin`.
 
+Public mode routes:
+
+- `/`: dashboard
+- `/results`: searchable benchmark results
+- `/systems`: searchable test-system catalog
+- `/systems/:id`: dedicated system profile and comparison view
+
 ## API Authentication
 
 The web UI requires an API key to authenticate with your backend. The default development key is:
@@ -67,6 +74,12 @@ Build the public UI locally with:
 
 ```bash
 VITE_APP_MODE=public npm run build
+```
+
+Run the public UI locally with:
+
+```bash
+VITE_APP_MODE=public npm run dev
 ```
 
 The built files will be in the `dist/` directory.

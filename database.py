@@ -39,8 +39,16 @@ def _build_mysql_url_from_parts() -> str:
 
 DATABASE_URL = _env("DATABASE_URL") or _build_mysql_url_from_parts()
 SQL_ECHO = (_env("SQL_ECHO", "false") or "false").lower() in {"1", "true", "yes"}
+MYSQL_POOL_RECYCLE_SECONDS = int(_env("MYSQL_POOL_RECYCLE_SECONDS", "1800") or "1800")
 
-engine = create_engine(DATABASE_URL, echo=SQL_ECHO)
+engine_kwargs = {"echo": SQL_ECHO}
+if DATABASE_URL.startswith("mysql"):
+    engine_kwargs.update({
+        "pool_pre_ping": True,
+        "pool_recycle": MYSQL_POOL_RECYCLE_SECONDS,
+    })
+
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 
 
 def check_tables_exist() -> bool:
@@ -95,5 +103,11 @@ def _ensure_config_quantity_columns():
 
 
 def get_db():
-    with Session(engine) as session:
+    session = Session(engine)
+    try:
         yield session
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
