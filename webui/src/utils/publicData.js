@@ -61,6 +61,18 @@ export const compareScores = (a, b, lowerIsBetter) => (
   lowerIsBetter ? Number(a.result) - Number(b.result) : Number(b.result) - Number(a.result)
 );
 
+export const formatPublicId = (prefix, id) => {
+  if (!id && id !== 0) return `${prefix}-?`;
+  return `${prefix}-${id}`;
+};
+
+export const formatSystemId = (id) => formatPublicId('SYS', id);
+export const formatResultId = (id) => formatPublicId('RES', id);
+export const formatBenchmarkId = (id) => formatPublicId('BM', id);
+export const formatCpuId = (id) => formatPublicId('CPU', id);
+export const formatGpuId = (id) => formatPublicId('GPU', id);
+export const formatMotherboardId = (id) => formatPublicId('MB', id);
+
 const byId = (items) => new Map(items.map((item) => [item.id, item]));
 const compact = (items) => items.filter(Boolean).join(' ').trim();
 const uniqueSorted = (items) => [...new Set(items.filter(Boolean))].sort((a, b) => a.localeCompare(b));
@@ -145,6 +157,7 @@ export const buildPublicModel = (data) => {
     return {
       config,
       id: config.id,
+      publicId: formatSystemId(config.id),
       name: config.name,
       cpuNames,
       gpuNames,
@@ -159,9 +172,13 @@ export const buildPublicModel = (data) => {
       newestResult,
       newestDate: newestResult?.timestamp || null,
       searchText: compact([
+        formatSystemId(config.id),
         config.name,
         cpuNames.join(' '),
         gpuNames.join(' '),
+        cpuIds.map(formatCpuId).join(' '),
+        gpuIds.map(formatGpuId).join(' '),
+        formatMotherboardId(config.motherboard_id),
         osName,
         ramName,
         config.ram_size,
@@ -180,11 +197,14 @@ export const buildPublicModel = (data) => {
     return {
       result,
       id: result.id,
+      publicId: formatResultId(result.id),
       benchmark,
       system,
       score: Number(result.result),
       date: result.timestamp,
       searchText: compact([
+        formatResultId(result.id),
+        formatBenchmarkId(benchmark?.id),
         benchmark?.name,
         system?.name,
         system?.cpuText,

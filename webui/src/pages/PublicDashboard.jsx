@@ -11,7 +11,7 @@ import {
   Server,
   Trophy,
 } from 'lucide-react';
-import { formatDate, formatScore, usePublicData } from '../utils/publicData';
+import { formatBenchmarkId, formatDate, formatResultId, formatScore, usePublicData } from '../utils/publicData';
 
 const StatCard = ({ icon: Icon, label, value, detail }) => (
   <div className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
@@ -81,13 +81,16 @@ const PublicDashboard = () => {
           {analytics.newestResult ? (
             <div className="mt-4">
               <p className="text-lg font-semibold text-gray-950 dark:text-white">
-                {analytics.newestResult.benchmark?.name || 'Unknown benchmark'}
+                <span title={`${formatBenchmarkId(analytics.newestResult.benchmark?.id)} ${analytics.newestResult.benchmark?.name || 'Unknown benchmark'}`}>
+                  {analytics.newestResult.benchmark?.name || 'Unknown benchmark'}
+                </span>
               </p>
               <p className="mt-2 text-3xl font-bold text-primary-700 dark:text-primary-300">
                 {formatScore(analytics.newestResult.result.result)}
               </p>
               <Link
                 to={`/systems/${analytics.newestResult.system?.id}`}
+                title={`${analytics.newestResult.system?.publicId || 'SYS-?'} ${analytics.newestResult.system?.name || 'Unknown system'}`}
                 className="mt-3 inline-flex items-center text-sm font-medium text-primary-700 hover:text-primary-900 dark:text-primary-300 dark:hover:text-primary-200"
               >
                 {analytics.newestResult.system?.name || 'Unknown system'}
@@ -121,8 +124,18 @@ const PublicDashboard = () => {
               <Link key={`${record.benchmark.id}-${record.id}`} to={`/systems/${record.system?.id}`} className="block px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-800">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="font-medium text-gray-950 dark:text-white">{record.benchmark.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{record.system?.name || 'Unknown system'}</p>
+                    <p
+                      className="font-medium text-gray-950 dark:text-white"
+                      title={`${formatBenchmarkId(record.benchmark.id)} ${record.benchmark.name}`}
+                    >
+                      {record.benchmark.name}
+                    </p>
+                    <p
+                      className="text-sm text-gray-500 dark:text-gray-400"
+                      title={`${record.system?.publicId || 'SYS-?'} ${record.system?.name || 'Unknown system'}`}
+                    >
+                      {record.system?.name || 'Unknown system'}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-primary-700 dark:text-primary-300">{formatScore(record.result.result)}</p>
@@ -147,7 +160,9 @@ const PublicDashboard = () => {
               <Link key={system.id} to={`/systems/${system.id}`} className="block px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-800">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-medium text-gray-950 dark:text-white">{system.name}</p>
+                    <p className="font-medium text-gray-950 dark:text-white" title={`${system.publicId} ${system.name}`}>
+                      {system.name}
+                    </p>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{system.cpuText}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{system.gpuText}</p>
                   </div>
@@ -186,13 +201,24 @@ const PublicDashboard = () => {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
               {recentResults.slice(0, 8).map((record) => (
                 <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td className="px-5 py-4 text-sm font-medium text-gray-950 dark:text-white">{record.benchmark?.name || 'Unknown'}</td>
+                  <td
+                    className="px-5 py-4 text-sm font-medium text-gray-950 dark:text-white"
+                    title={`${formatBenchmarkId(record.benchmark?.id)} ${record.benchmark?.name || 'Unknown'}`}
+                  >
+                    {record.benchmark?.name || 'Unknown'}
+                  </td>
                   <td className="px-5 py-4 text-sm">
-                    <Link to={`/systems/${record.system?.id}`} className="font-medium text-primary-700 hover:text-primary-900 dark:text-primary-300">
+                    <Link
+                      to={`/systems/${record.system?.id}`}
+                      title={`${record.system?.publicId || 'SYS-?'} ${record.system?.name || 'Unknown'}`}
+                      className="font-medium text-primary-700 hover:text-primary-900 dark:text-primary-300"
+                    >
                       {record.system?.name || 'Unknown'}
                     </Link>
                   </td>
-                  <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{formatScore(record.result.result)}</td>
+                  <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
+                    <span title={formatResultId(record.id)}>{formatScore(record.result.result)}</span>
+                  </td>
                   <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{formatDate(record.date)}</td>
                 </tr>
               ))}

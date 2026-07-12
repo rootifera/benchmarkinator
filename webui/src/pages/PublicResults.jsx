@@ -1,7 +1,14 @@
 import React, { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowUpDown, BarChart3, Search, Trophy, X } from 'lucide-react';
-import { compareScores, formatDate, formatScore, usePublicData } from '../utils/publicData';
+import {
+  compareScores,
+  formatBenchmarkId,
+  formatDate,
+  formatResultId,
+  formatScore,
+  usePublicData,
+} from '../utils/publicData';
 
 const getParam = (params, key, fallback = '') => params.get(key) || fallback;
 
@@ -195,7 +202,10 @@ const PublicResults = () => {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                 {filteredResults.map((record) => (
                   <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <td className="px-5 py-4 text-sm font-medium text-gray-950 dark:text-white">
+                    <td
+                      className="px-5 py-4 text-sm font-medium text-gray-950 dark:text-white"
+                      title={`${formatBenchmarkId(record.benchmark?.id)} ${record.benchmark?.name || 'Unknown'}`}
+                    >
                       {record.benchmark?.name || 'Unknown'}
                       {record.benchmark?.lower_is_better && (
                         <span className="mt-1 block w-max rounded-full border border-gray-300 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:border-gray-700 dark:text-gray-400">
@@ -204,12 +214,19 @@ const PublicResults = () => {
                       )}
                     </td>
                     <td className="px-5 py-4 text-sm">
-                      <span className="inline-flex rounded-full bg-primary-50 px-3 py-1 font-semibold text-primary-800 dark:bg-primary-950 dark:text-primary-200">
+                      <span
+                        title={formatResultId(record.id)}
+                        className="font-semibold text-gray-950 dark:text-white"
+                      >
                         {formatScore(record.result.result)}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-sm">
-                      <Link to={`/systems/${record.system?.id}`} className="font-medium text-primary-700 hover:text-primary-900 dark:text-primary-300">
+                      <Link
+                        to={`/systems/${record.system?.id}`}
+                        title={`${record.system?.publicId || 'SYS-?'} ${record.system?.name || 'Unknown'}`}
+                        className="font-medium text-primary-700 hover:text-primary-900 dark:text-primary-300"
+                      >
                         {record.system?.name || 'Unknown'}
                       </Link>
                       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{record.system?.osName}</p>

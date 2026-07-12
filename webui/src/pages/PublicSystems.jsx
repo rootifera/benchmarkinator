@@ -157,7 +157,9 @@ const PublicSystems = () => {
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-950 dark:text-white">{system.name}</h2>
+                  <div className="flex flex-wrap items-center gap-2" title={`${system.publicId} ${system.name}`}>
+                    <h2 className="text-lg font-semibold text-gray-950 dark:text-white">{system.name}</h2>
+                  </div>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{system.osName}</p>
                 </div>
                 <div className="rounded-md bg-gray-100 px-3 py-2 text-right text-sm dark:bg-gray-800">

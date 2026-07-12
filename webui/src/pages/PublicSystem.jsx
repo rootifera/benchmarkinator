@@ -14,6 +14,11 @@ import {
   Tv,
 } from 'lucide-react';
 import { buildApiUrl } from '../config/api';
+import {
+  formatBenchmarkId,
+  formatResultId,
+  formatSystemId,
+} from '../utils/publicData';
 
 const parseComponentIds = (raw, fallbackId, fallbackQuantity = 1) => {
   if (raw) {
@@ -172,12 +177,12 @@ const PublicSystem = () => {
 
   const scoreBadgeClass = (state) => {
     if (state === 'winner') {
-      return 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200 dark:bg-emerald-900/70 dark:text-emerald-100 dark:ring-emerald-800';
+      return 'bg-emerald-600 text-white ring-1 ring-emerald-500 dark:bg-emerald-500 dark:text-emerald-950 dark:ring-emerald-400';
     }
     if (state === 'loser') {
-      return 'bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/70 dark:text-red-100 dark:ring-red-800';
+      return 'bg-red-600 text-white ring-1 ring-red-500 dark:bg-red-500 dark:text-red-950 dark:ring-red-400';
     }
-    return 'bg-gray-100 text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:ring-gray-700';
+    return 'bg-gray-200 text-gray-800 ring-1 ring-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:ring-gray-600';
   };
 
   const comparisonRows = useMemo(() => {
@@ -303,7 +308,9 @@ const PublicSystem = () => {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Results
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{config.name}</h1>
+          <div className="flex flex-wrap items-center gap-3" title={`${formatSystemId(config.id)} ${config.name}`}>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{config.name}</h1>
+          </div>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
             Public test system profile and benchmark results
           </p>
@@ -375,7 +382,10 @@ const PublicSystem = () => {
                   const benchmark = lookups.benchmarks.get(result.benchmark_id);
                   return (
                     <tr key={result.id}>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                      <td
+                        className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white"
+                        title={`${formatBenchmarkId(benchmark?.id)} ${benchmark?.name || 'Unknown'}`}
+                      >
                         {benchmark?.name || 'Unknown'}
                         {benchmark?.lower_is_better && (
                           <span className="ml-2 rounded-full border border-gray-300 px-2 py-0.5 text-[10px] text-gray-700 dark:border-gray-700 dark:text-gray-300">
@@ -383,7 +393,9 @@ const PublicSystem = () => {
                           </span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">{formatScore(result.result)}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
+                        <span title={formatResultId(result.id)}>{formatScore(result.result)}</span>
+                      </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">{formatDate(result.timestamp)}</td>
                       <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{result.notes || 'No notes'}</td>
                     </tr>
@@ -451,8 +463,12 @@ const PublicSystem = () => {
                 <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Benchmark</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{config.name}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{targetConfig?.name || 'Target'}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      <span title={`${formatSystemId(config.id)} ${config.name}`}>{config.name}</span>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      <span title={targetConfig ? `${formatSystemId(targetConfig.id)} ${targetConfig.name}` : 'Target'}>{targetConfig?.name || 'Target'}</span>
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Leader</th>
                   </tr>
                 </thead>
@@ -461,17 +477,21 @@ const PublicSystem = () => {
                     const isPrimaryAhead = row.lead.leader === 'primary';
                     const isTie = row.lead.leader === 'tie' || row.lead.margin < 0.01;
                     const leaderName = isPrimaryAhead ? config.name : targetConfig?.name || 'Target';
+                    const leaderId = isPrimaryAhead ? formatSystemId(config.id) : formatSystemId(targetConfig?.id);
                     const leaderText = isTie
                       ? 'Even'
                       : `${isPrimaryAhead ? 'Primary' : 'Target'} leads by ${row.lead.margin.toFixed(2)}%`;
                     const leaderTitle = isTie
                       ? 'Both systems are even'
-                      : `${leaderName} leads by ${row.lead.margin.toFixed(2)}%`;
+                      : `${leaderId} ${leaderName} leads by ${row.lead.margin.toFixed(2)}%`;
                     const primaryScoreState = isTie ? 'tie' : isPrimaryAhead ? 'winner' : 'loser';
                     const targetScoreState = isTie ? 'tie' : isPrimaryAhead ? 'loser' : 'winner';
                     return (
                       <tr key={row.benchmark.id}>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                        <td
+                          className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white"
+                          title={`${formatBenchmarkId(row.benchmark.id)} ${row.benchmark.name}`}
+                        >
                           {row.benchmark.name}
                           {row.benchmark.lower_is_better && (
                             <span className="ml-2 rounded-full border border-gray-300 px-2 py-0.5 text-[10px] text-gray-700 dark:border-gray-700 dark:text-gray-300">
