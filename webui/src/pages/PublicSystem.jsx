@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { buildApiUrl } from '../config/api';
 import {
+  formatRank,
   formatBenchmarkId,
   formatResultId,
   formatSystemId,
@@ -148,6 +149,34 @@ const PublicSystem = () => {
     return lowerIsBetter ? a.result - b.result : b.result - a.result;
   };
 
+  const rankByResultId = useMemo(() => {
+    const ranks = new Map();
+
+    data.benchmarks.forEach((benchmark) => {
+      const sortedResults = data.results
+        .filter((result) => result.benchmark_id === benchmark.id && Number.isFinite(Number(result.result)))
+        .map((result) => ({ ...result, result: Number(result.result) }))
+        .sort((a, b) => compareScores(a, b, benchmark.lower_is_better));
+
+      let previousScore = null;
+      let currentRank = 0;
+      sortedResults.forEach((result, index) => {
+        if (previousScore === null || result.result !== previousScore) {
+          currentRank = index + 1;
+          previousScore = result.result;
+        }
+
+        ranks.set(result.id, {
+          rank: currentRank,
+          total: sortedResults.length,
+          label: formatRank(currentRank, sortedResults.length),
+        });
+      });
+    });
+
+    return ranks;
+  }, [data.benchmarks, data.results]);
+
   const getBestResult = (results, benchmark) => {
     const validResults = results
       .filter((result) => Number.isFinite(Number(result.result)))
@@ -211,12 +240,14 @@ const PublicSystem = () => {
           benchmark,
           primaryResult,
           targetResult,
+          primaryRank: rankByResultId.get(primaryResult.id),
+          targetRank: rankByResultId.get(targetResult.id),
           lead,
         };
       })
       .filter(Boolean)
       .sort((a, b) => a.benchmark.name.localeCompare(b.benchmark.name));
-  }, [data.benchmarks, data.results, numericConfigId, targetConfigId]);
+  }, [data.benchmarks, data.results, numericConfigId, rankByResultId, targetConfigId]);
 
   const getCPUDisplayName = (cpuId) => {
     const cpu = data.cpus.find((item) => item.id === cpuId);
@@ -373,6 +404,7 @@ const PublicSystem = () => {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Benchmark</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Result</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Rank</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Notes</th>
                 </tr>
@@ -380,6 +412,7 @@ const PublicSystem = () => {
               <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
                 {systemResults.map((result) => {
                   const benchmark = lookups.benchmarks.get(result.benchmark_id);
+                  const rank = rankByResultId.get(result.id);
                   return (
                     <tr key={result.id}>
                       <td
@@ -395,6 +428,11 @@ const PublicSystem = () => {
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
                         <span title={formatResultId(result.id)}>{formatScore(result.result)}</span>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">
+                        <span title={`${rank?.label || 'Unranked'} for ${benchmark?.name || 'this benchmark'}`}>
+                          {rank?.label || 'Unranked'}
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">{formatDate(result.timestamp)}</td>
                       <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{result.notes || 'No notes'}</td>
@@ -500,14 +538,20 @@ const PublicSystem = () => {
                           )}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm">
-                          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${scoreBadgeClass(primaryScoreState)}`}>
-                            {formatScore(row.primaryResult.result)}
-                          </span>
+                          <div className="space-y-1">
+                            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${scoreBadgeClass(primaryScoreState)}`}>
+                              {formatScore(row.primaryResult.result)}
+                            </span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{row.primaryRank?.label || 'Unranked'}</p>
+                          </div>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm">
-                          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${scoreBadgeClass(targetScoreState)}`}>
-                            {formatScore(row.targetResult.result)}
-                          </span>
+                          <div className="space-y-1">
+                            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${scoreBadgeClass(targetScoreState)}`}>
+                              {formatScore(row.targetResult.result)}
+                            </span>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{row.targetRank?.label || 'Unranked'}</p>
+                          </div>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm">
                           <span

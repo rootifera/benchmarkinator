@@ -139,6 +139,7 @@ const PublicDashboard = () => {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-primary-700 dark:text-primary-300">{formatScore(record.result.result)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{record.rankLabel}</p>
                     {record.benchmark.lower_is_better && <p className="text-xs text-gray-500">Lower is better</p>}
                   </div>
                 </div>
@@ -195,6 +196,7 @@ const PublicDashboard = () => {
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Benchmark</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">System</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Score</th>
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rank</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
               </tr>
             </thead>
@@ -219,12 +221,13 @@ const PublicDashboard = () => {
                   <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                     <span title={formatResultId(record.id)}>{formatScore(record.result.result)}</span>
                   </td>
+                  <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{record.rankLabel}</td>
                   <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{formatDate(record.date)}</td>
                 </tr>
               ))}
               {recentResults.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="px-5 py-8 text-center text-sm text-gray-500">No recent results yet.</td>
+                  <td colSpan="5" className="px-5 py-8 text-center text-sm text-gray-500">No recent results yet.</td>
                 </tr>
               )}
             </tbody>

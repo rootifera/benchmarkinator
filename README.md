@@ -194,6 +194,28 @@ HARDWARE_ERA=retroextended
 
 The loader is intended for initial/local data population. Review the SQL files before using them with an existing database.
 
+## Demo Data
+
+For UI testing, use the demo seeder to create a larger read-only browsing dataset with demo hardware, test systems, benchmarks, and benchmark results:
+
+```bash
+docker compose exec benchmarkinator-api python scripts/seed_demo_data.py --reset-demo
+```
+
+For local development outside Docker:
+
+```bash
+.venv/bin/python scripts/seed_demo_data.py --reset-demo
+```
+
+The demo seeder creates deterministic data, including mixed-era systems and benchmark compatibility gaps. It does not create a global score. Rankings are still per benchmark.
+
+Safety flags:
+
+- `--reset-demo` removes existing demo systems/results and reseeds them.
+- `--append` allows seeding when real non-demo data already exists.
+- With neither flag, the script refuses to run on a non-empty database.
+
 ## Database Migrations
 
 Alembic is included.

@@ -61,6 +61,11 @@ export const compareScores = (a, b, lowerIsBetter) => (
   lowerIsBetter ? Number(a.result) - Number(b.result) : Number(b.result) - Number(a.result)
 );
 
+export const formatRank = (rank, total) => {
+  if (!rank || !total) return 'Unranked';
+  return `#${rank} of ${total}`;
+};
+
 export const formatPublicId = (prefix, id) => {
   if (!id && id !== 0) return `${prefix}-?`;
   return `${prefix}-${id}`;
@@ -226,16 +231,61 @@ export const buildPublicModel = (data) => {
     resultsByBenchmark.get(record.benchmark.id).push(record);
   });
 
-  const leaders = [...resultsByBenchmark.entries()]
+  const benchmarkLeaderboards = [...resultsByBenchmark.entries()]
     .map(([benchmarkId, records]) => {
       const benchmark = lookups.benchmarks.get(benchmarkId);
-      const best = [...records].sort((a, b) => compareScores(a.result, b.result, benchmark?.lower_is_better))[0];
-      return best ? { ...best, benchmark } : null;
+      const sortedRecords = [...records].sort((a, b) => compareScores(a.result, b.result, benchmark?.lower_is_better));
+      let previousScore = null;
+      let currentRank = 0;
+      const rankedRecords = sortedRecords.map((record, index) => {
+        const score = Number(record.result.result);
+        if (previousScore === null || score !== previousScore) {
+          currentRank = index + 1;
+          previousScore = score;
+        }
+
+        return {
+          ...record,
+          rank: currentRank,
+          rankTotal: sortedRecords.length,
+          rankLabel: formatRank(currentRank, sortedRecords.length),
+        };
+      });
+
+      return {
+        benchmark,
+        records: rankedRecords,
+        leader: rankedRecords[0] || null,
+      };
     })
     .filter(Boolean)
     .sort((a, b) => a.benchmark.name.localeCompare(b.benchmark.name));
 
-  const recentResults = [...resultRecords]
+  const rankByResultId = new Map();
+  benchmarkLeaderboards.forEach((leaderboard) => {
+    leaderboard.records.forEach((record) => {
+      rankByResultId.set(record.id, {
+        rank: record.rank,
+        rankTotal: record.rankTotal,
+        rankLabel: record.rankLabel,
+      });
+    });
+  });
+
+  const rankedResultRecords = resultRecords.map((record) => ({
+    ...record,
+    ...(rankByResultId.get(record.id) || {
+      rank: null,
+      rankTotal: null,
+      rankLabel: 'Unranked',
+    }),
+  }));
+
+  const leaders = benchmarkLeaderboards
+    .map((leaderboard) => leaderboard.leader && { ...leaderboard.leader, benchmark: leaderboard.benchmark })
+    .filter(Boolean);
+
+  const recentResults = [...rankedResultRecords]
     .filter((record) => isValidDate(record.date))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -263,8 +313,9 @@ export const buildPublicModel = (data) => {
     data,
     lookups,
     systemRecords,
-    resultRecords,
-    validResults,
+    resultRecords: rankedResultRecords,
+    validResults: rankedResultRecords.filter((record) => Number.isFinite(record.score)),
+    benchmarkLeaderboards,
     leaders,
     recentResults,
     filterOptions,

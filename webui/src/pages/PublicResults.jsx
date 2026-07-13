@@ -193,6 +193,7 @@ const PublicResults = () => {
                 <tr>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Benchmark</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Score</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rank</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">System</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Hardware</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
@@ -219,6 +220,14 @@ const PublicResults = () => {
                         className="font-semibold text-gray-950 dark:text-white"
                       >
                         {formatScore(record.result.result)}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-sm">
+                      <span
+                        title={`${record.rankLabel} for ${record.benchmark?.name || 'this benchmark'}`}
+                        className="font-medium text-gray-700 dark:text-gray-300"
+                      >
+                        {record.rankLabel}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-sm">
