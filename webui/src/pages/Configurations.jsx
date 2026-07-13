@@ -18,6 +18,7 @@ import axios from 'axios';
 import SearchableSelect from '../components/SearchableSelect';
 import { buildApiUrl } from '../config/api';
 import ConfirmModal from '../components/ConfirmModal';
+import { formatSystemId, idBadgeClass } from '../utils/displayIds';
 
 const notify = (message, type = 'warning', duration) => {
   if (window.showToast) {
@@ -351,7 +352,10 @@ const Configurations = () => {
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(120px,0.8fr)_minmax(220px,1.5fr)_minmax(220px,1.5fr)_minmax(180px,1fr)_minmax(140px,0.8fr)_auto]">
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Name</p>
-                <p className="mt-1 break-words text-sm font-semibold text-gray-900 dark:text-white">{config.name}</p>
+                <p className="mt-1 flex flex-wrap items-center gap-2 break-words text-sm font-semibold text-gray-900 dark:text-white">
+                  <span className={idBadgeClass}>{formatSystemId(config.id)}</span>
+                  {config.name}
+                </p>
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">CPU</p>

@@ -38,6 +38,10 @@ Public UI routes:
 | Route | Purpose |
 | --- | --- |
 | `/` | Public benchmark dashboard |
+| `/benchmarks` | Public benchmark catalog and leaderboard list |
+| `/benchmarks/:id` | Dedicated benchmark leaderboard |
+| `/hardware` | Public CPU/GPU hardware catalog |
+| `/hardware/:type/:id` | Dedicated CPU/GPU result page |
 | `/results` | Searchable public benchmark results |
 | `/systems` | Searchable public test-system catalog |
 | `/systems/:id` | Dedicated public test-system profile and comparison view |

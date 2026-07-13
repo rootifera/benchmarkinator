@@ -1,10 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { BarChart3, Database, GitCompare, LayoutDashboard } from 'lucide-react';
+import { BarChart3, Cpu, Database, GitCompare, LayoutDashboard, Trophy } from 'lucide-react';
 import PublicThemeToggle from './PublicThemeToggle';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/benchmarks', label: 'Benchmarks', icon: Trophy },
+  { to: '/hardware', label: 'Hardware', icon: Cpu },
   { to: '/results', label: 'Results', icon: BarChart3 },
   { to: '/systems', label: 'Systems', icon: Database },
 ];

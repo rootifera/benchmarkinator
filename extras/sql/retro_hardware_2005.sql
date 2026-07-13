@@ -8,6 +8,17 @@
 START TRANSACTION;
 
 -- =======================
+-- BENCHMARK TARGETS
+-- =======================
+INSERT INTO benchmarktarget (name) VALUES
+('CPU'),
+('GPU'),
+('RAM'),
+('System'),
+('Storage')
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- =======================
 -- CPU BRANDS
 -- =======================
 INSERT INTO cpubrand (name) VALUES

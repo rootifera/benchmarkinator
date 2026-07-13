@@ -13,6 +13,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { buildApiUrl } from '../config/api';
 import ConfirmModal from '../components/ConfirmModal';
 import PublicThemeToggle from '../components/PublicThemeToggle';
+import { formatResultId, idBadgeClass } from '../utils/displayIds';
 
 const notify = (message, type = 'warning', duration) => {
   if (window.showToast) {
@@ -444,6 +445,9 @@ const Results = () => {
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                ID
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Benchmark
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -471,6 +475,9 @@ const Results = () => {
               const config = configurations.find(c => c.id === result.config_id);
               return (
                 <tr key={result.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    <span className={idBadgeClass}>{formatResultId(result.id)}</span>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                     {benchmark?.name || 'Unknown'}
                   </td>

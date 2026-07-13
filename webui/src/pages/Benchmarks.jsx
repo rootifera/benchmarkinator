@@ -11,6 +11,7 @@ import {
 import axios from 'axios';
 import { buildApiUrl } from '../config/api';
 import ConfirmModal from '../components/ConfirmModal';
+import { formatBenchmarkId, formatTargetId, idBadgeClass } from '../utils/displayIds';
 
 const notify = (message, type = 'warning', duration) => {
   if (window.showToast) {
@@ -138,6 +139,9 @@ const Benchmarks = () => {
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                ID
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -151,6 +155,9 @@ const Benchmarks = () => {
           <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {benchmarks.map((benchmark) => (
               <tr key={benchmark.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  <span className={idBadgeClass}>{formatBenchmarkId(benchmark.id)}</span>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                   {benchmark.name}
                   {benchmark.lower_is_better && (
@@ -272,6 +279,9 @@ const Benchmarks = () => {
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Name
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -282,6 +292,9 @@ const Benchmarks = () => {
               <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                 {benchmarkTargets.map((target) => (
                   <tr key={target.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <span className={idBadgeClass}>{formatTargetId(target.id)}</span>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       {target.name}
                     </td>

@@ -1,10 +1,33 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { buildApiUrl } from '../config/api';
+export {
+  formatBenchmarkId,
+  formatCpuId,
+  formatDiskId,
+  formatGpuId,
+  formatMotherboardId,
+  formatOsId,
+  formatPublicId,
+  formatRamId,
+  formatResultId,
+  formatSystemId,
+  formatTargetId,
+} from './displayIds';
+
+import {
+  formatBenchmarkId,
+  formatCpuId,
+  formatGpuId,
+  formatMotherboardId,
+  formatResultId,
+  formatSystemId,
+} from './displayIds';
 
 export const emptyPublicData = {
   results: [],
   benchmarks: [],
+  benchmarkTargets: [],
   configurations: [],
   cpus: [],
   gpus: [],
@@ -66,25 +89,14 @@ export const formatRank = (rank, total) => {
   return `#${rank} of ${total}`;
 };
 
-export const formatPublicId = (prefix, id) => {
-  if (!id && id !== 0) return `${prefix}-?`;
-  return `${prefix}-${id}`;
-};
-
-export const formatSystemId = (id) => formatPublicId('SYS', id);
-export const formatResultId = (id) => formatPublicId('RES', id);
-export const formatBenchmarkId = (id) => formatPublicId('BM', id);
-export const formatCpuId = (id) => formatPublicId('CPU', id);
-export const formatGpuId = (id) => formatPublicId('GPU', id);
-export const formatMotherboardId = (id) => formatPublicId('MB', id);
-
 const byId = (items) => new Map(items.map((item) => [item.id, item]));
 const compact = (items) => items.filter(Boolean).join(' ').trim();
 const uniqueSorted = (items) => [...new Set(items.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+const uniqueNumbers = (items) => [...new Set(items.filter((value) => Number.isFinite(Number(value))).map((value) => Number(value)))];
 
 export const buildPublicModel = (data) => {
   const lookups = {
-    benchmarks: byId(data.benchmarks),
+    benchmarkTargets: byId(data.benchmarkTargets || []),
     configs: byId(data.configurations),
     cpus: byId(data.cpus),
     gpus: byId(data.gpus),
@@ -101,6 +113,12 @@ export const buildPublicModel = (data) => {
     disks: byId(data.disks),
     oses: byId(data.oses),
   };
+
+  const benchmarksWithTargets = data.benchmarks.map((benchmark) => ({
+    ...benchmark,
+    target: lookups.benchmarkTargets.get(benchmark.benchmark_target_id) || null,
+  }));
+  lookups.benchmarks = byId(benchmarksWithTargets);
 
   const getCPUDisplayName = (cpuId) => {
     const cpu = lookups.cpus.get(cpuId);
@@ -166,6 +184,9 @@ export const buildPublicModel = (data) => {
       name: config.name,
       cpuNames,
       gpuNames,
+      cpuIds,
+      gpuIds,
+      motherboardId: config.motherboard_id,
       cpuText: cpuNames.join(', '),
       gpuText: gpuNames.join(', '),
       osName,
@@ -297,8 +318,69 @@ export const buildPublicModel = (data) => {
     ? Math.round((uniquePairs.size / totalPossiblePairs) * 100)
     : 0;
 
+  const systemsUsingCpu = new Map();
+  const systemsUsingGpu = new Map();
+  systemRecords.forEach((system) => {
+    uniqueNumbers(system.cpuIds).forEach((cpuId) => {
+      if (!systemsUsingCpu.has(cpuId)) systemsUsingCpu.set(cpuId, []);
+      systemsUsingCpu.get(cpuId).push(system);
+    });
+    uniqueNumbers(system.gpuIds).forEach((gpuId) => {
+      if (!systemsUsingGpu.has(gpuId)) systemsUsingGpu.set(gpuId, []);
+      systemsUsingGpu.get(gpuId).push(system);
+    });
+  });
+
+  const createHardwareRecord = (type, item, name, publicId, systems) => {
+    const systemIds = new Set(systems.map((system) => system.id));
+    const results = rankedResultRecords.filter((record) => record.system && systemIds.has(record.system.id));
+    const bestRanks = results
+      .filter((record) => record.rank)
+      .sort((a, b) => a.rank - b.rank || a.benchmark?.name?.localeCompare(b.benchmark?.name || '') || 0)
+      .slice(0, 5);
+
+    return {
+      type,
+      item,
+      id: item.id,
+      publicId,
+      name,
+      systems,
+      systemCount: systems.length,
+      resultCount: results.length,
+      bestRanks,
+      searchText: compact([
+        publicId,
+        name,
+        systems.map((system) => system.name).join(' '),
+        systems.map((system) => system.osName).join(' '),
+      ]).toLowerCase(),
+    };
+  };
+
+  const cpuRecords = data.cpus
+    .map((cpu) => createHardwareRecord(
+      'cpu',
+      cpu,
+      getCPUDisplayName(cpu.id),
+      formatCpuId(cpu.id),
+      systemsUsingCpu.get(cpu.id) || []
+    ))
+    .sort((a, b) => b.resultCount - a.resultCount || a.name.localeCompare(b.name));
+
+  const gpuRecords = data.gpus
+    .map((gpu) => createHardwareRecord(
+      'gpu',
+      gpu,
+      getGPUDisplayName(gpu.id),
+      formatGpuId(gpu.id),
+      systemsUsingGpu.get(gpu.id) || []
+    ))
+    .sort((a, b) => b.resultCount - a.resultCount || a.name.localeCompare(b.name));
+
   const filterOptions = {
-    benchmarks: data.benchmarks
+    benchmarkTargets: [...(data.benchmarkTargets || [])].sort((a, b) => a.name.localeCompare(b.name)),
+    benchmarks: benchmarksWithTargets
       .filter((benchmark) => benchmarksWithResults.has(benchmark.id))
       .sort((a, b) => a.name.localeCompare(b.name)),
     systems: systemRecords
@@ -316,6 +398,8 @@ export const buildPublicModel = (data) => {
     resultRecords: rankedResultRecords,
     validResults: rankedResultRecords.filter((record) => Number.isFinite(record.score)),
     benchmarkLeaderboards,
+    cpuRecords,
+    gpuRecords,
     leaders,
     recentResults,
     filterOptions,

@@ -8,6 +8,10 @@ const Hardware = lazy(() => import('./pages/Hardware'));
 const Benchmarks = lazy(() => import('./pages/Benchmarks'));
 const Results = lazy(() => import('./pages/Results'));
 const PublicDashboard = lazy(() => import('./pages/PublicDashboard'));
+const PublicBenchmarks = lazy(() => import('./pages/PublicBenchmarks'));
+const PublicBenchmark = lazy(() => import('./pages/PublicBenchmark'));
+const PublicHardware = lazy(() => import('./pages/PublicHardware'));
+const PublicHardwareDetail = lazy(() => import('./pages/PublicHardwareDetail'));
 const PublicResults = lazy(() => import('./pages/PublicResults'));
 const PublicSystems = lazy(() => import('./pages/PublicSystems'));
 const PublicSystem = lazy(() => import('./pages/PublicSystem'));
@@ -31,6 +35,10 @@ const Routes = () => {
           <Suspense fallback={<PageFallback />}>
             <RouterRoutes>
               <Route path="/" element={<PublicDashboard />} />
+              <Route path="/benchmarks" element={<PublicBenchmarks />} />
+              <Route path="/benchmarks/:benchmarkId" element={<PublicBenchmark />} />
+              <Route path="/hardware" element={<PublicHardware />} />
+              <Route path="/hardware/:type/:id" element={<PublicHardwareDetail />} />
               <Route path="/results" element={<PublicResults />} />
               <Route path="/systems" element={<PublicSystems />} />
               <Route path="/systems/:configId" element={<PublicSystem />} />

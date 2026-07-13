@@ -7,6 +7,17 @@
 START TRANSACTION;
 
 -- =======================
+-- BENCHMARK TARGETS
+-- =======================
+INSERT INTO benchmarktarget (name) VALUES
+('CPU'),
+('GPU'),
+('RAM'),
+('System'),
+('Storage')
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
+-- =======================
 -- CPU FAMILIES (2006–2008 add-ons)
 -- =======================
 -- Intel Core era
