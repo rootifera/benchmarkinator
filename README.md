@@ -15,7 +15,7 @@ It provides:
 - optional hardware seed data
 - backup and restore scripts
 
-Default configuration is local-only. For internet access, put the web UI behind HTTPS and keep MySQL and the raw API bound to localhost.
+Default configuration exposes the admin and public web UIs on the host network. For internet access, put the public UI behind HTTPS, keep the admin UI private, and keep MySQL and the raw API bound to localhost.
 
 ## Services
 
@@ -23,15 +23,15 @@ Default ports:
 
 | Service | URL |
 | --- | --- |
-| Admin UI | http://localhost:8001 |
-| Public UI | http://localhost:8002 |
+| Admin UI | http://<host-ip>:8001 |
+| Public UI | http://<host-ip>:8002 |
 | API | http://localhost:12345 |
 | API docs | http://localhost:12345/docs |
 | MySQL | localhost:3306 |
 
 The admin and public UI containers serve static files through nginx. The admin UI proxies `/api` to the API container. The public UI only proxies `/api/public/*`.
 
-In Docker Compose, MySQL, the API, and both web UIs bind to `127.0.0.1` by default. Change the bind-address values only for the surfaces you intentionally want reachable from another host.
+In Docker Compose, MySQL and the raw API bind to `127.0.0.1` by default. The admin and public web UIs bind to `0.0.0.0` by default so they can be reached from the host network or a reverse proxy.
 
 Public UI routes:
 

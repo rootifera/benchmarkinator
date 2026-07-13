@@ -113,9 +113,9 @@ read -r api_port
 api_port=${api_port:-12345}
 set_env_var "API_PORT" "$api_port"
 
-echo "Admin UI bind address [127.0.0.1]:"
+echo "Admin UI bind address [0.0.0.0]:"
 read -r admin_bind_address
-admin_bind_address=${admin_bind_address:-127.0.0.1}
+admin_bind_address=${admin_bind_address:-0.0.0.0}
 set_env_var "ADMIN_BIND_ADDRESS" "$admin_bind_address"
 
 echo "Admin UI port [8001]:"
@@ -123,9 +123,9 @@ read -r admin_port
 admin_port=${admin_port:-8001}
 set_env_var "ADMIN_PORT" "$admin_port"
 
-echo "Public UI bind address [127.0.0.1]:"
+echo "Public UI bind address [0.0.0.0]:"
 read -r public_bind_address
-public_bind_address=${public_bind_address:-127.0.0.1}
+public_bind_address=${public_bind_address:-0.0.0.0}
 set_env_var "PUBLIC_BIND_ADDRESS" "$public_bind_address"
 
 echo "Public UI port [8002]:"

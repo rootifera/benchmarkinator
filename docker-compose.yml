@@ -60,7 +60,7 @@ services:
     image: rootifera/benchmarkinator-admin
     container_name: benchmarkinator-admin
     ports:
-      - "${ADMIN_BIND_ADDRESS:-127.0.0.1}:${ADMIN_PORT:-8001}:80"
+      - "${ADMIN_BIND_ADDRESS:-0.0.0.0}:${ADMIN_PORT:-8001}:80"
     depends_on:
       benchmarkinator-api:
         condition: service_started
@@ -77,7 +77,7 @@ services:
     image: rootifera/benchmarkinator-public
     container_name: benchmarkinator-public
     ports:
-      - "${PUBLIC_BIND_ADDRESS:-127.0.0.1}:${PUBLIC_PORT:-8002}:80"
+      - "${PUBLIC_BIND_ADDRESS:-0.0.0.0}:${PUBLIC_PORT:-8002}:80"
     depends_on:
       benchmarkinator-api:
         condition: service_started
