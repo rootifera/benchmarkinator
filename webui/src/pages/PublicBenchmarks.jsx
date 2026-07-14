@@ -4,8 +4,6 @@ import { Filter, Trophy } from 'lucide-react';
 import { formatBenchmarkId, usePublicData } from '../utils/publicData';
 
 const getParam = (params, key, fallback = '') => params.get(key) || fallback;
-const sortColumns = new Set(['benchmark', 'target', 'direction', 'options']);
-const descendingFirstColumns = new Set(['options']);
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
 const decodeOptionValues = (value) => {
@@ -27,22 +25,11 @@ const PublicBenchmarks = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const q = getParam(searchParams, 'q');
   const target = getParam(searchParams, 'target');
-  const sort = sortColumns.has(getParam(searchParams, 'sort')) ? getParam(searchParams, 'sort') : 'benchmark';
-  const dir = getParam(searchParams, 'dir') === 'desc' ? 'desc' : 'asc';
 
   const setFilter = (key, value) => {
     const next = new URLSearchParams(searchParams);
     if (value) next.set(key, value);
     else next.delete(key);
-    setSearchParams(next);
-  };
-
-  const setSort = (key) => {
-    const next = new URLSearchParams(searchParams);
-    const defaultDir = descendingFirstColumns.has(key) ? 'desc' : 'asc';
-    const nextDir = sort === key ? (dir === 'asc' ? 'desc' : 'asc') : defaultDir;
-    next.set('sort', key);
-    next.set('dir', nextDir);
     setSearchParams(next);
   };
 
@@ -91,48 +78,8 @@ const PublicBenchmarks = () => {
       return matchesSearch && matchesTarget;
     });
 
-    return [...filtered].sort((a, b) => {
-      let comparison = 0;
-      if (sort === 'target') {
-        comparison = collator.compare(a.target?.name || '', b.target?.name || '');
-      } else if (sort === 'direction') {
-        comparison = collator.compare(
-          a.lower_is_better ? 'Lower is better' : 'Higher is better',
-          b.lower_is_better ? 'Lower is better' : 'Higher is better'
-        );
-      } else if (sort === 'options') {
-        comparison = a.options.length - b.options.length;
-      } else {
-        comparison = collator.compare(a.name, b.name);
-      }
-
-      if (comparison === 0) {
-        comparison = collator.compare(a.name, b.name);
-      }
-
-      return dir === 'desc' ? -comparison : comparison;
-    });
-  }, [benchmarks, dir, q, sort, target]);
-
-  const SortHeader = ({ id, align = 'left', children }) => {
-    const active = sort === id;
-    const direction = active ? (dir === 'asc' ? 'up' : 'down') : 'idle';
-    const justify = align === 'right' ? 'justify-end' : 'justify-start';
-
-    return (
-      <button
-        type="button"
-        onClick={() => setSort(id)}
-        className={`inline-flex w-full items-center gap-1.5 ${justify} text-xs font-medium uppercase tracking-wider text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100`}
-        aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
-      >
-        <span>{children}</span>
-        <span className={active ? 'text-primary-700 dark:text-primary-300' : 'text-gray-400 dark:text-gray-600'}>
-          {direction === 'up' ? '↑' : direction === 'down' ? '↓' : '↕'}
-        </span>
-      </button>
-    );
-  };
+    return [...filtered].sort((a, b) => collator.compare(a.name, b.name));
+  }, [benchmarks, q, target]);
 
   if (loading) {
     return <div className="flex items-center justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary-600" /></div>;
@@ -206,67 +153,52 @@ const PublicBenchmarks = () => {
           <p className="mt-3 font-medium text-gray-950 dark:text-white">No benchmarks match those filters.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-md border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
-              <thead className="bg-gray-50 dark:bg-gray-950">
-                <tr>
-                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    <SortHeader id="benchmark">Benchmark</SortHeader>
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    <SortHeader id="target">Target</SortHeader>
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    <SortHeader id="direction">Score Direction</SortHeader>
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    <SortHeader id="options">Available Values</SortHeader>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                {filteredBenchmarks.map((benchmark) => (
-                  <tr
-                    key={benchmark.id}
-                    className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                  >
-                    <td className="px-5 py-4">
-                      <div
-                        className="font-medium text-gray-950 dark:text-white"
-                        title={`${formatBenchmarkId(benchmark.id)} ${benchmark.name}`}
-                      >
-                        {benchmark.name}
-                      </div>
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{formatBenchmarkId(benchmark.id)}</p>
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
-                      {benchmark.target?.name || 'Benchmark'}
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
-                      {benchmark.lower_is_better ? 'Lower is better' : 'Higher is better'}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
-                      {benchmark.options.length ? (
-                        <div className="space-y-2">
-                          {benchmark.options.map((option) => (
-                            <div key={option.id}>
-                              <span className="font-medium text-gray-950 dark:text-white">{option.name}:</span>
-                              <span className="ml-1 line-clamp-2">
-                                {option.parsedValues.join(', ')}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-gray-500 dark:text-gray-400">Default only</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          {filteredBenchmarks.map((benchmark) => (
+            <div
+              key={benchmark.id}
+              className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex gap-3">
+                  <Trophy className="mt-1 h-5 w-5 shrink-0 text-primary-600 dark:text-primary-400" />
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      {formatBenchmarkId(benchmark.id)}
+                    </p>
+                    <h2 className="mt-1 text-lg font-semibold text-gray-950 dark:text-white" title={`${formatBenchmarkId(benchmark.id)} ${benchmark.name}`}>
+                      {benchmark.name}
+                    </h2>
+                    <p className="mt-1 break-words text-sm text-gray-500 dark:text-gray-400">
+                      {benchmark.lower_is_better ? 'Lower score is better' : 'Higher score is better'}
+                    </p>
+                  </div>
+                </div>
+                <div className="rounded-md bg-gray-100 px-3 py-2 text-right text-sm dark:bg-gray-800">
+                  <p className="font-semibold text-gray-950 dark:text-white">{benchmark.target?.name || 'Benchmark'}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">target</p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 text-sm">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Available Values</p>
+                  {benchmark.options.length ? (
+                    <div className="mt-1 space-y-1.5 text-gray-700 dark:text-gray-300">
+                      {benchmark.options.map((option) => (
+                        <p key={option.id} className="break-words">
+                          <span className="font-semibold text-gray-950 dark:text-white">{option.name}:</span>{' '}
+                          <span>{option.parsedValues.join(', ')}</span>
+                        </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-1 font-semibold text-gray-950 dark:text-white">Default only</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
