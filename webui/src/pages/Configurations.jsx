@@ -609,176 +609,225 @@ const Configurations = () => {
 const ConfigurationDetailsModal = ({ 
   configuration, 
   onClose,
-  getConfigCPUDisplay,
-  getConfigGPUDisplay,
-  renderComponentLines,
-  getMotherboardDisplayName,
   getComponentName,
+  cpus,
+  gpus,
+  motherboards,
   ramTypes,
   disks,
-  oses
+  oses,
+  cpuBrands,
+  cpuFamilies,
+  gpuBrands,
+  gpuModels,
+  gpuVRAMTypes,
+  gpuManufacturers,
+  motherboardManufacturers,
+  motherboardChipsets
 }) => {
+  const compact = (items) => items.filter(Boolean).join(' ').trim();
+  const compactDescription = (items) => items.filter(Boolean).join(' | ').trim();
+  const displaySerial = (item, fallback) => item?.serial || fallback;
+
+  const parseComponentIds = (raw, fallbackId, fallbackQuantity = 1) => {
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((value) => parseInt(value, 10)).filter(Boolean);
+        }
+      } catch {
+        // Use legacy fields below.
+      }
+    }
+
+    if (!fallbackId) return [];
+    return Array.from(
+      { length: Math.max(parseInt(fallbackQuantity, 10) || 1, 1) },
+      () => fallbackId
+    );
+  };
+
+  const summarizeComponentIds = (ids) => {
+    const counts = ids.reduce((acc, id) => {
+      acc[id] = (acc[id] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(counts).map(([id, count]) => ({
+      id: parseInt(id, 10),
+      count,
+    }));
+  };
+
+  const getCpuDetail = (cpuId) => {
+    const cpu = cpus.find(c => c.id === cpuId);
+    if (!cpu) return { title: 'Unknown CPU', detail: '' };
+    const brand = cpuBrands.find(b => b.id === cpu.cpu_brand_id);
+    const family = cpuFamilies.find(f => f.id === cpu.cpu_family_id);
+    const specs = [];
+    if (cpu.speed) specs.push(cpu.speed);
+    if (cpu.core_count) specs.push(`${cpu.core_count} Cores`);
+    return {
+      title: compact([brand?.name, family?.name, cpu.model]) || `CPU ${cpu.id}`,
+      detail: compactDescription([specs.join(', '), displaySerial(cpu, formatCpuId(cpu.id))]),
+    };
+  };
+
+  const getGpuDetail = (gpuId) => {
+    const gpu = gpus.find(g => g.id === gpuId);
+    if (!gpu) return { title: 'Unknown GPU', detail: '' };
+    const manufacturer = gpuManufacturers.find(m => m.id === gpu.gpu_manufacturer_id);
+    const brand = gpuBrands.find(b => b.id === gpu.gpu_brand_id);
+    const model = gpuModels.find(m => m.id === gpu.gpu_model_id);
+    const vramType = gpuVRAMTypes.find(v => v.id === gpu.gpu_vram_type_id);
+    return {
+      title: compact([manufacturer?.name, brand?.name, model?.name]) || `GPU ${gpu.id}`,
+      detail: compactDescription([compact([gpu.vram_size, vramType?.name]), displaySerial(gpu, formatGpuId(gpu.id))]),
+    };
+  };
+
+  const getMotherboardDetail = (motherboardId) => {
+    const motherboard = motherboards.find(m => m.id === motherboardId);
+    if (!motherboard) return { title: 'Unknown Motherboard', detail: '' };
+    const manufacturer = motherboardManufacturers.find(m => m.id === motherboard.manufacturer_id);
+    const chipset = motherboardChipsets.find(c => c.id === motherboard.chipset_id);
+    return {
+      title: compact([manufacturer?.name, motherboard.model]) || `Motherboard ${motherboard.id}`,
+      detail: compactDescription([chipset?.name, displaySerial(motherboard, formatMotherboardId(motherboard.id))]),
+    };
+  };
+
+  const cpuItems = summarizeComponentIds(parseComponentIds(configuration.cpu_component_ids, configuration.cpu_id, configuration.cpu_quantity));
+  const gpuItems = summarizeComponentIds(parseComponentIds(configuration.gpu_component_ids, configuration.gpu_id, configuration.gpu_quantity));
+  const motherboardDetail = getMotherboardDetail(configuration.motherboard_id);
+  const ramName = getComponentName(configuration.ram_id, ramTypes, 'name');
+  const diskName = getComponentName(configuration.disk_id, disks);
+  const osName = getComponentName(configuration.os_id, oses);
+
+  const DetailRow = ({ label, children }) => (
+    <div className="border-b border-gray-200 py-3 last:border-b-0 dark:border-gray-800">
+      <dt className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</dt>
+      <dd className="mt-1 text-sm text-gray-950 dark:text-white">{children}</dd>
+    </div>
+  );
+
+  const ComponentLine = ({ count = 1, title, detail }) => (
+    <div className="min-w-0">
+      <div className="flex items-center gap-2">
+        {count > 1 && (
+          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+            {count}x
+          </span>
+        )}
+        <span className="break-words font-medium">{title}</span>
+      </div>
+      {detail && <p className="mt-0.5 break-words text-xs text-gray-500 dark:text-gray-400">{detail}</p>}
+    </div>
+  );
+
+  const StatusChip = ({ active }) => (
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+      active
+        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+    }`}>
+      {active ? 'Enabled' : 'Disabled'}
+    </span>
+  );
+
+  const OverclockRow = ({ label, active, base, current }) => (
+    <DetailRow label={label}>
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusChip active={active} />
+        {active && base && <span className="text-xs text-gray-500 dark:text-gray-400">Reference: {base}MHz</span>}
+        {active && current && <span className="text-xs text-gray-500 dark:text-gray-400">Measured: {current}MHz</span>}
+      </div>
+    </DetailRow>
+  );
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-          Test System Details: {configuration.name}
-        </h2>
+      <div className="relative mx-4 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900">
+        <div className="mb-6 border-b border-gray-200 pb-4 dark:border-gray-800">
+          <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            {formatSystemId(configuration.id)}
+          </p>
+          <h2 className="mt-1 break-words text-2xl font-semibold text-gray-950 dark:text-white">
+            {configuration.name}
+          </h2>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {/* Core Components */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-              <Cpu className="w-5 h-5 inline mr-2" />
+          <section>
+            <h3 className="flex items-center text-base font-semibold text-gray-950 dark:text-white">
+              <Cpu className="mr-2 h-5 w-5 text-primary-600 dark:text-primary-400" />
               Core Components
             </h3>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">CPU</label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  {renderComponentLines(getConfigCPUDisplay(configuration))}
-                </p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">GPU</label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  {renderComponentLines(getConfigGPUDisplay(configuration))}
-                </p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Motherboard</label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  {getMotherboardDisplayName(configuration.motherboard_id)}
-                </p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">RAM</label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  {getComponentName(configuration.ram_id, ramTypes, 'name')} - {configuration.ram_size}
-                </p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Storage</label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  {getComponentName(configuration.disk_id, disks)}
-                </p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Operating System</label>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  {getComponentName(configuration.os_id, oses)}
-                </p>
-              </div>
-            </div>
-          </div>
+            <dl className="mt-3 rounded-md border border-gray-200 px-4 dark:border-gray-800">
+              <DetailRow label="CPU">
+                <div className="space-y-2">
+                  {cpuItems.length ? cpuItems.map((item) => (
+                    <ComponentLine key={`cpu-${item.id}`} count={item.count} {...getCpuDetail(item.id)} />
+                  )) : <span className="text-gray-500 dark:text-gray-400">Unknown CPU</span>}
+                </div>
+              </DetailRow>
+              <DetailRow label="GPU">
+                <div className="space-y-2">
+                  {gpuItems.length ? gpuItems.map((item) => (
+                    <ComponentLine key={`gpu-${item.id}`} count={item.count} {...getGpuDetail(item.id)} />
+                  )) : <span className="text-gray-500 dark:text-gray-400">Unknown GPU</span>}
+                </div>
+              </DetailRow>
+              <DetailRow label="Motherboard">
+                <ComponentLine {...motherboardDetail} />
+              </DetailRow>
+              <DetailRow label="Memory">
+                <ComponentLine title={ramName} detail={configuration.ram_size} />
+              </DetailRow>
+              <DetailRow label="Storage">
+                <span className="font-medium">{diskName}</span>
+              </DetailRow>
+              <DetailRow label="Operating System">
+                <span className="font-medium">{osName}</span>
+              </DetailRow>
+            </dl>
+          </section>
 
           {/* Overclocking & Drivers */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-              <Settings className="w-5 h-5 inline mr-2" />
+          <section>
+            <h3 className="flex items-center text-base font-semibold text-gray-950 dark:text-white">
+              <Settings className="mr-2 h-5 w-5 text-primary-600 dark:text-primary-400" />
               Overclocking & Drivers
             </h3>
-            
-            <div className="space-y-3">
-              {/* CPU Overclocking */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">CPU Overclocking</label>
-                <div className="mt-1 text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  {configuration.cpu_overclock ? (
-                    <div className="space-y-1">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                        Enabled
-                      </span>
-                      {configuration.cpu_baseclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Reference: {configuration.cpu_baseclock}MHz</p>
-                      )}
-                      {configuration.cpu_currentclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Measured: {configuration.cpu_currentclock}MHz</p>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-gray-500 dark:text-gray-400">Disabled</span>
-                  )}
-                </div>
-              </div>
-
-              {/* GPU Core Overclocking */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">GPU Core Overclocking</label>
-                <div className="mt-1 text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  {configuration.gpu_core_overclock ? (
-                    <div className="space-y-1">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                        Enabled
-                      </span>
-                      {configuration.gpu_core_baseclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Reference: {configuration.gpu_core_baseclock}MHz</p>
-                      )}
-                      {configuration.gpu_core_currentclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Measured: {configuration.gpu_core_currentclock}MHz</p>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-gray-500 dark:text-gray-400">Disabled</span>
-                  )}
-                </div>
-              </div>
-
-              {/* GPU VRAM Overclocking */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">GPU VRAM Overclocking</label>
-                <div className="mt-1 text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  {configuration.gpu_vram_overclock ? (
-                    <div className="space-y-1">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
-                        Enabled
-                      </span>
-                      {configuration.gpu_vram_baseclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Reference: {configuration.gpu_vram_baseclock}MHz</p>
-                      )}
-                      {configuration.gpu_vram_currentclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Measured: {configuration.gpu_vram_currentclock}MHz</p>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-gray-500 dark:text-gray-400">Disabled</span>
-                  )}
-                </div>
-              </div>
-
-              {/* RAM Overclocking */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">RAM Overclocking</label>
-                <div className="mt-1 text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  {configuration.ram_overclock ? (
-                    <div className="space-y-1">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
-                        Enabled
-                      </span>
-                      {configuration.ram_baseclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Reference: {configuration.ram_baseclock}MHz</p>
-                      )}
-                      {configuration.ram_currentclock && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400">Measured: {configuration.ram_currentclock}MHz</p>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-gray-500 dark:text-gray-400">Disabled</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Driver Versions */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Driver Versions</label>
-                <div className="mt-1 text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded space-y-1">
+            <dl className="mt-3 rounded-md border border-gray-200 px-4 dark:border-gray-800">
+              <OverclockRow
+                label="CPU Overclocking"
+                active={configuration.cpu_overclock}
+                base={configuration.cpu_baseclock}
+                current={configuration.cpu_currentclock}
+              />
+              <OverclockRow
+                label="GPU Core Overclocking"
+                active={configuration.gpu_core_overclock}
+                base={configuration.gpu_core_baseclock}
+                current={configuration.gpu_core_currentclock}
+              />
+              <OverclockRow
+                label="GPU VRAM Overclocking"
+                active={configuration.gpu_vram_overclock}
+                base={configuration.gpu_vram_baseclock}
+                current={configuration.gpu_vram_currentclock}
+              />
+              <OverclockRow
+                label="RAM Overclocking"
+                active={configuration.ram_overclock}
+                base={configuration.ram_baseclock}
+                current={configuration.ram_currentclock}
+              />
+              <DetailRow label="Driver Versions">
+                <div className="space-y-1">
                   {configuration.cpu_driver_version && (
                     <p className="text-xs text-gray-600 dark:text-gray-400"><span className="font-medium">CPU:</span> {configuration.cpu_driver_version}</p>
                   )}
@@ -792,19 +841,19 @@ const ConfigurationDetailsModal = ({
                     <span className="text-xs text-gray-500 dark:text-gray-400">No driver versions specified</span>
                   )}
                 </div>
-              </div>
-            </div>
-          </div>
+              </DetailRow>
+            </dl>
+          </section>
         </div>
 
         {/* Notes */}
         {configuration.notes && (
           <div className="mt-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2 mb-3">
+            <h3 className="mb-3 border-b border-gray-200 pb-2 text-base font-semibold text-gray-950 dark:border-gray-800 dark:text-white">
               Notes
             </h3>
-            <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded">
-              <p className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{configuration.notes}</p>
+            <div className="rounded-md border border-gray-200 p-3 dark:border-gray-800">
+              <p className="whitespace-pre-wrap text-sm text-gray-900 dark:text-white">{configuration.notes}</p>
             </div>
           </div>
         )}
@@ -813,7 +862,7 @@ const ConfigurationDetailsModal = ({
         <div className="mt-6 flex justify-end">
           <button
             onClick={onClose}
-            className="bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="btn-secondary"
           >
             Close
           </button>
