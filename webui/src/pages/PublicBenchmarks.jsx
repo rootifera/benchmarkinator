@@ -153,20 +153,20 @@ const PublicBenchmarks = () => {
           <p className="mt-3 font-medium text-gray-950 dark:text-white">No benchmarks match those filters.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
           {filteredBenchmarks.map((benchmark) => (
             <div
               key={benchmark.id}
-              className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"
+              className="overflow-hidden rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900"
             >
               <div className="flex items-start justify-between gap-4">
-                <div className="flex gap-3">
+                <div className="flex min-w-0 gap-3">
                   <Trophy className="mt-1 h-5 w-5 shrink-0 text-primary-600 dark:text-primary-400" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       {formatBenchmarkId(benchmark.id)}
                     </p>
-                    <h2 className="mt-1 text-lg font-semibold text-gray-950 dark:text-white" title={`${formatBenchmarkId(benchmark.id)} ${benchmark.name}`}>
+                    <h2 className="mt-1 break-words text-lg font-semibold text-gray-950 dark:text-white" title={`${formatBenchmarkId(benchmark.id)} ${benchmark.name}`}>
                       {benchmark.name}
                     </h2>
                     <p className="mt-1 break-words text-sm text-gray-500 dark:text-gray-400">
@@ -174,22 +174,34 @@ const PublicBenchmarks = () => {
                     </p>
                   </div>
                 </div>
-                <div className="rounded-md bg-gray-100 px-3 py-2 text-right text-sm dark:bg-gray-800">
-                  <p className="font-semibold text-gray-950 dark:text-white">{benchmark.target?.name || 'Benchmark'}</p>
+                <div className="max-w-[9rem] shrink-0 rounded-md bg-gray-100 px-3 py-2 text-right text-sm dark:bg-gray-800">
+                  <p className="truncate font-semibold text-gray-950 dark:text-white" title={benchmark.target?.name || 'Benchmark'}>
+                    {benchmark.target?.name || 'Benchmark'}
+                  </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">target</p>
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-3 text-sm">
-                <div>
+              <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 text-sm">
+                <div className="min-w-0">
                   <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Available Values</p>
                   {benchmark.options.length ? (
                     <div className="mt-1 space-y-1.5 text-gray-700 dark:text-gray-300">
                       {benchmark.options.map((option) => (
-                        <p key={option.id} className="break-words">
-                          <span className="font-semibold text-gray-950 dark:text-white">{option.name}:</span>{' '}
-                          <span>{option.parsedValues.join(', ')}</span>
-                        </p>
+                        <div key={option.id} className="min-w-0 rounded-md bg-gray-50 p-2 dark:bg-gray-950/40">
+                          <p className="break-words font-semibold text-gray-950 dark:text-white">{option.name}</p>
+                          <div className="mt-1 flex min-w-0 flex-wrap gap-1.5">
+                            {option.parsedValues.map((value, index) => (
+                              <span
+                                key={`${option.id}-${value}-${index}`}
+                                title={value}
+                                className="inline-flex max-w-full rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                              >
+                                <span className="max-w-full truncate">{value}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   ) : (

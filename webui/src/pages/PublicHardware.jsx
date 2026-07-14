@@ -118,13 +118,13 @@ const PublicHardware = () => {
                 className="rounded-md border border-gray-200 bg-white p-5 transition-colors hover:border-primary-300 hover:bg-primary-50/40 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-primary-800 dark:hover:bg-primary-950/20"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex gap-3">
+                  <div className="flex min-w-0 gap-3">
                     <Icon className="mt-1 h-5 w-5 shrink-0 text-primary-600 dark:text-primary-400" />
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                         {hardwareLabels[record.type] || 'Hardware'}
                       </p>
-                      <h2 className="mt-1 text-lg font-semibold text-gray-950 dark:text-white" title={`${record.publicId} ${record.name}`}>
+                      <h2 className="mt-1 break-words text-lg font-semibold text-gray-950 dark:text-white" title={`${record.publicId} ${record.name}`}>
                         {record.name}
                       </h2>
                       {record.detail && (
@@ -137,7 +137,7 @@ const PublicHardware = () => {
                     <p className="text-xs text-gray-500 dark:text-gray-400">results</p>
                   </div>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div className="ml-8 mt-4 grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Systems</p>
                     <p className="mt-1 font-semibold text-gray-950 dark:text-white">{record.systemCount}</p>

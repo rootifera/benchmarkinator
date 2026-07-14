@@ -171,7 +171,7 @@ const Benchmarks = () => {
                   {options.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {options.map((option) => (
-                        <span key={option.id} className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                        <span key={option.id} className="max-w-full break-words rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">
                           {option.name}
                         </span>
                       ))}
@@ -547,148 +547,152 @@ const BenchmarkForm = ({ benchmark, benchmarkTargets, benchmarkOptions, onClose,
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-4">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl p-6 w-full max-w-2xl mx-4">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {benchmark ? 'Edit' : 'Add New'} Benchmark
-        </h2>
+      <div className="relative flex h-[min(42rem,calc(100dvh-2rem))] max-h-[calc(100vh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl dark:bg-gray-900">
+        <div className="shrink-0 border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {benchmark ? 'Edit' : 'Add New'} Benchmark
+          </h2>
+        </div>
         
-        <form onSubmit={handleSubmit} className="space-y-6" id="benchmark-form">
-          {/* Basic Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-              <BarChart3 className="w-5 h-5 inline mr-2" />
-              Basic Information
-            </h3>
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col overflow-hidden" id="benchmark-form">
+          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-6 py-5">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+                <BarChart3 className="w-5 h-5 inline mr-2" />
+                Basic Information
+              </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <BarChart3 className="w-4 h-4 inline mr-2" />
-                  Name
-                </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <BarChart3 className="w-4 h-4 inline mr-2" />
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="input-field"
+                    placeholder="e.g., 3DMark2000, Prime95"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <Target className="w-4 h-4 inline mr-2" />
+                    Benchmark Target
+                  </label>
+                  <select
+                    value={formData.benchmark_target_id || ''}
+                    onChange={(e) => setFormData({ ...formData, benchmark_target_id: e.target.value ? parseInt(e.target.value) : '' })}
+                    className="input-field"
+                  >
+                    <option value="">Select a target (optional)</option>
+                    {benchmarkTargets.map((target) => (
+                      <option key={target.id} value={target.id}>
+                        {target.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Lower is better */}
+              <div className="flex items-center space-x-3 pt-2">
                 <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="input-field"
-                  placeholder="e.g., 3DMark2000, Prime95"
-                  required
+                  id="lower_is_better"
+                  type="checkbox"
+                  checked={!!formData.lower_is_better}
+                  onChange={(e) => setFormData({ ...formData, lower_is_better: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  <Target className="w-4 h-4 inline mr-2" />
-                  Benchmark Target
-                </label>
-                <select
-                  value={formData.benchmark_target_id || ''}
-                  onChange={(e) => setFormData({ ...formData, benchmark_target_id: e.target.value ? parseInt(e.target.value) : '' })}
-                  className="input-field"
+                <label
+                  htmlFor="lower_is_better"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none"
                 >
-                  <option value="">Select a target (optional)</option>
-                  {benchmarkTargets.map((target) => (
-                    <option key={target.id} value={target.id}>
-                      {target.name}
-                    </option>
-                  ))}
-                </select>
+                  Lower is better (e.g., latency, compression time)
+                </label>
               </div>
             </div>
 
-            {/* Lower is better */}
-            <div className="flex items-center space-x-3 pt-2">
-              <input
-                id="lower_is_better"
-                type="checkbox"
-                checked={!!formData.lower_is_better}
-                onChange={(e) => setFormData({ ...formData, lower_is_better: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              <label
-                htmlFor="lower_is_better"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none"
-              >
-                Lower is better (e.g., latency, compression time)
-              </label>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-700">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Result Options</h3>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Optional dropdowns shown when adding results for this benchmark.
-                </p>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 border-b border-gray-200 pb-2 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Result Options</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Optional dropdowns shown when adding results for this benchmark.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addOption}
+                  className="inline-flex shrink-0 items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Option
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={addOption}
-                className="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Option
-              </button>
-            </div>
 
-            {options.length === 0 ? (
-              <div className="rounded-md border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                No options defined. Results for this benchmark will not ask for extra settings.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {options.map((option, index) => (
-                  <div key={option.id || `new-${index}`} className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-2">
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Option Name
-                          </label>
-                          <input
-                            type="text"
-                            value={option.name}
-                            onChange={(e) => updateOption(index, { name: e.target.value })}
-                            className="input-field"
-                            placeholder="e.g., Resolution"
-                          />
+              {options.length === 0 ? (
+                <div className="rounded-md border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                  No options defined. Results for this benchmark will not ask for extra settings.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {options.map((option, index) => (
+                    <div key={option.id || `new-${index}`} className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
+                      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2">
+                          <div className="min-w-0">
+                            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Option Name
+                            </label>
+                            <input
+                              type="text"
+                              value={option.name}
+                              onChange={(e) => updateOption(index, { name: e.target.value })}
+                              className="input-field"
+                              placeholder="e.g., Resolution"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Values
+                            </label>
+                            <textarea
+                              value={option.valuesText}
+                              onChange={(e) => updateOption(index, { valuesText: e.target.value })}
+                              className="input-field"
+                              rows="3"
+                              placeholder="800 x 600&#10;1024 x 768"
+                            />
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              Enter one per line, or comma-separated.
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Values
-                          </label>
-                          <textarea
-                            value={option.valuesText}
-                            onChange={(e) => updateOption(index, { valuesText: e.target.value })}
-                            className="input-field"
-                            rows="3"
-                            placeholder="800 x 600&#10;1024 x 768"
-                          />
-                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Enter one per line, or comma-separated.
-                          </p>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeOption(index)}
+                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-red-600 transition-colors hover:bg-red-50 hover:text-red-900 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300 sm:mt-7"
+                          title="Remove option"
+                          aria-label="Remove option"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeOption(index)}
-                        className="mt-7 inline-flex h-9 w-9 items-center justify-center rounded-md text-red-600 transition-colors hover:bg-red-50 hover:text-red-900 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
-                        title="Remove option"
-                        aria-label="Remove option"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           
-          <div className="flex space-x-3">
+          <div className="flex shrink-0 space-x-3 border-t border-gray-200 bg-white px-6 py-4 dark:border-gray-800 dark:bg-gray-900">
             <button
               type="button"
               onClick={onClose}
