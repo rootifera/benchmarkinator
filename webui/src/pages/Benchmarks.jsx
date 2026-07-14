@@ -134,64 +134,55 @@ const Benchmarks = () => {
     }
 
     return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Target
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {benchmarks.map((benchmark) => (
-              <tr key={benchmark.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  <span className={idBadgeClass}>{formatBenchmarkId(benchmark.id)}</span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                  {benchmark.name}
-                  {benchmark.lower_is_better && (
-                    <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300">
-                      lower is better
-                    </span>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border border-primary-200 dark:border-primary-700">
-                    <Target className="w-3 h-3 mr-1" />
-                    {benchmarkTargets.find(t => t.id === benchmark.benchmark_target_id)?.name || 'N/A'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+      <div className="space-y-4">
+        {benchmarks.map((benchmark) => {
+          const target = benchmarkTargets.find(t => t.id === benchmark.benchmark_target_id);
+          return (
+            <article
+              key={benchmark.id}
+              className="rounded-md border border-gray-200 bg-white transition-colors hover:border-primary-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-primary-800"
+            >
+              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={idBadgeClass}>{formatBenchmarkId(benchmark.id)}</span>
+                    {benchmark.lower_is_better && (
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                        lower is better
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="mt-2 break-words text-lg font-semibold text-gray-950 dark:text-white">
+                    {benchmark.name}
+                  </h3>
+                  <p className="mt-1 flex items-center text-sm text-gray-600 dark:text-gray-400">
+                    <Target className="mr-1.5 h-4 w-4 text-primary-600 dark:text-primary-400" />
+                    {target?.name || 'No target'}
+                    {target && <span className="ml-2 text-xs text-gray-500 dark:text-gray-500">{formatTargetId(target.id)}</span>}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
                   <button
                     onClick={() => { setEditingItem(benchmark); setShowForm(true); }}
-                    className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3 p-1 rounded hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-primary-600 transition-colors hover:bg-primary-50 hover:text-primary-900 dark:text-primary-400 dark:hover:bg-primary-900/20 dark:hover:text-primary-300"
                     title="Edit benchmark"
+                    aria-label="Edit benchmark"
                   >
-                    <Edit className="w-4 h-4" />
+                    <Edit className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => requestDelete('benchmark', benchmark.id)}
-                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-red-600 transition-colors hover:bg-red-50 hover:text-red-900 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
                     title="Delete benchmark"
+                    aria-label="Delete benchmark"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
     );
   };

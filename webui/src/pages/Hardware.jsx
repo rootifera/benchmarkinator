@@ -56,6 +56,45 @@ const Hardware = () => {
     { id: 'os', name: 'OS', icon: Monitor },
   ];
 
+  const HardwareCard = ({ id, title, detail, meta = [], onEdit, onDelete }) => (
+    <article className="rounded-md border border-gray-200 bg-white transition-colors hover:border-primary-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-primary-800">
+      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <span className={idBadgeClass}>{id}</span>
+          <h4 className="mt-2 break-words text-base font-semibold text-gray-950 dark:text-white">{title}</h4>
+          {detail && <p className="mt-1 break-words text-sm text-gray-500 dark:text-gray-400">{detail}</p>}
+          {meta.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {meta.filter(Boolean).map((item) => (
+                <span key={item} className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                  {item}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            onClick={onEdit}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-primary-600 transition-colors hover:bg-primary-50 hover:text-primary-900 dark:text-primary-400 dark:hover:bg-primary-900/20 dark:hover:text-primary-300"
+            title="Edit"
+            aria-label="Edit"
+          >
+            <Edit className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-red-600 transition-colors hover:bg-red-50 hover:text-red-900 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+            title="Delete"
+            aria-label="Delete"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -454,70 +493,25 @@ const Hardware = () => {
             </button>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Brand</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Family</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Model</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Speed</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cores</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Serial</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {data.main?.map((cpu) => {
-                  const brand = data.lookup.brands?.find(b => b.id === cpu.cpu_brand_id);
-                  const family = data.lookup.families?.find(f => f.id === cpu.cpu_family_id);
-                  
-                  return (
-                    <tr key={cpu.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        <span className={idBadgeClass}>{formatCpuId(cpu.id)}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {brand?.name || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {family?.name || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        {cpu.model}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {cpu.speed}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {cpu.core_count}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {cpu.serial || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => {
-                            setEditingItem(cpu);
-                            setShowForm(true);
-                          }}
-                          className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(cpu.id)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            {data.main?.map((cpu) => {
+              const brand = data.lookup.brands?.find(b => b.id === cpu.cpu_brand_id);
+              const family = data.lookup.families?.find(f => f.id === cpu.cpu_family_id);
+              return (
+                <HardwareCard
+                  key={cpu.id}
+                  id={formatCpuId(cpu.id)}
+                  title={[brand?.name, family?.name, cpu.model].filter(Boolean).join(' ') || 'Unknown CPU'}
+                  detail={[cpu.speed, cpu.core_count ? `${cpu.core_count} Cores` : null, cpu.serial || formatCpuId(cpu.id)].filter(Boolean).join(' | ')}
+                  meta={[brand?.name, family?.name].filter(Boolean)}
+                  onEdit={() => {
+                    setEditingItem(cpu);
+                    setShowForm(true);
+                  }}
+                  onDelete={() => handleDelete(cpu.id)}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
@@ -843,72 +837,27 @@ const Hardware = () => {
                 </button>
               </div>
           
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Manufacturer</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Brand</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Model</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">VRAM Size</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">VRAM Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Serial</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {data.main?.map((gpu) => {
-                      const manufacturer = data.lookup.manufacturers?.find(m => m.id === gpu.gpu_manufacturer_id);
-                      const brand = data.lookup.brands?.find(b => b.id === gpu.gpu_brand_id);
-                      const model = data.lookup.models?.find(m => m.id === gpu.gpu_model_id);
-                      const vramType = data.lookup.vramTypes?.find(v => v.id === gpu.gpu_vram_type_id);
-                      
-                      return (
-                        <tr key={gpu.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            <span className={idBadgeClass}>{formatGpuId(gpu.id)}</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {manufacturer?.name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {brand?.name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {model?.name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            {gpu.vram_size}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {vramType?.name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {gpu.serial || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button
-                              onClick={() => {
-                                setEditingItem(gpu);
-                                setShowForm(true);
-                              }}
-                              className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(gpu.id)}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="space-y-3">
+                {data.main?.map((gpu) => {
+                  const manufacturer = data.lookup.manufacturers?.find(m => m.id === gpu.gpu_manufacturer_id);
+                  const brand = data.lookup.brands?.find(b => b.id === gpu.gpu_brand_id);
+                  const model = data.lookup.models?.find(m => m.id === gpu.gpu_model_id);
+                  const vramType = data.lookup.vramTypes?.find(v => v.id === gpu.gpu_vram_type_id);
+                  return (
+                    <HardwareCard
+                      key={gpu.id}
+                      id={formatGpuId(gpu.id)}
+                      title={[manufacturer?.name, brand?.name, model?.name].filter(Boolean).join(' ') || 'Unknown GPU'}
+                      detail={[gpu.vram_size, vramType?.name, gpu.serial || formatGpuId(gpu.id)].filter(Boolean).join(' | ')}
+                      meta={[manufacturer?.name, brand?.name].filter(Boolean)}
+                      onEdit={() => {
+                        setEditingItem(gpu);
+                        setShowForm(true);
+                      }}
+                      onDelete={() => handleDelete(gpu.id)}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1101,66 +1050,25 @@ const Hardware = () => {
                 </button>
               </div>
               
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Manufacturer</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Model</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Chipset</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Serial</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Notes</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {data.main?.map((motherboard) => {
-                      const manufacturer = data.lookup.manufacturers?.find(m => m.id === motherboard.manufacturer_id);
-                      const chipset = data.lookup.chipsets?.find(c => c.id === motherboard.chipset_id);
-                      
-                      return (
-                        <tr key={motherboard.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            <span className={idBadgeClass}>{formatMotherboardId(motherboard.id)}</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {manufacturer?.name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            {motherboard.model}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {chipset?.name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {motherboard.serial || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {motherboard.notes || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button
-                              onClick={() => {
-                                setEditingItem(motherboard);
-                                setShowForm(true);
-                              }}
-                              className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(motherboard.id)}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="space-y-3">
+                {data.main?.map((motherboard) => {
+                  const manufacturer = data.lookup.manufacturers?.find(m => m.id === motherboard.manufacturer_id);
+                  const chipset = data.lookup.chipsets?.find(c => c.id === motherboard.chipset_id);
+                  return (
+                    <HardwareCard
+                      key={motherboard.id}
+                      id={formatMotherboardId(motherboard.id)}
+                      title={[manufacturer?.name, motherboard.model].filter(Boolean).join(' ') || 'Unknown Motherboard'}
+                      detail={[chipset?.name, motherboard.serial || formatMotherboardId(motherboard.id)].filter(Boolean).join(' | ')}
+                      meta={[motherboard.notes].filter(Boolean)}
+                      onEdit={() => {
+                        setEditingItem(motherboard);
+                        setShowForm(true);
+                      }}
+                      onDelete={() => handleDelete(motherboard.id)}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}

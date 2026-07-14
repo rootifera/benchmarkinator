@@ -13,7 +13,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { buildApiUrl } from '../config/api';
 import ConfirmModal from '../components/ConfirmModal';
 import PublicThemeToggle from '../components/PublicThemeToggle';
-import { formatResultId, idBadgeClass } from '../utils/displayIds';
+import { formatResultId, formatSystemId, idBadgeClass } from '../utils/displayIds';
 
 const notify = (message, type = 'warning', duration) => {
   if (window.showToast) {
@@ -281,6 +281,21 @@ const Results = () => {
     fetchFilteredResults();
   }, [fetchFilteredResults]);
 
+  const formatDate = (value) => {
+    try {
+      const date = new Date(value);
+      return date.getTime() > 0 ? date.toLocaleDateString() : 'No date';
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  const formatScore = (value) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return value || 'N/A';
+    return numeric.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  };
+
   const renderFilters = () => (
     <div className="card mb-6">
       <div className="flex items-center justify-between mb-4">
@@ -440,102 +455,85 @@ const Results = () => {
     }
 
     return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Benchmark
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Test System
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Result
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                Notes
-              </th>
-              {isAuthenticated && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Actions
-                </th>
-              )}
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            {filteredResults.map((result) => {
-              const benchmark = benchmarks.find(b => b.id === result.benchmark_id);
-              const config = configurations.find(c => c.id === result.config_id);
-              return (
-                <tr key={result.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+      <div className="space-y-4">
+        {filteredResults.map((result) => {
+          const benchmark = benchmarks.find(b => b.id === result.benchmark_id);
+          const config = configurations.find(c => c.id === result.config_id);
+          return (
+            <article
+              key={result.id}
+              className="rounded-md border border-gray-200 bg-white transition-colors hover:border-primary-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-primary-800"
+            >
+              <div className="flex flex-col gap-4 border-b border-gray-200 p-4 dark:border-gray-800 md:flex-row md:items-start md:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className={idBadgeClass}>{formatResultId(result.id)}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                    {benchmark?.name || 'Unknown'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {config ? (
+                    {benchmark?.lower_is_better && (
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                        lower is better
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="mt-2 break-words text-lg font-semibold text-gray-950 dark:text-white">
+                    {benchmark?.name || 'Unknown benchmark'}
+                  </h3>
+                </div>
+                <div className="flex shrink-0 items-start gap-3">
+                  <div className="rounded-md bg-primary-50 px-3 py-2 text-right dark:bg-primary-950/40">
+                    <p className="text-xs font-medium uppercase tracking-wider text-primary-700 dark:text-primary-300">Score</p>
+                    <p className="text-xl font-semibold text-primary-900 dark:text-primary-100">{formatScore(result.result)}</p>
+                  </div>
+                  {isAuthenticated && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleEditResult(result)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-md text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
+                        title="Edit Result"
+                        aria-label="Edit Result"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => requestDeleteResult(result.id)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-md text-red-600 transition-colors hover:bg-red-50 hover:text-red-900 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+                        title="Delete Result"
+                        aria-label="Delete Result"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-5 p-4 md:grid-cols-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Test System</p>
+                  {config ? (
+                    <>
                       <Link
                         to={`/systems/${config.id}`}
-                        className="font-medium text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+                        className="mt-1 block break-words text-sm font-medium text-primary-700 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200"
                       >
                         {config.name}
                       </Link>
-                    ) : (
-                      'Unknown'
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200">
-                      {result.result}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {(() => {
-                      try {
-                        const date = new Date(result.timestamp);
-                        return date.getTime() > 0 ? date.toLocaleDateString() : 'No date';
-                      } catch {
-                        return 'Invalid date';
-                      }
-                    })()}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                    {result.notes || 'No notes'}
-                  </td>
-                  {isAuthenticated && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEditResult(result)}
-                          className="rounded p-1 text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
-                          title="Edit Result"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => requestDeleteResult(result.id)}
-                          className="rounded p-1 text-red-600 transition-colors hover:bg-red-50 hover:text-red-900 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
-                          title="Delete Result"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{formatSystemId(config.id)}</p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Unknown system</p>
                   )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Date</p>
+                  <p className="mt-1 text-sm font-medium text-gray-950 dark:text-white">{formatDate(result.timestamp)}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Notes</p>
+                  <p className="mt-1 break-words text-sm text-gray-700 dark:text-gray-300">{result.notes || 'No notes'}</p>
+                </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
     );
   };
@@ -596,7 +594,7 @@ const Results = () => {
       {renderFilters()}
 
       {/* Results Table */}
-      <div className="card">
+      <div>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             Benchmark Results
