@@ -87,6 +87,7 @@ export const compareScores = (a, b, lowerIsBetter) => (
 
 export const formatRank = (rank, total) => {
   if (!rank || !total) return 'Unranked';
+  if (total === 1) return 'Only result';
   return `#${rank} of ${total}`;
 };
 
