@@ -3,9 +3,6 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   Award,
-  BarChart3,
-  Cpu,
-  Database,
   Monitor,
   Search,
   Server,
@@ -27,21 +24,6 @@ const ScorePill = ({ id, value }) => (
   >
     {formatScore(value)}
   </span>
-);
-
-const StatCard = ({ icon: Icon, label, value, detail }) => (
-  <div className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{label}</p>
-        <p className="mt-2 text-3xl font-bold text-gray-950 dark:text-white">{value}</p>
-        {detail && <p className="mt-1 text-sm text-gray-500 dark:text-gray-500">{detail}</p>}
-      </div>
-      <div className="rounded-md bg-primary-50 p-3 text-primary-700 dark:bg-primary-950 dark:text-primary-300">
-        <Icon className="h-5 w-5" />
-      </div>
-    </div>
-  </div>
 );
 
 const PublicDashboard = () => {
@@ -72,14 +54,11 @@ const PublicDashboard = () => {
     <div className="space-y-8">
       <section className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr] lg:items-stretch">
         <div className="rounded-md border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">
-            Public benchmark lab
-          </p>
           <h1 className="mt-3 text-3xl font-bold text-gray-950 dark:text-white sm:text-4xl">
-            Explore tested hardware, benchmark scores, and system comparisons.
+            Benchmarkinator
           </h1>
           <p className="mt-4 max-w-3xl text-gray-600 dark:text-gray-400">
-            Search across systems, CPUs, GPUs, benchmarks, operating systems, and notes. Open any test system for its full hardware profile and matching benchmark results.
+            All your benchmark results in one place.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link to="/results" className="btn-primary inline-flex items-center">
@@ -118,13 +97,6 @@ const PublicDashboard = () => {
             <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">No results have been published yet.</p>
           )}
         </div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={Database} label="Benchmark Results" value={analytics.totalResults} detail="Published score entries" />
-        <StatCard icon={Server} label="Test Systems" value={analytics.totalSystems} detail={`${analytics.systemsWithResults} with results`} />
-        <StatCard icon={Cpu} label="CPUs Tested" value={analytics.totalCpus} detail={`${analytics.totalGpus} GPUs tested`} />
-        <StatCard icon={BarChart3} label="Coverage" value={`${analytics.coveragePercent}%`} detail={`${analytics.totalBenchmarks} benchmark definitions`} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-2">
@@ -214,10 +186,10 @@ const PublicDashboard = () => {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
             <thead className="bg-gray-50 dark:bg-gray-950">
               <tr>
-                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Benchmark</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">System</th>
-                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Score</th>
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Benchmark</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Settings</th>
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Score</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rank</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
               </tr>
@@ -225,12 +197,6 @@ const PublicDashboard = () => {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
               {recentResults.slice(0, 8).map((record) => (
                 <tr key={record.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td
-                    className="px-5 py-4 text-sm font-medium text-gray-950 dark:text-white"
-                    title={`${formatBenchmarkId(record.benchmark?.id)} ${record.benchmark?.name || 'Unknown'}`}
-                  >
-                    {record.benchmark?.name || 'Unknown'}
-                  </td>
                   <td className="px-5 py-4 text-sm">
                     <Link
                       to={`/systems/${record.system?.id}`}
@@ -240,11 +206,17 @@ const PublicDashboard = () => {
                       {record.system?.name || 'Unknown'}
                     </Link>
                   </td>
-                  <td className="px-5 py-4 text-sm">
-                    <ScorePill id={record.id} value={record.result.result} />
+                  <td
+                    className="px-5 py-4 text-sm font-medium text-gray-950 dark:text-white"
+                    title={`${formatBenchmarkId(record.benchmark?.id)} ${record.benchmark?.name || 'Unknown'}`}
+                  >
+                    {record.benchmark?.name || 'Unknown'}
                   </td>
                   <td className="max-w-xs px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                     <span className="line-clamp-2">{record.settingsLabel}</span>
+                  </td>
+                  <td className="px-5 py-4 text-sm">
+                    <ScorePill id={record.id} value={record.result.result} />
                   </td>
                   <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{record.rankLabel}</td>
                   <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{formatDate(record.date)}</td>
