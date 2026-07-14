@@ -1,37 +1,29 @@
 import React, { useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Filter, Trophy } from 'lucide-react';
-import { formatBenchmarkId, formatResultId, formatScore, usePublicData } from '../utils/publicData';
+import { useSearchParams } from 'react-router-dom';
+import { Filter, Trophy } from 'lucide-react';
+import { formatBenchmarkId, usePublicData } from '../utils/publicData';
 
 const getParam = (params, key, fallback = '') => params.get(key) || fallback;
-const sortColumns = new Set(['benchmark', 'target', 'leader', 'score', 'results']);
-const descendingFirstColumns = new Set(['score', 'results']);
+const sortColumns = new Set(['benchmark', 'target', 'direction', 'options']);
+const descendingFirstColumns = new Set(['options']);
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
-const getLeaderScore = (leaderboard) => (
-  leaderboard.leader ? Number(leaderboard.leader.result.result) : Number.NaN
-);
-
-const ScorePill = ({ result }) => (
-  <span
-    title={formatResultId(result.id)}
-    className="inline-flex w-24 justify-center rounded-md bg-primary-700 px-2.5 py-1 text-sm font-semibold tabular-nums text-white shadow-sm dark:bg-primary-400 dark:text-primary-950"
-  >
-    {formatScore(result.result)}
-  </span>
-);
-
-const compareNullableNumbers = (a, b) => {
-  const aValid = Number.isFinite(a);
-  const bValid = Number.isFinite(b);
-  if (!aValid && !bValid) return 0;
-  if (!aValid) return 1;
-  if (!bValid) return -1;
-  return a - b;
+const decodeOptionValues = (value) => {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.map((item) => String(item).trim()).filter(Boolean);
+  } catch {
+    // Older/manual values can still be shown as comma/newline separated text.
+  }
+  return value
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 };
 
 const PublicBenchmarks = () => {
-  const { loading, error, refetch, benchmarkLeaderboards, filterOptions } = usePublicData();
+  const { loading, error, refetch, data, filterOptions } = usePublicData();
   const [searchParams, setSearchParams] = useSearchParams();
   const q = getParam(searchParams, 'q');
   const target = getParam(searchParams, 'target');
@@ -56,21 +48,44 @@ const PublicBenchmarks = () => {
 
   const targets = useMemo(
     () => filterOptions.benchmarkTargets.filter((targetOption) => (
-      filterOptions.benchmarks.some((benchmark) => benchmark.benchmark_target_id === targetOption.id)
+      data.benchmarks.some((benchmark) => benchmark.benchmark_target_id === targetOption.id)
     )),
-    [filterOptions.benchmarkTargets, filterOptions.benchmarks]
+    [data.benchmarks, filterOptions.benchmarkTargets]
   );
 
-  const filteredLeaderboards = useMemo(() => {
+  const benchmarks = useMemo(() => {
+    const targetsById = new Map(filterOptions.benchmarkTargets.map((targetOption) => [targetOption.id, targetOption]));
+    const optionsByBenchmark = new Map();
+
+    data.benchmarkOptions.forEach((option) => {
+      const list = optionsByBenchmark.get(option.benchmark_id) || [];
+      list.push({
+        ...option,
+        parsedValues: decodeOptionValues(option.values),
+      });
+      optionsByBenchmark.set(option.benchmark_id, list);
+    });
+
+    optionsByBenchmark.forEach((options) => {
+      options.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.id - b.id);
+    });
+
+    return data.benchmarks.map((benchmark) => ({
+      ...benchmark,
+      target: targetsById.get(benchmark.benchmark_target_id) || null,
+      options: optionsByBenchmark.get(benchmark.id) || [],
+    }));
+  }, [data.benchmarkOptions, data.benchmarks, filterOptions.benchmarkTargets]);
+
+  const filteredBenchmarks = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const filtered = benchmarkLeaderboards.filter((leaderboard) => {
-      const benchmark = leaderboard.benchmark;
+    const filtered = benchmarks.filter((benchmark) => {
       const matchesSearch = !needle || [
         formatBenchmarkId(benchmark.id),
         benchmark.name,
         benchmark.target?.name,
-        leaderboard.settingsLabel,
-        leaderboard.leader?.system?.name,
+        benchmark.lower_is_better ? 'lower is better' : 'higher is better',
+        ...benchmark.options.flatMap((option) => [option.name, ...option.parsedValues]),
       ].filter(Boolean).join(' ').toLowerCase().includes(needle);
       const matchesTarget = !target || String(benchmark.benchmark_target_id) === target;
       return matchesSearch && matchesTarget;
@@ -79,24 +94,25 @@ const PublicBenchmarks = () => {
     return [...filtered].sort((a, b) => {
       let comparison = 0;
       if (sort === 'target') {
-        comparison = collator.compare(a.benchmark.target?.name || '', b.benchmark.target?.name || '');
-      } else if (sort === 'leader') {
-        comparison = collator.compare(a.leader?.system?.name || '', b.leader?.system?.name || '');
-      } else if (sort === 'score') {
-        comparison = compareNullableNumbers(getLeaderScore(a), getLeaderScore(b));
-      } else if (sort === 'results') {
-        comparison = a.records.length - b.records.length;
+        comparison = collator.compare(a.target?.name || '', b.target?.name || '');
+      } else if (sort === 'direction') {
+        comparison = collator.compare(
+          a.lower_is_better ? 'Lower is better' : 'Higher is better',
+          b.lower_is_better ? 'Lower is better' : 'Higher is better'
+        );
+      } else if (sort === 'options') {
+        comparison = a.options.length - b.options.length;
       } else {
-        comparison = collator.compare(a.benchmark.name, b.benchmark.name);
+        comparison = collator.compare(a.name, b.name);
       }
 
       if (comparison === 0) {
-        comparison = collator.compare(a.benchmark.name, b.benchmark.name);
+        comparison = collator.compare(a.name, b.name);
       }
 
       return dir === 'desc' ? -comparison : comparison;
     });
-  }, [benchmarkLeaderboards, dir, q, sort, target]);
+  }, [benchmarks, dir, q, sort, target]);
 
   const SortHeader = ({ id, align = 'left', children }) => {
     const active = sort === id;
@@ -150,7 +166,7 @@ const PublicBenchmarks = () => {
               type="search"
               value={q}
               onChange={(event) => setFilter('q', event.target.value)}
-              placeholder="Search benchmarks, leaders, IDs..."
+              placeholder="Search benchmarks, targets, settings, IDs..."
               className="input-field h-8 py-1 text-sm"
             />
           </label>
@@ -180,11 +196,11 @@ const PublicBenchmarks = () => {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold text-gray-950 dark:text-white">Benchmarks</h1>
         <div className="text-sm text-gray-600 dark:text-gray-400">
-          {filteredLeaderboards.length} of {benchmarkLeaderboards.length} benchmarks
+          {filteredBenchmarks.length} of {benchmarks.length} benchmarks
         </div>
       </div>
 
-      {filteredLeaderboards.length === 0 ? (
+      {filteredBenchmarks.length === 0 ? (
         <div className="rounded-md border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-gray-900">
           <Trophy className="mx-auto h-10 w-10 text-gray-400" />
           <p className="mt-3 font-medium text-gray-950 dark:text-white">No benchmarks match those filters.</p>
@@ -202,72 +218,49 @@ const PublicBenchmarks = () => {
                     <SortHeader id="target">Target</SortHeader>
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    Settings
+                    <SortHeader id="direction">Score Direction</SortHeader>
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    <SortHeader id="leader">Leader</SortHeader>
+                    <SortHeader id="options">Available Values</SortHeader>
                   </th>
-                  <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    <SortHeader id="score" align="right">Best score</SortHeader>
-                  </th>
-                  <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    <SortHeader id="results" align="right">Results</SortHeader>
-                  </th>
-                  <th className="w-12 px-5 py-3" aria-label="Open benchmark" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                {filteredLeaderboards.map((leaderboard) => (
+                {filteredBenchmarks.map((benchmark) => (
                   <tr
-                    key={`${leaderboard.benchmark.id}-${leaderboard.settings}`}
+                    key={benchmark.id}
                     className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
                   >
                     <td className="px-5 py-4">
-                      <Link
-                        to={`/benchmarks/${leaderboard.benchmark.id}`}
-                        className="font-medium text-gray-950 hover:text-primary-700 dark:text-white dark:hover:text-primary-300"
-                        title={`${formatBenchmarkId(leaderboard.benchmark.id)} ${leaderboard.benchmark.name}`}
+                      <div
+                        className="font-medium text-gray-950 dark:text-white"
+                        title={`${formatBenchmarkId(benchmark.id)} ${benchmark.name}`}
                       >
-                        {leaderboard.benchmark.name}
-                      </Link>
-                      {leaderboard.benchmark.lower_is_better && (
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Lower is better</p>
-                      )}
+                        {benchmark.name}
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{formatBenchmarkId(benchmark.id)}</p>
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
-                      {leaderboard.benchmark.target?.name || 'Benchmark'}
+                      {benchmark.target?.name || 'Benchmark'}
                     </td>
-                    <td className="max-w-xs px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
-                      <span className="line-clamp-2">{leaderboard.settingsLabel}</span>
+                    <td className="whitespace-nowrap px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      {benchmark.lower_is_better ? 'Lower is better' : 'Higher is better'}
                     </td>
-                    <td className="px-5 py-4">
-                      {leaderboard.leader ? (
-                        <Link
-                          to={`/systems/${leaderboard.leader.system?.id}`}
-                          className="text-sm font-medium text-primary-700 hover:text-primary-800 dark:text-primary-300 dark:hover:text-primary-200"
-                          title={leaderboard.leader.system?.publicId}
-                        >
-                          {leaderboard.leader.system?.name || 'Unknown system'}
-                        </Link>
+                    <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      {benchmark.options.length ? (
+                        <div className="space-y-2">
+                          {benchmark.options.map((option) => (
+                            <div key={option.id}>
+                              <span className="font-medium text-gray-950 dark:text-white">{option.name}:</span>
+                              <span className="ml-1 line-clamp-2">
+                                {option.parsedValues.join(', ')}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       ) : (
-                        <span className="text-sm text-gray-500 dark:text-gray-400">No results</span>
+                        <span className="text-gray-500 dark:text-gray-400">Default only</span>
                       )}
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-4 text-right text-sm">
-                      {leaderboard.leader ? <ScorePill result={leaderboard.leader.result} /> : 'N/A'}
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-4 text-right text-sm text-gray-700 dark:text-gray-300">
-                      {leaderboard.records.length}
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <Link
-                        to={`/benchmarks/${leaderboard.benchmark.id}`}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-primary-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-primary-300"
-                        aria-label={`Open ${leaderboard.benchmark.name}`}
-                        title={`Open ${leaderboard.benchmark.name}`}
-                      >
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
                     </td>
                   </tr>
                 ))}
