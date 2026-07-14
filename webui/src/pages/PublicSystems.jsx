@@ -1,9 +1,30 @@
 import React, { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Cpu, Database, Monitor, Search, Server, X } from 'lucide-react';
+import { Cpu, Database, Monitor, Search, Server, Settings, X } from 'lucide-react';
 import { formatDate, usePublicData } from '../utils/publicData';
 
 const getParam = (params, key, fallback = '') => params.get(key) || fallback;
+
+const ComponentLine = ({ count = 1, title, detail }) => (
+  <div className="min-w-0">
+    <div className="flex items-center gap-2">
+      {count > 1 && (
+        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+          {count}x
+        </span>
+      )}
+      <span className="break-words font-medium">{title}</span>
+    </div>
+    {detail && <p className="mt-0.5 break-words text-xs text-gray-500 dark:text-gray-400">{detail}</p>}
+  </div>
+);
+
+const ComponentGroup = ({ icon: Icon, children }) => (
+  <div className="flex min-w-0 gap-2 text-sm text-gray-700 dark:text-gray-300">
+    <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
+    <div className="min-w-0 space-y-1">{children}</div>
+  </div>
+);
 
 const PublicSystems = () => {
   const { loading, error, refetch, systemRecords, filterOptions } = usePublicData();
@@ -167,22 +188,23 @@ const PublicSystems = () => {
                   <p className="text-xs text-gray-500 dark:text-gray-400">results</p>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-                <div className="flex gap-2 text-gray-700 dark:text-gray-300">
-                  <Cpu className="mt-0.5 h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
-                  <span>{system.cpuText}</span>
-                </div>
-                <div className="flex gap-2 text-gray-700 dark:text-gray-300">
-                  <Monitor className="mt-0.5 h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
-                  <span>{system.gpuText}</span>
-                </div>
-                <div className="flex gap-2 text-gray-700 dark:text-gray-300">
-                  <Database className="mt-0.5 h-4 w-4 shrink-0 text-primary-600 dark:text-primary-400" />
-                  <span>{system.ramText}</span>
-                </div>
-                <div className="text-gray-500 dark:text-gray-400">
-                  Newest: {formatDate(system.newestDate)}
-                </div>
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <ComponentGroup icon={Cpu}>
+                  {system.cpuDetails.length
+                    ? system.cpuDetails.map((item) => <ComponentLine key={`cpu-${item.id}`} {...item} />)
+                    : <ComponentLine title="Unknown CPU" />}
+                </ComponentGroup>
+                <ComponentGroup icon={Monitor}>
+                  {system.gpuDetails.length
+                    ? system.gpuDetails.map((item) => <ComponentLine key={`gpu-${item.id}`} {...item} />)
+                    : <ComponentLine title="Unknown GPU" />}
+                </ComponentGroup>
+                <ComponentGroup icon={Settings}>
+                  <ComponentLine {...system.motherboardDetail} />
+                </ComponentGroup>
+                <ComponentGroup icon={Database}>
+                  <ComponentLine title={system.ramText || 'Unknown RAM'} detail={`Newest: ${formatDate(system.newestDate)}`} />
+                </ComponentGroup>
               </div>
             </Link>
           ))}

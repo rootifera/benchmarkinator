@@ -17,9 +17,16 @@ import { buildApiUrl } from '../config/api';
 import {
   formatRank,
   formatBenchmarkId,
+  formatCpuId,
+  formatGpuId,
+  formatMotherboardId,
   formatResultId,
   formatSystemId,
 } from '../utils/publicData';
+
+const compact = (items) => items.filter(Boolean).join(' ').trim();
+const compactDescription = (items) => items.filter(Boolean).join(' | ').trim();
+const displaySerial = (item, fallback) => item?.serial || fallback;
 
 const parseComponentIds = (raw, fallbackId, fallbackQuantity = 1) => {
   if (raw) {
@@ -40,28 +47,18 @@ const parseComponentIds = (raw, fallbackId, fallbackQuantity = 1) => {
   );
 };
 
-const formatComponentLines = (ids, getName) => {
-  if (!ids.length) return ['Unknown'];
+const summarizeComponentIds = (ids) => {
+  if (!ids.length) return [];
   const counts = ids.reduce((acc, id) => {
     acc[id] = (acc[id] || 0) + 1;
     return acc;
   }, {});
 
-  return Object.entries(counts).map(([id, count]) => {
-    const label = getName(parseInt(id, 10));
-    return count > 1 ? `${count}x ${label}` : label;
-  });
+  return Object.entries(counts).map(([id, count]) => ({
+    id: parseInt(id, 10),
+    count,
+  }));
 };
-
-const renderLines = (lines) => (
-  <span className="space-y-1">
-    {lines.map((line, index) => (
-      <span key={`${line}-${index}`} className="block break-words">
-        {line}
-      </span>
-    ))}
-  </span>
-);
 
 const formatDate = (value) => {
   const date = new Date(value);
@@ -249,32 +246,41 @@ const PublicSystem = () => {
       .sort((a, b) => a.benchmark.name.localeCompare(b.benchmark.name));
   }, [data.benchmarks, data.results, numericConfigId, rankByResultId, targetConfigId]);
 
-  const getCPUDisplayName = (cpuId) => {
+  const getCPUDetail = (cpuId) => {
     const cpu = data.cpus.find((item) => item.id === cpuId);
-    if (!cpu) return 'Unknown';
+    if (!cpu) return { title: 'Unknown CPU', detail: '' };
     const brand = lookups.cpuBrands.get(cpu.cpu_brand_id)?.name;
     const family = lookups.cpuFamilies.get(cpu.cpu_family_id)?.name;
     const details = [cpu.speed, cpu.core_count ? `${cpu.core_count} Cores` : ''].filter(Boolean);
-    return `${[brand, family, cpu.model].filter(Boolean).join(' ')}${details.length ? ` [${details.join(' - ')}]` : ''}${cpu.serial ? ` [${cpu.serial}]` : ''}`.trim();
+    return {
+      title: compact([brand, family, cpu.model]) || formatCpuId(cpu.id),
+      detail: compactDescription([...details, displaySerial(cpu, formatCpuId(cpu.id))]),
+    };
   };
 
-  const getGPUDisplayName = (gpuId) => {
+  const getGPUDetail = (gpuId) => {
     const gpu = data.gpus.find((item) => item.id === gpuId);
-    if (!gpu) return 'Unknown';
+    if (!gpu) return { title: 'Unknown GPU', detail: '' };
     const manufacturer = lookups.gpuManufacturers.get(gpu.gpu_manufacturer_id)?.name;
     const brand = lookups.gpuBrands.get(gpu.gpu_brand_id)?.name;
     const model = lookups.gpuModels.get(gpu.gpu_model_id)?.name;
     const vramType = lookups.gpuVramTypes.get(gpu.gpu_vram_type_id)?.name;
     const vram = [gpu.vram_size, vramType].filter(Boolean).join(' ');
-    return `${[manufacturer, brand, model].filter(Boolean).join(' ')}${vram ? ` [${vram}]` : ''}${gpu.serial ? ` [${gpu.serial}]` : ''}`.trim();
+    return {
+      title: compact([manufacturer, brand, model]) || formatGpuId(gpu.id),
+      detail: compactDescription([vram, displaySerial(gpu, formatGpuId(gpu.id))]),
+    };
   };
 
-  const getMotherboardDisplayName = (motherboardId) => {
+  const getMotherboardDetail = (motherboardId) => {
     const motherboard = data.motherboards.find((item) => item.id === motherboardId);
-    if (!motherboard) return 'Unknown';
+    if (!motherboard) return { title: 'Unknown Motherboard', detail: '' };
     const manufacturer = lookups.motherboardManufacturers.get(motherboard.manufacturer_id)?.name;
     const chipset = lookups.motherboardChipsets.get(motherboard.chipset_id)?.name;
-    return `${[manufacturer, motherboard.model].filter(Boolean).join(' ')}${chipset ? ` [${chipset}]` : ''}${motherboard.serial ? ` [${motherboard.serial}]` : ''}`.trim();
+    return {
+      title: compact([manufacturer, motherboard.model]) || formatMotherboardId(motherboard.id),
+      detail: compactDescription([chipset, displaySerial(motherboard, formatMotherboardId(motherboard.id))]),
+    };
   };
 
   const copyLink = async () => {
@@ -304,7 +310,7 @@ const PublicSystem = () => {
             Results
           </Link>
         </div>
-        <div className="rounded-md border border-gray-200 bg-white p-8 text-center dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-md border border-gray-200 bg-white p-8 text-center dark:border-gray-800 dark:bg-gray-900">
           <p className="text-sm font-medium text-gray-900 dark:text-white">
             {error || 'This test system was not found.'}
           </p>
@@ -313,22 +319,53 @@ const PublicSystem = () => {
     );
   }
 
-  const cpuLines = formatComponentLines(
-    parseComponentIds(config.cpu_component_ids, config.cpu_id, config.cpu_quantity),
-    getCPUDisplayName
+  const cpuItems = summarizeComponentIds(parseComponentIds(config.cpu_component_ids, config.cpu_id, config.cpu_quantity));
+  const gpuItems = summarizeComponentIds(parseComponentIds(config.gpu_component_ids, config.gpu_id, config.gpu_quantity));
+  const motherboardDetail = getMotherboardDetail(config.motherboard_id);
+
+  const ComponentLine = ({ count = 1, title, detail }) => (
+    <div className="min-w-0">
+      <div className="flex items-center gap-2">
+        {count > 1 && (
+          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+            {count}x
+          </span>
+        )}
+        <span className="break-words font-medium">{title}</span>
+      </div>
+      {detail && <p className="mt-0.5 break-words text-xs text-gray-500 dark:text-gray-400">{detail}</p>}
+    </div>
   );
-  const gpuLines = formatComponentLines(
-    parseComponentIds(config.gpu_component_ids, config.gpu_id, config.gpu_quantity),
-    getGPUDisplayName
+
+  const HardwareCard = ({ label, icon: Icon, children }) => (
+    <div className="rounded-md border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+      <div className="mb-2 flex items-center text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+        <Icon className="mr-2 h-4 w-4 text-primary-600 dark:text-primary-400" />
+        {label}
+      </div>
+      <div className="space-y-2 text-sm text-gray-950 dark:text-white">{children}</div>
+    </div>
   );
 
   const hardware = [
-    { label: 'CPU', icon: Cpu, value: renderLines(cpuLines) },
-    { label: 'GPU', icon: Monitor, value: renderLines(gpuLines) },
-    { label: 'Motherboard', icon: Settings, value: getMotherboardDisplayName(config.motherboard_id) },
-    { label: 'RAM', icon: Database, value: `${lookups.ramTypes.get(config.ram_id)?.name || 'Unknown'} - ${config.ram_size || 'Unknown'}` },
-    { label: 'Storage', icon: HardDrive, value: lookups.disks.get(config.disk_id)?.name || 'Unknown' },
-    { label: 'OS', icon: Tv, value: lookups.oses.get(config.os_id)?.name || 'Unknown' },
+    {
+      label: 'CPU',
+      icon: Cpu,
+      value: cpuItems.length
+        ? cpuItems.map((item) => <ComponentLine key={`cpu-${item.id}`} count={item.count} {...getCPUDetail(item.id)} />)
+        : <span className="text-gray-500 dark:text-gray-400">Unknown CPU</span>,
+    },
+    {
+      label: 'GPU',
+      icon: Monitor,
+      value: gpuItems.length
+        ? gpuItems.map((item) => <ComponentLine key={`gpu-${item.id}`} count={item.count} {...getGPUDetail(item.id)} />)
+        : <span className="text-gray-500 dark:text-gray-400">Unknown GPU</span>,
+    },
+    { label: 'Motherboard', icon: Settings, value: <ComponentLine {...motherboardDetail} /> },
+    { label: 'Memory', icon: Database, value: <ComponentLine title={lookups.ramTypes.get(config.ram_id)?.name || 'Unknown RAM'} detail={config.ram_size || 'Unknown'} /> },
+    { label: 'Storage', icon: HardDrive, value: <span className="font-medium">{lookups.disks.get(config.disk_id)?.name || 'Unknown'}</span> },
+    { label: 'OS', icon: Tv, value: <span className="font-medium">{lookups.oses.get(config.os_id)?.name || 'Unknown'}</span> },
   ];
 
   return (
@@ -362,19 +399,15 @@ const PublicSystem = () => {
         {hardware.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.label} className="rounded-md border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-              <div className="mb-2 flex items-center text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                <Icon className="mr-2 h-4 w-4" />
-                {item.label}
-              </div>
-              <div className="text-sm font-medium text-gray-900 dark:text-white">{item.value}</div>
-            </div>
+            <HardwareCard key={item.label} label={item.label} icon={Icon}>
+              {item.value}
+            </HardwareCard>
           );
         })}
       </div>
 
       {(config.cpu_driver_version || config.gpu_driver_version || config.mb_chipset_driver_version || config.notes) && (
-        <div className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+        <div className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
           <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">System Notes</h2>
           <div className="grid grid-cols-1 gap-3 text-sm text-gray-700 dark:text-gray-300 md:grid-cols-3">
             {config.cpu_driver_version && <p><span className="font-medium">CPU driver:</span> {config.cpu_driver_version}</p>}
@@ -385,8 +418,8 @@ const PublicSystem = () => {
         </div>
       )}
 
-      <div className="rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+      <div className="rounded-md border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Benchmark Results</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">{systemResults.length} result{systemResults.length === 1 ? '' : 's'}</p>
@@ -398,55 +431,53 @@ const PublicSystem = () => {
             No benchmark results have been published for this test system yet.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Benchmark</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Result</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Rank</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Notes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-                {systemResults.map((result) => {
-                  const benchmark = lookups.benchmarks.get(result.benchmark_id);
-                  const rank = rankByResultId.get(result.id);
-                  return (
-                    <tr key={result.id}>
-                      <td
-                        className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white"
-                        title={`${formatBenchmarkId(benchmark?.id)} ${benchmark?.name || 'Unknown'}`}
-                      >
-                        {benchmark?.name || 'Unknown'}
+          <div className="divide-y divide-gray-200 dark:divide-gray-800">
+            {systemResults.map((result) => {
+              const benchmark = lookups.benchmarks.get(result.benchmark_id);
+              const rank = rankByResultId.get(result.id);
+              return (
+                <article key={result.id} className="p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 dark:bg-gray-950 dark:text-gray-400">
+                          {formatResultId(result.id)}
+                        </span>
                         {benchmark?.lower_is_better && (
-                          <span className="ml-2 rounded-full border border-gray-300 px-2 py-0.5 text-[10px] text-gray-700 dark:border-gray-700 dark:text-gray-300">
+                          <span className="rounded-full border border-gray-300 px-2 py-0.5 text-[10px] text-gray-700 dark:border-gray-700 dark:text-gray-300">
                             lower is better
                           </span>
                         )}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
-                        <span title={formatResultId(result.id)}>{formatScore(result.result)}</span>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">
-                        <span title={`${rank?.label || 'Unranked'} for ${benchmark?.name || 'this benchmark'}`}>
-                          {rank?.label || 'Unranked'}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-white">{formatDate(result.timestamp)}</td>
-                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">{result.notes || 'No notes'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                      <h3
+                        className="mt-2 break-words text-base font-semibold text-gray-950 dark:text-white"
+                        title={`${formatBenchmarkId(benchmark?.id)} ${benchmark?.name || 'Unknown'}`}
+                      >
+                        {benchmark?.name || 'Unknown benchmark'}
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatDate(result.timestamp)}</p>
+                      {result.notes && <p className="mt-2 break-words text-sm text-gray-700 dark:text-gray-300">{result.notes}</p>}
+                    </div>
+                    <div className="flex shrink-0 gap-3">
+                      <div className="flex h-[60px] w-24 flex-col items-center justify-center rounded-md bg-primary-700 px-3 py-2 text-center text-white shadow-sm dark:bg-primary-400 dark:text-primary-950">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-primary-100 dark:text-primary-950/70">Score</p>
+                        <p className="mt-0.5 text-lg font-semibold tabular-nums">{formatScore(result.result)}</p>
+                      </div>
+                      <div className="flex h-[60px] w-20 flex-col items-center justify-center rounded-md bg-gray-100 px-3 py-2 text-center dark:bg-gray-800">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Rank</p>
+                        <p className="mt-0.5 text-sm font-semibold tabular-nums text-gray-950 dark:text-white">{rank?.label || 'Unranked'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </div>
 
-      <div className="rounded-md border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-        <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+      <div className="rounded-md border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+        <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Compare This System</h2>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             {config.name} is locked as the primary system. Select another test system to compare matching benchmark results.
@@ -497,7 +528,7 @@ const PublicSystem = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
                 <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Benchmark</th>
@@ -510,7 +541,7 @@ const PublicSystem = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Leader</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
+                <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-800 dark:bg-gray-900">
                   {comparisonRows.map((row) => {
                     const isPrimaryAhead = row.lead.leader === 'primary';
                     const isTie = row.lead.leader === 'tie' || row.lead.margin < 0.01;

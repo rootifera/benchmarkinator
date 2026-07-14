@@ -13,6 +13,22 @@ import {
 } from 'lucide-react';
 import { formatBenchmarkId, formatDate, formatResultId, formatScore, usePublicData } from '../utils/publicData';
 
+const formatComponentSummary = (items, fallback) => {
+  if (!items?.length) return fallback;
+  const first = items[0];
+  const count = items.reduce((total, item) => total + (item.count || 1), 0);
+  return count > 1 ? `${first.title} +${count - 1}` : first.title;
+};
+
+const ScorePill = ({ id, value }) => (
+  <span
+    title={formatResultId(id)}
+    className="inline-flex w-24 justify-center rounded-md bg-primary-700 px-2.5 py-1 text-sm font-semibold tabular-nums text-white shadow-sm dark:bg-primary-400 dark:text-primary-950"
+  >
+    {formatScore(value)}
+  </span>
+);
+
 const StatCard = ({ icon: Icon, label, value, detail }) => (
   <div className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
     <div className="flex items-start justify-between gap-4">
@@ -138,7 +154,7 @@ const PublicDashboard = () => {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-primary-700 dark:text-primary-300">{formatScore(record.result.result)}</p>
+                    <p className="font-semibold text-gray-950 dark:text-white">{formatScore(record.result.result)}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{record.rankLabel}</p>
                     {record.benchmark.lower_is_better && <p className="text-xs text-gray-500">Lower is better</p>}
                   </div>
@@ -164,8 +180,12 @@ const PublicDashboard = () => {
                     <p className="font-medium text-gray-950 dark:text-white" title={`${system.publicId} ${system.name}`}>
                       {system.name}
                     </p>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{system.cpuText}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{system.gpuText}</p>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      {formatComponentSummary(system.cpuDetails, 'Unknown CPU')}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {formatComponentSummary(system.gpuDetails, 'Unknown GPU')}
+                    </p>
                   </div>
                   <div className="text-right text-sm text-gray-600 dark:text-gray-400">
                     <p className="font-semibold text-gray-950 dark:text-white">{system.resultCount}</p>
@@ -218,8 +238,8 @@ const PublicDashboard = () => {
                       {record.system?.name || 'Unknown'}
                     </Link>
                   </td>
-                  <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
-                    <span title={formatResultId(record.id)}>{formatScore(record.result.result)}</span>
+                  <td className="px-5 py-4 text-sm">
+                    <ScorePill id={record.id} value={record.result.result} />
                   </td>
                   <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{record.rankLabel}</td>
                   <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{formatDate(record.date)}</td>

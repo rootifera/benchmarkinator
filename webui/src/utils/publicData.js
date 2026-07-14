@@ -91,6 +91,8 @@ export const formatRank = (rank, total) => {
 
 const byId = (items) => new Map(items.map((item) => [item.id, item]));
 const compact = (items) => items.filter(Boolean).join(' ').trim();
+const compactDescription = (items) => items.filter(Boolean).join(' | ').trim();
+const displaySerial = (item, fallback) => item?.serial || fallback;
 const uniqueSorted = (items) => [...new Set(items.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 const uniqueNumbers = (items) => [...new Set(items.filter((value) => Number.isFinite(Number(value))).map((value) => Number(value)))];
 
@@ -148,6 +150,43 @@ export const buildPublicModel = (data) => {
     return `${compact([manufacturer, motherboard.model])}${chipset ? ` (${chipset})` : ''}`.trim();
   };
 
+  const getCPUDetail = (cpuId) => {
+    const cpu = lookups.cpus.get(cpuId);
+    if (!cpu) return { title: 'Unknown CPU', detail: '' };
+    const brand = lookups.cpuBrands.get(cpu.cpu_brand_id)?.name;
+    const family = lookups.cpuFamilies.get(cpu.cpu_family_id)?.name;
+    const specs = [cpu.speed, cpu.core_count ? `${cpu.core_count} Cores` : ''].filter(Boolean);
+    return {
+      title: compact([brand, family, cpu.model]) || formatCpuId(cpu.id),
+      detail: compactDescription([...specs, displaySerial(cpu, formatCpuId(cpu.id))]),
+    };
+  };
+
+  const getGPUDetail = (gpuId) => {
+    const gpu = lookups.gpus.get(gpuId);
+    if (!gpu) return { title: 'Unknown GPU', detail: '' };
+    const manufacturer = lookups.gpuManufacturers.get(gpu.gpu_manufacturer_id)?.name;
+    const brand = lookups.gpuBrands.get(gpu.gpu_brand_id)?.name;
+    const model = lookups.gpuModels.get(gpu.gpu_model_id)?.name;
+    const vramType = lookups.gpuVramTypes.get(gpu.gpu_vram_type_id)?.name;
+    const vram = compact([gpu.vram_size, vramType]);
+    return {
+      title: compact([manufacturer, brand, model]) || formatGpuId(gpu.id),
+      detail: compactDescription([vram, displaySerial(gpu, formatGpuId(gpu.id))]),
+    };
+  };
+
+  const getMotherboardDetail = (motherboardId) => {
+    const motherboard = lookups.motherboards.get(motherboardId);
+    if (!motherboard) return { title: 'Unknown motherboard', detail: '' };
+    const manufacturer = lookups.motherboardManufacturers.get(motherboard.manufacturer_id)?.name;
+    const chipset = lookups.motherboardChipsets.get(motherboard.chipset_id)?.name;
+    return {
+      title: compact([manufacturer, motherboard.model]) || formatMotherboardId(motherboard.id),
+      detail: compactDescription([chipset, displaySerial(motherboard, formatMotherboardId(motherboard.id))]),
+    };
+  };
+
   const summarizeComponents = (ids, getName) => {
     if (!ids.length) return ['Unknown'];
     const counts = ids.reduce((acc, id) => {
@@ -161,15 +200,32 @@ export const buildPublicModel = (data) => {
     });
   };
 
+  const summarizeComponentDetails = (ids, getDetail) => {
+    if (!ids.length) return [];
+    const counts = ids.reduce((acc, id) => {
+      acc[id] = (acc[id] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(counts).map(([id, count]) => ({
+      id: parseInt(id, 10),
+      count,
+      ...getDetail(parseInt(id, 10)),
+    }));
+  };
+
   const systemRecords = data.configurations.map((config) => {
     const cpuIds = parseComponentIds(config.cpu_component_ids, config.cpu_id, config.cpu_quantity);
     const gpuIds = parseComponentIds(config.gpu_component_ids, config.gpu_id, config.gpu_quantity);
     const cpuNames = summarizeComponents(cpuIds, getCPUDisplayName);
     const gpuNames = summarizeComponents(gpuIds, getGPUDisplayName);
+    const cpuDetails = summarizeComponentDetails(cpuIds, getCPUDetail);
+    const gpuDetails = summarizeComponentDetails(gpuIds, getGPUDetail);
     const osName = lookups.oses.get(config.os_id)?.name || 'Unknown OS';
     const ramName = lookups.ramTypes.get(config.ram_id)?.name || 'Unknown RAM';
     const diskName = lookups.disks.get(config.disk_id)?.name || 'Unknown storage';
     const motherboardName = getMotherboardDisplayName(config.motherboard_id);
+    const motherboardDetail = getMotherboardDetail(config.motherboard_id);
     const configResults = data.results.filter((result) => result.config_id === config.id);
     const datedResults = configResults.filter((result) => isValidDate(result.timestamp));
     const newestResult = datedResults.length
@@ -184,9 +240,12 @@ export const buildPublicModel = (data) => {
       name: config.name,
       cpuNames,
       gpuNames,
+      cpuDetails,
+      gpuDetails,
       cpuIds,
       gpuIds,
       motherboardId: config.motherboard_id,
+      motherboardDetail,
       cpuText: cpuNames.join(', '),
       gpuText: gpuNames.join(', '),
       osName,
@@ -320,6 +379,7 @@ export const buildPublicModel = (data) => {
 
   const systemsUsingCpu = new Map();
   const systemsUsingGpu = new Map();
+  const systemsUsingMotherboard = new Map();
   systemRecords.forEach((system) => {
     uniqueNumbers(system.cpuIds).forEach((cpuId) => {
       if (!systemsUsingCpu.has(cpuId)) systemsUsingCpu.set(cpuId, []);
@@ -329,9 +389,13 @@ export const buildPublicModel = (data) => {
       if (!systemsUsingGpu.has(gpuId)) systemsUsingGpu.set(gpuId, []);
       systemsUsingGpu.get(gpuId).push(system);
     });
+    if (system.motherboardId) {
+      if (!systemsUsingMotherboard.has(system.motherboardId)) systemsUsingMotherboard.set(system.motherboardId, []);
+      systemsUsingMotherboard.get(system.motherboardId).push(system);
+    }
   });
 
-  const createHardwareRecord = (type, item, name, publicId, systems) => {
+  const createHardwareRecord = (type, item, name, publicId, systems, detail = '') => {
     const systemIds = new Set(systems.map((system) => system.id));
     const results = rankedResultRecords.filter((record) => record.system && systemIds.has(record.system.id));
     const bestRanks = results
@@ -345,6 +409,7 @@ export const buildPublicModel = (data) => {
       id: item.id,
       publicId,
       name,
+      detail,
       systems,
       systemCount: systems.length,
       resultCount: results.length,
@@ -352,6 +417,7 @@ export const buildPublicModel = (data) => {
       searchText: compact([
         publicId,
         name,
+        detail,
         systems.map((system) => system.name).join(' '),
         systems.map((system) => system.osName).join(' '),
       ]).toLowerCase(),
@@ -364,7 +430,8 @@ export const buildPublicModel = (data) => {
       cpu,
       getCPUDisplayName(cpu.id),
       formatCpuId(cpu.id),
-      systemsUsingCpu.get(cpu.id) || []
+      systemsUsingCpu.get(cpu.id) || [],
+      getCPUDetail(cpu.id).detail
     ))
     .sort((a, b) => b.resultCount - a.resultCount || a.name.localeCompare(b.name));
 
@@ -374,7 +441,19 @@ export const buildPublicModel = (data) => {
       gpu,
       getGPUDisplayName(gpu.id),
       formatGpuId(gpu.id),
-      systemsUsingGpu.get(gpu.id) || []
+      systemsUsingGpu.get(gpu.id) || [],
+      getGPUDetail(gpu.id).detail
+    ))
+    .sort((a, b) => b.resultCount - a.resultCount || a.name.localeCompare(b.name));
+
+  const motherboardRecords = data.motherboards
+    .map((motherboard) => createHardwareRecord(
+      'motherboard',
+      motherboard,
+      getMotherboardDisplayName(motherboard.id),
+      formatMotherboardId(motherboard.id),
+      systemsUsingMotherboard.get(motherboard.id) || [],
+      getMotherboardDetail(motherboard.id).detail
     ))
     .sort((a, b) => b.resultCount - a.resultCount || a.name.localeCompare(b.name));
 
@@ -400,6 +479,7 @@ export const buildPublicModel = (data) => {
     benchmarkLeaderboards,
     cpuRecords,
     gpuRecords,
+    motherboardRecords,
     leaders,
     recentResults,
     filterOptions,

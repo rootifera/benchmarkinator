@@ -479,9 +479,9 @@ const Results = () => {
                   </h3>
                 </div>
                 <div className="flex shrink-0 items-start gap-3">
-                  <div className="rounded-md bg-primary-50 px-3 py-2 text-right dark:bg-primary-950/40">
-                    <p className="text-xs font-medium uppercase tracking-wider text-primary-700 dark:text-primary-300">Score</p>
-                    <p className="text-xl font-semibold text-primary-900 dark:text-primary-100">{formatScore(result.result)}</p>
+                  <div className="flex h-[60px] w-24 flex-col items-center justify-center rounded-md bg-primary-700 px-3 py-2 text-center text-white shadow-sm dark:bg-primary-400 dark:text-primary-950">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-primary-100 dark:text-primary-950/70">Score</p>
+                    <p className="mt-0.5 text-lg font-semibold tabular-nums">{formatScore(result.result)}</p>
                   </div>
                   {isAuthenticated && (
                     <div className="flex items-center gap-2">

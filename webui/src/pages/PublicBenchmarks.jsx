@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Search, Trophy, X } from 'lucide-react';
-import { formatBenchmarkId, formatScore, usePublicData } from '../utils/publicData';
+import { formatBenchmarkId, formatResultId, formatScore, usePublicData } from '../utils/publicData';
 
 const getParam = (params, key, fallback = '') => params.get(key) || fallback;
 const sortColumns = new Set(['benchmark', 'target', 'leader', 'score', 'results']);
@@ -10,6 +10,15 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
 
 const getLeaderScore = (leaderboard) => (
   leaderboard.leader ? Number(leaderboard.leader.result.result) : Number.NaN
+);
+
+const ScorePill = ({ result }) => (
+  <span
+    title={formatResultId(result.id)}
+    className="inline-flex w-24 justify-center rounded-md bg-primary-700 px-2.5 py-1 text-sm font-semibold tabular-nums text-white shadow-sm dark:bg-primary-400 dark:text-primary-950"
+  >
+    {formatScore(result.result)}
+  </span>
 );
 
 const compareNullableNumbers = (a, b) => {
@@ -225,8 +234,8 @@ const PublicBenchmarks = () => {
                         <span className="text-sm text-gray-500 dark:text-gray-400">No results</span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-5 py-4 text-right text-sm font-semibold text-gray-950 dark:text-white">
-                      {leaderboard.leader ? formatScore(leaderboard.leader.result.result) : 'N/A'}
+                    <td className="whitespace-nowrap px-5 py-4 text-right text-sm">
+                      {leaderboard.leader ? <ScorePill result={leaderboard.leader.result} /> : 'N/A'}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-right text-sm text-gray-700 dark:text-gray-300">
                       {leaderboard.records.length}

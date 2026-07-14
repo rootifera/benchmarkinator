@@ -62,7 +62,7 @@ const Hardware = () => {
         <div className="min-w-0">
           <span className={idBadgeClass}>{id}</span>
           <h4 className="mt-2 break-words text-base font-semibold text-gray-950 dark:text-white">{title}</h4>
-          {detail && <p className="mt-1 break-words text-sm text-gray-500 dark:text-gray-400">{detail}</p>}
+          {detail && <p className="mt-1 break-words text-xs text-gray-500 dark:text-gray-400">{detail}</p>}
           {meta.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {meta.filter(Boolean).map((item) => (

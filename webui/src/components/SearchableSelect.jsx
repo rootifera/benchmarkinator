@@ -68,9 +68,9 @@ const SearchableSelect = ({
       <button
         type="button"
         className={`
-          w-full min-h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+          w-full min-h-10 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md
           focus:ring-2 focus:ring-primary-500 focus:border-transparent
-          bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+          bg-white dark:bg-gray-800 text-gray-900 dark:text-white
           text-left flex items-center justify-between
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-400 dark:hover:border-gray-500'}
         `}
@@ -101,15 +101,15 @@ const SearchableSelect = ({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-hidden">
+        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-hidden">
           {/* Search Input */}
-          <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+          <div className="p-2 border-b border-gray-200 dark:border-gray-700">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 ref={searchInputRef}
                 type="text"
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 placeholder={searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -132,7 +132,7 @@ const SearchableSelect = ({
                     key={optionValue}
                     type="button"
                     className={`
-                      w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700
+                      w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800
                       ${isSelected ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-900 dark:text-white'}
                     `}
                     onClick={() => handleSelect(option)}

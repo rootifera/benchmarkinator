@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Cpu, Monitor } from 'lucide-react';
+import { ArrowLeft, Cpu, Monitor, Settings } from 'lucide-react';
 import {
   formatBenchmarkId,
   formatDate,
@@ -9,10 +9,37 @@ import {
   usePublicData,
 } from '../utils/publicData';
 
+const hardwareLabels = {
+  cpu: 'CPU',
+  gpu: 'GPU',
+  motherboard: 'Motherboard',
+};
+const hardwareIcons = {
+  cpu: Cpu,
+  gpu: Monitor,
+  motherboard: Settings,
+};
+
+const formatComponentSummary = (items, fallback) => {
+  if (!items?.length) return fallback;
+  const first = items[0];
+  const count = items.reduce((total, item) => total + (item.count || 1), 0);
+  return count > 1 ? `${first.title} +${count - 1}` : first.title;
+};
+
+const ScorePill = ({ id, value }) => (
+  <span
+    title={formatResultId(id)}
+    className="inline-flex w-24 justify-center rounded-md bg-primary-700 px-2.5 py-1 text-sm font-semibold tabular-nums text-white shadow-sm dark:bg-primary-400 dark:text-primary-950"
+  >
+    {formatScore(value)}
+  </span>
+);
+
 const PublicHardwareDetail = () => {
   const { type, id } = useParams();
   const numericId = parseInt(id, 10);
-  const { loading, error, refetch, cpuRecords, gpuRecords, resultRecords } = usePublicData();
+  const { loading, error, refetch, cpuRecords, gpuRecords, motherboardRecords, resultRecords } = usePublicData();
 
   if (loading) {
     return <div className="flex items-center justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary-600" /></div>;
@@ -27,9 +54,14 @@ const PublicHardwareDetail = () => {
     );
   }
 
-  const collection = type === 'gpu' ? gpuRecords : cpuRecords;
+  const collections = {
+    cpu: cpuRecords,
+    gpu: gpuRecords,
+    motherboard: motherboardRecords,
+  };
+  const collection = collections[type] || [];
   const record = collection.find((item) => item.id === numericId);
-  const Icon = type === 'gpu' ? Monitor : Cpu;
+  const Icon = hardwareIcons[type] || Cpu;
 
   if (!record) {
     return (
@@ -61,11 +93,14 @@ const PublicHardwareDetail = () => {
           <Icon className="mt-2 h-6 w-6 text-primary-600 dark:text-primary-400" />
           <div>
             <p className="text-sm font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-300">
-              {record.type === 'cpu' ? 'CPU' : 'GPU'}
+              {hardwareLabels[record.type] || 'Hardware'}
             </p>
             <h1 className="mt-2 text-3xl font-bold text-gray-950 dark:text-white" title={`${record.publicId} ${record.name}`}>
               {record.name}
             </h1>
+            {record.detail && (
+              <p className="mt-2 break-words text-gray-600 dark:text-gray-400">{record.detail}</p>
+            )}
           </div>
         </div>
       </div>
@@ -98,8 +133,12 @@ const PublicHardwareDetail = () => {
                 <div>
                   <p className="font-medium text-primary-700 dark:text-primary-300">{system.name}</p>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{system.osName}</p>
-                  <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{system.cpuText}</p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">{system.gpuText}</p>
+                  <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                    {formatComponentSummary(system.cpuDetails, 'Unknown CPU')}
+                  </p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    {formatComponentSummary(system.gpuDetails, 'Unknown GPU')}
+                  </p>
                 </div>
                 <div className="text-right text-sm text-gray-600 dark:text-gray-400">
                   <p className="font-semibold text-gray-950 dark:text-white">{system.resultCount}</p>
@@ -139,7 +178,9 @@ const PublicHardwareDetail = () => {
                       </Link>
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{result.rankLabel}</td>
-                    <td className="px-5 py-4 text-sm font-semibold text-gray-950 dark:text-white" title={formatResultId(result.id)}>{formatScore(result.result.result)}</td>
+                    <td className="px-5 py-4 text-sm">
+                      <ScorePill id={result.id} value={result.result.result} />
+                    </td>
                     <td className="px-5 py-4 text-sm">
                       <Link to={`/systems/${result.system?.id}`} className="font-medium text-primary-700 hover:text-primary-900 dark:text-primary-300">
                         {result.system?.name || 'Unknown system'}

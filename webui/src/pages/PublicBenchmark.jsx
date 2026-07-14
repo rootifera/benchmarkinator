@@ -9,6 +9,22 @@ import {
   usePublicData,
 } from '../utils/publicData';
 
+const formatComponentSummary = (items, fallback) => {
+  if (!items?.length) return fallback;
+  const first = items[0];
+  const count = items.reduce((total, item) => total + (item.count || 1), 0);
+  return count > 1 ? `${first.title} +${count - 1}` : first.title;
+};
+
+const ScorePill = ({ id, value }) => (
+  <span
+    title={formatResultId(id)}
+    className="inline-flex w-24 justify-center rounded-md bg-primary-700 px-2.5 py-1 text-sm font-semibold tabular-nums text-white shadow-sm dark:bg-primary-400 dark:text-primary-950"
+  >
+    {formatScore(value)}
+  </span>
+);
+
 const PublicBenchmark = () => {
   const { benchmarkId } = useParams();
   const numericBenchmarkId = parseInt(benchmarkId, 10);
@@ -116,12 +132,12 @@ const PublicBenchmark = () => {
                       </Link>
                       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{record.system?.osName}</p>
                     </td>
-                    <td className="px-5 py-4 text-sm font-semibold text-gray-950 dark:text-white" title={formatResultId(record.id)}>
-                      {formatScore(record.result.result)}
+                    <td className="px-5 py-4 text-sm">
+                      <ScorePill id={record.id} value={record.result.result} />
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
-                      <p>{record.system?.cpuText || 'Unknown CPU'}</p>
-                      <p className="mt-1">{record.system?.gpuText || 'Unknown GPU'}</p>
+                      <p>{formatComponentSummary(record.system?.cpuDetails, 'Unknown CPU')}</p>
+                      <p className="mt-1">{formatComponentSummary(record.system?.gpuDetails, 'Unknown GPU')}</p>
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{formatDate(record.date)}</td>
                     <td className="max-w-xs px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
