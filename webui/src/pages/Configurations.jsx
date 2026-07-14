@@ -314,6 +314,85 @@ const Configurations = () => {
     return displayText.trim();
   };
 
+  const compact = (items) => items.filter(Boolean).join(' ').trim();
+  const compactDescription = (items) => items.filter(Boolean).join(' | ').trim();
+  const displaySerial = (item, fallback) => item?.serial || fallback;
+
+  const summarizeComponentIds = (ids) => {
+    const counts = ids.reduce((acc, id) => {
+      acc[id] = (acc[id] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(counts).map(([id, count]) => ({
+      id: parseInt(id, 10),
+      count,
+    }));
+  };
+
+  const getCpuSummary = (cpuId) => {
+    const cpu = cpus.find(c => c.id === cpuId);
+    if (!cpu) return { title: 'Unknown CPU', detail: '' };
+    const brand = cpuBrands.find(b => b.id === cpu.cpu_brand_id);
+    const family = cpuFamilies.find(f => f.id === cpu.cpu_family_id);
+    const specs = [];
+    if (cpu.speed) specs.push(cpu.speed);
+    if (cpu.core_count) specs.push(`${cpu.core_count} Cores`);
+    return {
+      title: compact([brand?.name, family?.name, cpu.model]) || formatCpuId(cpu.id),
+      detail: compactDescription([specs.join(', '), displaySerial(cpu, formatCpuId(cpu.id))]),
+    };
+  };
+
+  const getGpuSummary = (gpuId) => {
+    const gpu = gpus.find(g => g.id === gpuId);
+    if (!gpu) return { title: 'Unknown GPU', detail: '' };
+    const manufacturer = gpuManufacturers.find(m => m.id === gpu.gpu_manufacturer_id);
+    const brand = gpuBrands.find(b => b.id === gpu.gpu_brand_id);
+    const model = gpuModels.find(m => m.id === gpu.gpu_model_id);
+    const vramType = gpuVRAMTypes.find(v => v.id === gpu.gpu_vram_type_id);
+    return {
+      title: compact([manufacturer?.name, brand?.name, model?.name]) || formatGpuId(gpu.id),
+      detail: compactDescription([compact([gpu.vram_size, vramType?.name]), displaySerial(gpu, formatGpuId(gpu.id))]),
+    };
+  };
+
+  const getMotherboardSummary = (motherboardId) => {
+    const motherboard = motherboards.find(m => m.id === motherboardId);
+    if (!motherboard) return { title: 'Unknown Motherboard', detail: '' };
+    const manufacturer = motherboardManufacturers.find(m => m.id === motherboard.manufacturer_id);
+    const chipset = motherboardChipsets.find(c => c.id === motherboard.chipset_id);
+    return {
+      title: compact([manufacturer?.name, motherboard.model]) || formatMotherboardId(motherboard.id),
+      detail: compactDescription([chipset?.name, displaySerial(motherboard, formatMotherboardId(motherboard.id))]),
+    };
+  };
+
+  const HardwareSummary = ({ label, icon: Icon, children }) => (
+    <div className="min-w-0">
+      <p className="flex items-center text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+        {Icon && <Icon className="mr-1.5 h-3.5 w-3.5" />}
+        {label}
+      </p>
+      <div className="mt-1 space-y-1 text-sm text-gray-950 dark:text-white">
+        {children}
+      </div>
+    </div>
+  );
+
+  const ComponentSummary = ({ count = 1, title, detail }) => (
+    <div className="min-w-0">
+      <div className="flex items-center gap-2">
+        {count > 1 && (
+          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+            {count}x
+          </span>
+        )}
+        <span className="break-words font-medium">{title}</span>
+      </div>
+      {detail && <p className="break-words text-xs text-gray-500 dark:text-gray-400">{detail}</p>}
+    </div>
+  );
+
   const renderTable = () => {
     if (loading) {
       return (
@@ -349,78 +428,102 @@ const Configurations = () => {
     }
 
     return (
-      <div className="space-y-3">
-        {configurations.map((config) => (
-          <div
-            key={config.id}
-            className="rounded-md border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
-          >
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(120px,0.8fr)_minmax(220px,1.5fr)_minmax(220px,1.5fr)_minmax(180px,1fr)_minmax(140px,0.8fr)_auto]">
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Name</p>
-                <p className="mt-1 flex flex-wrap items-center gap-2 break-words text-sm font-semibold text-gray-900 dark:text-white">
-                  <span className={idBadgeClass}>{formatSystemId(config.id)}</span>
-                  {config.name}
-                </p>
+      <div className="space-y-4">
+        {configurations.map((config) => {
+          const cpuItems = summarizeComponentIds(parseComponentIds(config.cpu_component_ids, config.cpu_id, config.cpu_quantity));
+          const gpuItems = summarizeComponentIds(parseComponentIds(config.gpu_component_ids, config.gpu_id, config.gpu_quantity));
+          const motherboard = getMotherboardSummary(config.motherboard_id);
+          const isOverclocked = config.cpu_overclock || config.gpu_core_overclock || config.gpu_vram_overclock || config.ram_overclock;
+
+          return (
+            <article
+              key={config.id}
+              className="rounded-md border border-gray-200 bg-white transition-colors hover:border-primary-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-primary-800"
+            >
+              <div className="flex flex-col gap-4 border-b border-gray-200 p-4 dark:border-gray-800 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={idBadgeClass}>{formatSystemId(config.id)}</span>
+                    {isOverclocked && (
+                      <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/40 dark:text-orange-200">
+                        Overclocked
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="mt-2 break-words text-lg font-semibold text-gray-950 dark:text-white">
+                    {config.name}
+                  </h2>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedConfig(config);
+                      setShowDetails(true);
+                    }}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
+                    title="Show Details"
+                    aria-label="Show Details"
+                  >
+                    <Search className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingItem(config);
+                      setCloningItem(null);
+                      setShowForm(true);
+                    }}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-primary-600 transition-colors hover:bg-primary-50 hover:text-primary-900 dark:text-primary-400 dark:hover:bg-primary-900/20 dark:hover:text-primary-300"
+                    title="Edit"
+                    aria-label="Edit"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleClone(config)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-emerald-600 transition-colors hover:bg-emerald-50 hover:text-emerald-900 dark:text-emerald-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-300"
+                    title="Clone"
+                    aria-label="Clone"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => requestDelete(config.id)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-red-600 transition-colors hover:bg-red-50 hover:text-red-900 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+                    title="Delete"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">CPU</p>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white">{renderComponentLines(getConfigCPUDisplay(config))}</p>
+
+              <div className="grid grid-cols-1 gap-5 p-4 md:grid-cols-2 xl:grid-cols-4">
+                <HardwareSummary label="CPU" icon={Cpu}>
+                  {cpuItems.length ? cpuItems.map((item) => (
+                    <ComponentSummary key={`cpu-${config.id}-${item.id}`} count={item.count} {...getCpuSummary(item.id)} />
+                  )) : <span className="text-gray-500 dark:text-gray-400">Unknown CPU</span>}
+                </HardwareSummary>
+
+                <HardwareSummary label="GPU" icon={Monitor}>
+                  {gpuItems.length ? gpuItems.map((item) => (
+                    <ComponentSummary key={`gpu-${config.id}-${item.id}`} count={item.count} {...getGpuSummary(item.id)} />
+                  )) : <span className="text-gray-500 dark:text-gray-400">Unknown GPU</span>}
+                </HardwareSummary>
+
+                <HardwareSummary label="Motherboard" icon={Settings}>
+                  <ComponentSummary {...motherboard} />
+                </HardwareSummary>
+
+                <HardwareSummary label="Memory" icon={Database}>
+                  <ComponentSummary
+                    title={getComponentName(config.ram_id, ramTypes, 'name')}
+                    detail={config.ram_size}
+                  />
+                </HardwareSummary>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">GPU</p>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white">{renderComponentLines(getConfigGPUDisplay(config))}</p>
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Motherboard</p>
-                <p className="mt-1 break-words text-sm text-gray-900 dark:text-white">{getMotherboardDisplayName(config.motherboard_id)}</p>
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">RAM</p>
-                <p className="mt-1 break-words text-sm text-gray-900 dark:text-white">
-                  {getComponentName(config.ram_id, ramTypes, 'name')} - {config.ram_size}
-                </p>
-              </div>
-              <div className="flex items-start justify-end gap-3 xl:pt-5">
-                <button
-                  onClick={() => {
-                    setSelectedConfig(config);
-                    setShowDetails(true);
-                  }}
-                  className="rounded p-1 text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-900 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
-                  title="Show Details"
-                >
-                  <Search className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingItem(config);
-                    setCloningItem(null);
-                    setShowForm(true);
-                  }}
-                  className="rounded p-1 text-primary-600 transition-colors hover:bg-primary-50 hover:text-primary-900 dark:text-primary-400 dark:hover:bg-primary-900/20 dark:hover:text-primary-300"
-                  title="Edit"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleClone(config)}
-                  className="rounded p-1 text-emerald-600 transition-colors hover:bg-emerald-50 hover:text-emerald-900 dark:text-emerald-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-300"
-                  title="Clone"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => requestDelete(config.id)}
-                  className="rounded p-1 text-red-600 transition-colors hover:bg-red-50 hover:text-red-900 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
-                  title="Delete"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+            </article>
+          );
+        })}
       </div>
     );
   };
@@ -510,10 +613,10 @@ const Configurations = () => {
               </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {loading ? '...' : configurations.filter(c => 
-                  c.cpu_overclock_enabled || 
-                  c.gpu_core_overclock_enabled || 
-                  c.gpu_vram_overclock_enabled || 
-                  c.ram_overclock_enabled
+                  c.cpu_overclock ||
+                  c.gpu_core_overclock ||
+                  c.gpu_vram_overclock ||
+                  c.ram_overclock
                 ).length}
               </p>
             </div>
@@ -522,7 +625,7 @@ const Configurations = () => {
       </div>
 
       {/* Content */}
-      <div className="card">
+      <div>
         {renderTable()}
       </div>
 
