@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Cpu, Database, Monitor, Search, Server, Settings, X } from 'lucide-react';
+import { Cpu, Database, Filter, Monitor, Server, Settings } from 'lucide-react';
 import { formatDate, usePublicData } from '../utils/publicData';
 
 const getParam = (params, key, fallback = '') => params.get(key) || fallback;
@@ -72,13 +72,6 @@ const PublicSystems = () => {
     return systems;
   }, [filters, systemRecords]);
 
-  const activeFilters = [
-    filters.q && ['q', `Search: ${filters.q}`],
-    filters.cpu && ['cpu', filters.cpu],
-    filters.gpu && ['gpu', filters.gpu],
-    filters.os && ['os', filters.os],
-  ].filter(Boolean);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -98,68 +91,73 @@ const PublicSystems = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-950 dark:text-white">Test Systems</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Browse every published hardware configuration and jump into its benchmark profile.
+      <div className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="flex items-center text-lg font-semibold text-gray-950 dark:text-white">
+            <Filter className="mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" />
+            Filters
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Filters work together - combine hardware, system, and OS filters
           </p>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {filteredSystems.length} of {systemRecords.length} systems
-        </div>
-      </div>
-
-      <div className="rounded-md border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(4,minmax(0,1fr))_auto]">
-          <label className="relative">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Search</span>
             <input
               type="search"
               value={filters.q}
               onChange={(event) => setFilter('q', event.target.value)}
               placeholder="Search systems, CPU, GPU, OS, motherboard..."
-              className="input-field pl-9"
+              className="input-field h-8 py-1 text-sm"
             />
           </label>
-          <select value={filters.cpu} onChange={(event) => setFilter('cpu', event.target.value)} className="input-field">
-            <option value="">All CPUs</option>
-            {filterOptions.cpus.map((cpu) => <option key={cpu} value={cpu}>{cpu}</option>)}
-          </select>
-          <select value={filters.gpu} onChange={(event) => setFilter('gpu', event.target.value)} className="input-field">
-            <option value="">All GPUs</option>
-            {filterOptions.gpus.map((gpu) => <option key={gpu} value={gpu}>{gpu}</option>)}
-          </select>
-          <select value={filters.os} onChange={(event) => setFilter('os', event.target.value)} className="input-field">
-            <option value="">All OSes</option>
-            {filterOptions.oses.map((os) => <option key={os} value={os}>{os}</option>)}
-          </select>
-          <select value={filters.sort} onChange={(event) => setFilter('sort', event.target.value)} className="input-field">
-            <option value="results">Most results</option>
-            <option value="newest">Newest result</option>
-            <option value="name">System name</option>
-          </select>
-          <button type="button" onClick={clearFilters} className="btn-secondary inline-flex items-center justify-center">
-            <X className="mr-2 h-4 w-4" />
-            Clear
-          </button>
-        </div>
-
-        {activeFilters.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {activeFilters.map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setFilter(key, '')}
-                className="inline-flex items-center rounded-full border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-              >
-                {label}
-                <X className="ml-2 h-3 w-3" />
-              </button>
-            ))}
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">CPU</span>
+            <select value={filters.cpu} onChange={(event) => setFilter('cpu', event.target.value)} className="input-field h-8 py-1 text-sm">
+              <option value="">All CPUs</option>
+              {filterOptions.cpus.map((cpu) => <option key={cpu} value={cpu}>{cpu}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">GPU</span>
+            <select value={filters.gpu} onChange={(event) => setFilter('gpu', event.target.value)} className="input-field h-8 py-1 text-sm">
+              <option value="">All GPUs</option>
+              {filterOptions.gpus.map((gpu) => <option key={gpu} value={gpu}>{gpu}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">OS</span>
+            <select value={filters.os} onChange={(event) => setFilter('os', event.target.value)} className="input-field h-8 py-1 text-sm">
+              <option value="">All OSes</option>
+              {filterOptions.oses.map((os) => <option key={os} value={os}>{os}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Sort</span>
+            <select value={filters.sort} onChange={(event) => setFilter('sort', event.target.value)} className="input-field h-8 py-1 text-sm">
+              <option value="results">Most results</option>
+              <option value="newest">Newest result</option>
+              <option value="name">System name</option>
+            </select>
+          </label>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex h-8 items-center justify-center rounded-md bg-gray-600 px-3 text-xs font-medium text-white transition-colors hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600"
+            >
+              Clear
+            </button>
           </div>
-        )}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-semibold text-gray-950 dark:text-white">Test Systems</h1>
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          {filteredSystems.length} of {systemRecords.length} systems
+        </div>
       </div>
 
       {filteredSystems.length === 0 ? (

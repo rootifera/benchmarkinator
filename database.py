@@ -18,7 +18,7 @@ from models.ram import RAM
 from models.disk import Disk
 from models.oses import OS
 from models.config import Config
-from models.benchmark import BenchmarkTarget, Benchmark
+from models.benchmark import BenchmarkTarget, Benchmark, BenchmarkOption
 from models.benchmark_results import BenchmarkResult
 from models.settings import Setting  # <-- new: key/value settings table
 
@@ -62,6 +62,7 @@ def check_tables_exist() -> bool:
         "disk", "os",
         "config",
         "benchmarktarget", "benchmark",
+        "benchmarkoption",
         "benchmarkresult",
         "settings",  # ensure our new settings table is considered
     }
@@ -76,6 +77,7 @@ def init_db():
     """
     SQLModel.metadata.create_all(bind=engine)
     _ensure_config_quantity_columns()
+    _ensure_benchmark_result_settings_column()
 
 
 def _ensure_config_quantity_columns():
@@ -93,6 +95,26 @@ def _ensure_config_quantity_columns():
         statements.append("ALTER TABLE config ADD COLUMN gpu_quantity INTEGER NOT NULL DEFAULT 1")
     if "gpu_component_ids" not in existing_columns:
         statements.append("ALTER TABLE config ADD COLUMN gpu_component_ids TEXT")
+
+    if not statements:
+        return
+
+    with engine.begin() as conn:
+        for statement in statements:
+            conn.execute(text(statement))
+
+
+def _ensure_benchmark_result_settings_column():
+    inspector = inspect(engine)
+    if "benchmarkresult" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("benchmarkresult")}
+    statements = []
+    if "settings" not in existing_columns:
+        statements.append("ALTER TABLE benchmarkresult ADD COLUMN settings TEXT")
+    if "option_values" not in existing_columns:
+        statements.append("ALTER TABLE benchmarkresult ADD COLUMN option_values TEXT")
 
     if not statements:
         return

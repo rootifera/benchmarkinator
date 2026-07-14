@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowUpDown, BarChart3, Search, Trophy, X } from 'lucide-react';
+import { Filter, Trophy } from 'lucide-react';
 import {
   compareScores,
   formatBenchmarkId,
@@ -86,15 +86,6 @@ const PublicResults = () => {
     return records;
   }, [filters, resultRecords, selectedBenchmark]);
 
-  const activeFilters = [
-    filters.q && ['q', `Search: ${filters.q}`],
-    filters.benchmark && ['benchmark', selectedBenchmark?.name || 'Benchmark'],
-    filters.system && ['system', filterOptions.systems.find((system) => String(system.id) === filters.system)?.name || 'System'],
-    filters.cpu && ['cpu', filters.cpu],
-    filters.gpu && ['gpu', filters.gpu],
-    filters.os && ['os', filters.os],
-  ].filter(Boolean);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -114,88 +105,81 @@ const PublicResults = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-950 dark:text-white">Benchmark Results</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Search scores by benchmark, hardware, test system, operating system, and notes.
+      <div className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="flex items-center text-lg font-semibold text-gray-950 dark:text-white">
+            <Filter className="mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" />
+            Filters
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Filters work together - combine benchmark, test system, hardware, and sorting filters
           </p>
         </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_auto]">
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Search</span>
+            <input
+              type="search"
+              value={filters.q}
+              onChange={(event) => setFilter('q', event.target.value)}
+              placeholder="Benchmark, system, notes..."
+              className="input-field h-8 py-1 text-sm"
+            />
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Benchmark</span>
+            <select value={filters.benchmark} onChange={(event) => setFilter('benchmark', event.target.value)} className="input-field h-8 py-1 text-sm">
+              <option value="">All</option>
+              {filterOptions.benchmarks.map((benchmark) => <option key={benchmark.id} value={benchmark.id}>{benchmark.name}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Test System</span>
+            <select value={filters.system} onChange={(event) => setFilter('system', event.target.value)} className="input-field h-8 py-1 text-sm">
+              <option value="">All</option>
+              {filterOptions.systems.map((system) => <option key={system.id} value={system.id}>{system.name}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">CPU</span>
+            <select value={filters.cpu} onChange={(event) => setFilter('cpu', event.target.value)} className="input-field h-8 py-1 text-sm">
+              <option value="">All</option>
+              {filterOptions.cpus.map((cpu) => <option key={cpu} value={cpu}>{cpu}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">GPU</span>
+            <select value={filters.gpu} onChange={(event) => setFilter('gpu', event.target.value)} className="input-field h-8 py-1 text-sm">
+              <option value="">All</option>
+              {filterOptions.gpus.map((gpu) => <option key={gpu} value={gpu}>{gpu}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Sort</span>
+            <select value={filters.sort} onChange={(event) => setFilter('sort', event.target.value)} className="input-field h-8 py-1 text-sm">
+              <option value="newest">Newest</option>
+              <option value="best">Best score</option>
+              <option value="benchmark">Benchmark</option>
+              <option value="system">System</option>
+            </select>
+          </label>
+          <div className="flex items-end">
+            <button type="button" onClick={clearFilters} className="inline-flex h-8 items-center justify-center rounded-md bg-gray-600 px-3 text-xs font-medium text-white transition-colors hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600">
+              Clear
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-semibold text-gray-950 dark:text-white">Benchmark Results</h1>
         <div className="text-sm text-gray-600 dark:text-gray-400">
           {filteredResults.length} of {resultRecords.length} results
         </div>
       </div>
 
-      <div className="rounded-md border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.4fr)_repeat(6,minmax(0,1fr))_auto]">
-          <label className="relative">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-            <input
-              type="search"
-              value={filters.q}
-              onChange={(event) => setFilter('q', event.target.value)}
-              placeholder="Search benchmark, CPU, GPU, system, OS..."
-              className="input-field pl-9"
-            />
-          </label>
-          <select value={filters.benchmark} onChange={(event) => setFilter('benchmark', event.target.value)} className="input-field">
-            <option value="">All benchmarks</option>
-            {filterOptions.benchmarks.map((benchmark) => <option key={benchmark.id} value={benchmark.id}>{benchmark.name}</option>)}
-          </select>
-          <select value={filters.system} onChange={(event) => setFilter('system', event.target.value)} className="input-field">
-            <option value="">All systems</option>
-            {filterOptions.systems.map((system) => <option key={system.id} value={system.id}>{system.name}</option>)}
-          </select>
-          <select value={filters.cpu} onChange={(event) => setFilter('cpu', event.target.value)} className="input-field">
-            <option value="">All CPUs</option>
-            {filterOptions.cpus.map((cpu) => <option key={cpu} value={cpu}>{cpu}</option>)}
-          </select>
-          <select value={filters.gpu} onChange={(event) => setFilter('gpu', event.target.value)} className="input-field">
-            <option value="">All GPUs</option>
-            {filterOptions.gpus.map((gpu) => <option key={gpu} value={gpu}>{gpu}</option>)}
-          </select>
-          <select value={filters.os} onChange={(event) => setFilter('os', event.target.value)} className="input-field">
-            <option value="">All OSes</option>
-            {filterOptions.oses.map((os) => <option key={os} value={os}>{os}</option>)}
-          </select>
-          <select value={filters.sort} onChange={(event) => setFilter('sort', event.target.value)} className="input-field">
-            <option value="newest">Newest</option>
-            <option value="best">Best score</option>
-            <option value="benchmark">Benchmark</option>
-            <option value="system">System</option>
-          </select>
-          <button type="button" onClick={clearFilters} className="btn-secondary inline-flex items-center justify-center">
-            <X className="mr-2 h-4 w-4" />
-            Clear
-          </button>
-        </div>
-
-        {activeFilters.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {activeFilters.map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setFilter(key, '')}
-                className="inline-flex items-center rounded-full border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-              >
-                {label}
-                <X className="ml-2 h-3 w-3" />
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
       <div className="rounded-md border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <div className="flex items-center justify-between gap-4 border-b border-gray-200 px-5 py-4 dark:border-gray-800">
-          <h2 className="flex items-center text-lg font-semibold text-gray-950 dark:text-white">
-            <BarChart3 className="mr-2 h-5 w-5 text-primary-600 dark:text-primary-400" />
-            Results
-          </h2>
-          <ArrowUpDown className="h-5 w-5 text-gray-400" />
-        </div>
-
         {filteredResults.length === 0 ? (
           <div className="p-10 text-center">
             <Trophy className="mx-auto h-10 w-10 text-gray-400" />
@@ -210,6 +194,7 @@ const PublicResults = () => {
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Benchmark</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Score</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rank</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Settings</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">System</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Hardware</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
@@ -240,6 +225,9 @@ const PublicResults = () => {
                       >
                         {record.rankLabel}
                       </span>
+                    </td>
+                    <td className="max-w-xs px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      <span className="line-clamp-2">{record.settingsLabel}</span>
                     </td>
                     <td className="px-5 py-4 text-sm">
                       <Link

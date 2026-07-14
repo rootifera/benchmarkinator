@@ -165,6 +165,7 @@ const PublicHardwareDetail = () => {
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Benchmark</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rank</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Score</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Settings</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">System</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
                 </tr>
@@ -180,6 +181,9 @@ const PublicHardwareDetail = () => {
                     <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{result.rankLabel}</td>
                     <td className="px-5 py-4 text-sm">
                       <ScorePill id={result.id} value={result.result.result} />
+                    </td>
+                    <td className="max-w-xs px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      <span className="line-clamp-2">{result.settingsLabel}</span>
                     </td>
                     <td className="px-5 py-4 text-sm">
                       <Link to={`/systems/${result.system?.id}`} className="font-medium text-primary-700 hover:text-primary-900 dark:text-primary-300">

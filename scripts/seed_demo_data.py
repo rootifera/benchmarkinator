@@ -215,6 +215,28 @@ def benchmark_supported(benchmark_name: str, cpu_power: float, gpu_power: float,
     return False
 
 
+def settings_for(benchmark_name: str, os_name: str) -> str:
+    if benchmark_name in {"Doom Timedemo", "Quake Timedemo"}:
+        return "320x200, timedemo, default detail"
+    if benchmark_name == "Quake II Demo1":
+        return "640x480, OpenGL, default detail"
+    if benchmark_name in {"3DMark99", "3DMark2000"}:
+        return "1024x768, 16-bit color, default benchmark"
+    if benchmark_name == "3DMark2001 SE":
+        return "1024x768, 32-bit color, default benchmark"
+    if benchmark_name in {"3DMark03", "AquaMark3"}:
+        return "1024x768, default quality"
+    if benchmark_name == "SuperPi 1M":
+        return "1M calculation"
+    if benchmark_name == "7-Zip Compression":
+        return "32MB dictionary, default threads"
+    if benchmark_name == "CrystalDiskMark Seq Read":
+        return "1GiB test file, sequential read"
+    if benchmark_name == "HD Tach Average Read":
+        return "Long bench, average read"
+    return f"Default run, {os_name}"
+
+
 def seed_demo_data(session: Session, *, reset_demo: bool = False, append: bool = False) -> dict[str, int]:
     if reset_demo:
         reset_demo_data(session)
@@ -358,6 +380,7 @@ def seed_demo_data(session: Session, *, reset_demo: bool = False, append: bool =
                     benchmark_id=benchmarks[benchmark_name].id,
                     config_id=config.id,
                     result=score,
+                    settings=settings_for(benchmark_name, os_name),
                     timestamp=timestamp.isoformat().replace("+00:00", "Z"),
                     notes=f"Demo {target_name.lower()} run",
                 )

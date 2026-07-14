@@ -2,7 +2,7 @@ import pytest
 from fastapi import HTTPException
 from starlette.requests import Request
 
-from models.benchmark import Benchmark, BenchmarkTarget
+from models.benchmark import Benchmark, BenchmarkOption, BenchmarkTarget
 from models.benchmark_results import BenchmarkResult
 from models.config import Config
 from models.cpu import CPU, CPUBrand, CPUFamily
@@ -361,3 +361,87 @@ def test_compare_configs_can_filter_to_one_benchmark(db):
     assert {result["benchmark_id"] for result in all_results} == {benchmark_1.id, benchmark_2.id}
     assert [result["benchmark_id"] for result in filtered] == [benchmark_2.id]
     assert filtered[0]["benchmark_name"] == "SuperPi"
+
+
+def test_compare_configs_matches_benchmark_settings(db):
+    records = _create_referenced_graph(db)
+    config_1 = records["config"]
+    benchmark = records["benchmark"]
+    config_2 = config.create_config(
+        Config(
+            name="Settings match rig",
+            cpu_id=records["cpu"].id,
+            motherboard_id=records["motherboard"].id,
+            gpu_id=records["gpu"].id,
+            disk_id=records["disk"].id,
+            os_id=records["os"].id,
+            ram_id=records["ram"].id,
+            ram_size="32GB",
+        ),
+        db,
+    )
+
+    benchmark_results.create_benchmark_result(
+        BenchmarkResult(
+            benchmark_id=benchmark.id,
+            config_id=config_1.id,
+            result=100,
+            settings="1024x768, 32-bit color",
+        ),
+        db,
+    )
+    benchmark_results.create_benchmark_result(
+        BenchmarkResult(
+            benchmark_id=benchmark.id,
+            config_id=config_2.id,
+            result=120,
+            settings="640x480, 16-bit color",
+        ),
+        db,
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        benchmark_results.compare_configs(config_1.id, config_2.id, benchmark_id=benchmark.id, db=db)
+
+    assert exc.value.status_code == 404
+
+    benchmark_results.create_benchmark_result(
+        BenchmarkResult(
+            benchmark_id=benchmark.id,
+            config_id=config_2.id,
+            result=90,
+            settings="1024x768, 32-bit color",
+        ),
+        db,
+    )
+
+    comparison = benchmark_results.compare_configs(config_1.id, config_2.id, benchmark_id=benchmark.id, db=db)
+
+    assert len(comparison) == 1
+    assert comparison[0]["settings"] == "1024x768, 32-bit color"
+    assert comparison[0]["config_2_result"] == 90
+
+
+def test_benchmark_options_generate_result_settings(db):
+    records = _create_referenced_graph(db)
+    option = benchmark_router.create_benchmark_option(
+        BenchmarkOption(
+            benchmark_id=records["benchmark"].id,
+            name="Resolution",
+            values='["800 x 600", "1024 x 768"]',
+        ),
+        db,
+    )
+
+    result = benchmark_results.create_benchmark_result(
+        BenchmarkResult(
+            benchmark_id=records["benchmark"].id,
+            config_id=records["config"].id,
+            result=1234,
+            option_values=f'{{"{option.id}": "1024 x 768"}}',
+        ),
+        db,
+    )
+
+    assert result.option_values == f'{{"{option.id}": "1024 x 768"}}'
+    assert result.settings == "Resolution: 1024 x 768"

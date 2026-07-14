@@ -12,7 +12,7 @@ from sqlalchemy.sql import text
 from sqlmodel import Session, select
 
 from routers import cpu, gpu, motherboard, ram, disk, oses, config, benchmark, benchmark_results
-from models.benchmark import Benchmark, BenchmarkTarget
+from models.benchmark import Benchmark, BenchmarkOption, BenchmarkTarget
 from models.benchmark_results import BenchmarkResult
 from models.config import Config
 from models.cpu import CPU, CPUBrand, CPUFamily
@@ -154,6 +154,7 @@ def public_results_data(response: Response):
         payload = {
             "results": session.exec(select(BenchmarkResult)).all(),
             "benchmarks": session.exec(select(Benchmark)).all(),
+            "benchmarkOptions": session.exec(select(BenchmarkOption)).all(),
             "benchmarkTargets": session.exec(select(BenchmarkTarget)).all(),
             "configurations": session.exec(select(Config)).all(),
             "cpus": session.exec(select(CPU)).all(),

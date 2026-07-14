@@ -152,6 +152,7 @@ const PublicDashboard = () => {
                     >
                       {record.system?.name || 'Unknown system'}
                     </p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{record.settingsLabel}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-gray-950 dark:text-white">{formatScore(record.result.result)}</p>
@@ -216,6 +217,7 @@ const PublicDashboard = () => {
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Benchmark</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">System</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Score</th>
+                <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Settings</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rank</th>
                 <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
               </tr>
@@ -241,13 +243,16 @@ const PublicDashboard = () => {
                   <td className="px-5 py-4 text-sm">
                     <ScorePill id={record.id} value={record.result.result} />
                   </td>
+                  <td className="max-w-xs px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
+                    <span className="line-clamp-2">{record.settingsLabel}</span>
+                  </td>
                   <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{record.rankLabel}</td>
                   <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{formatDate(record.date)}</td>
                 </tr>
               ))}
               {recentResults.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="px-5 py-8 text-center text-sm text-gray-500">No recent results yet.</td>
+                  <td colSpan="6" className="px-5 py-8 text-center text-sm text-gray-500">No recent results yet.</td>
                 </tr>
               )}
             </tbody>

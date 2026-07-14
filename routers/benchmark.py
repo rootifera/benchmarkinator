@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import Session, select
 from utils.helper import validate_and_normalize_name
-from models.benchmark import Benchmark, BenchmarkTarget
+from models.benchmark import Benchmark, BenchmarkOption, BenchmarkTarget
 from models.benchmark_results import BenchmarkResult
 from database import get_db
 
@@ -65,6 +65,73 @@ def delete_benchmark_target(target_id: int, db: Session = Depends(get_db)):
     return {"message": "Benchmark target deleted successfully"}
 
 
+def _validate_option_payload(option: BenchmarkOption, db: Session):
+    if not db.get(Benchmark, option.benchmark_id):
+        raise HTTPException(status_code=400, detail="Invalid benchmark ID")
+
+    option.name = (option.name or "").strip()
+    option.values = (option.values or "").strip()
+    if not option.name:
+        raise HTTPException(status_code=400, detail="Option name is required")
+    if not option.values:
+        raise HTTPException(status_code=400, detail="Option values are required")
+    return option
+
+
+@router.get("/options/", response_model=list[BenchmarkOption])
+def get_benchmark_options(db: Session = Depends(get_db)):
+    return db.exec(select(BenchmarkOption)).all()
+
+
+@router.get("/{benchmark_id}/options/", response_model=list[BenchmarkOption])
+def get_options_for_benchmark(benchmark_id: int, db: Session = Depends(get_db)):
+    if not db.get(Benchmark, benchmark_id):
+        raise HTTPException(status_code=404, detail="Benchmark not found")
+    return db.exec(
+        select(BenchmarkOption)
+        .where(BenchmarkOption.benchmark_id == benchmark_id)
+        .order_by(BenchmarkOption.sort_order, BenchmarkOption.id)
+    ).all()
+
+
+@router.post("/options/", response_model=BenchmarkOption)
+def create_benchmark_option(option: BenchmarkOption, db: Session = Depends(get_db)):
+    option = _validate_option_payload(option, db)
+    db.add(option)
+    db.commit()
+    db.refresh(option)
+    return option
+
+
+@router.put("/options/{option_id}", response_model=BenchmarkOption)
+def update_benchmark_option(option_id: int, option: BenchmarkOption, db: Session = Depends(get_db)):
+    db_option = db.get(BenchmarkOption, option_id)
+    if db_option is None:
+        raise HTTPException(status_code=404, detail="Benchmark option not found")
+
+    option = _validate_option_payload(option, db)
+    db_option.benchmark_id = option.benchmark_id
+    db_option.name = option.name
+    db_option.values = option.values
+    db_option.sort_order = option.sort_order
+
+    db.add(db_option)
+    db.commit()
+    db.refresh(db_option)
+    return db_option
+
+
+@router.delete("/options/{option_id}")
+def delete_benchmark_option(option_id: int, db: Session = Depends(get_db)):
+    db_option = db.get(BenchmarkOption, option_id)
+    if db_option is None:
+        raise HTTPException(status_code=404, detail="Benchmark option not found")
+
+    db.delete(db_option)
+    db.commit()
+    return {"message": "Benchmark option deleted successfully"}
+
+
 @router.post("/", response_model=Benchmark)
 def create_benchmark(benchmark: Benchmark, db: Session = Depends(get_db)):
     benchmark.name = validate_and_normalize_name(benchmark.name, db, Benchmark)
@@ -123,6 +190,10 @@ def delete_benchmark(benchmark_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_409_CONFLICT,
             detail="Cannot delete benchmark because it is referenced by one or more benchmark results."
         )
+
+    options = db.exec(select(BenchmarkOption).where(BenchmarkOption.benchmark_id == benchmark_id)).all()
+    for option in options:
+        db.delete(option)
 
     db.delete(benchmark)
     db.commit()

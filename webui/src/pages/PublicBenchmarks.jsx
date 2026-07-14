@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Search, Trophy, X } from 'lucide-react';
+import { ArrowRight, Filter, Trophy } from 'lucide-react';
 import { formatBenchmarkId, formatResultId, formatScore, usePublicData } from '../utils/publicData';
 
 const getParam = (params, key, fallback = '') => params.get(key) || fallback;
@@ -69,6 +69,7 @@ const PublicBenchmarks = () => {
         formatBenchmarkId(benchmark.id),
         benchmark.name,
         benchmark.target?.name,
+        leaderboard.settingsLabel,
         leaderboard.leader?.system?.name,
       ].filter(Boolean).join(' ').toLowerCase().includes(needle);
       const matchesTarget = !target || String(benchmark.benchmark_target_id) === target;
@@ -132,42 +133,54 @@ const PublicBenchmarks = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-950 dark:text-white">Benchmarks</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Browse benchmark leaderboards and see which systems have been tested.
+      <div className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="flex items-center text-lg font-semibold text-gray-950 dark:text-white">
+            <Filter className="mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" />
+            Filters
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Filters work together - combine benchmark, target, and search filters
           </p>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {filteredLeaderboards.length} of {benchmarkLeaderboards.length} benchmarks
-        </div>
-      </div>
-
-      <div className="rounded-md border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
-          <label className="relative">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Search</span>
             <input
               type="search"
               value={q}
               onChange={(event) => setFilter('q', event.target.value)}
               placeholder="Search benchmarks, leaders, IDs..."
-              className="input-field pl-9"
+              className="input-field h-8 py-1 text-sm"
             />
           </label>
-          <select value={target} onChange={(event) => setFilter('target', event.target.value)} className="input-field">
-            <option value="">All targets</option>
-            {targets.map((targetOption) => (
-              <option key={targetOption.id} value={targetOption.id}>
-                {targetOption.name}
-              </option>
-            ))}
-          </select>
-          <button type="button" onClick={() => setSearchParams({})} className="btn-secondary inline-flex items-center justify-center">
-            <X className="mr-2 h-4 w-4" />
-            Clear
-          </button>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Target</span>
+            <select value={target} onChange={(event) => setFilter('target', event.target.value)} className="input-field h-8 py-1 text-sm">
+              <option value="">All targets</option>
+              {targets.map((targetOption) => (
+                <option key={targetOption.id} value={targetOption.id}>
+                  {targetOption.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => setSearchParams({})}
+              className="inline-flex h-8 items-center justify-center rounded-md bg-gray-600 px-3 text-xs font-medium text-white transition-colors hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-semibold text-gray-950 dark:text-white">Benchmarks</h1>
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          {filteredLeaderboards.length} of {benchmarkLeaderboards.length} benchmarks
         </div>
       </div>
 
@@ -189,6 +202,9 @@ const PublicBenchmarks = () => {
                     <SortHeader id="target">Target</SortHeader>
                   </th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Settings
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                     <SortHeader id="leader">Leader</SortHeader>
                   </th>
                   <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -203,7 +219,7 @@ const PublicBenchmarks = () => {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                 {filteredLeaderboards.map((leaderboard) => (
                   <tr
-                    key={leaderboard.benchmark.id}
+                    key={`${leaderboard.benchmark.id}-${leaderboard.settings}`}
                     className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
                   >
                     <td className="px-5 py-4">
@@ -220,6 +236,9 @@ const PublicBenchmarks = () => {
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                       {leaderboard.benchmark.target?.name || 'Benchmark'}
+                    </td>
+                    <td className="max-w-xs px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      <span className="line-clamp-2">{leaderboard.settingsLabel}</span>
                     </td>
                     <td className="px-5 py-4">
                       {leaderboard.leader ? (

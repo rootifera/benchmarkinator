@@ -1,13 +1,61 @@
+import json
+
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from utils.helper import validate_and_normalize_name
 from utils.config_components import config_has_cpu, config_has_gpu
+from models.benchmark import Benchmark, BenchmarkOption
 from models.benchmark_results import BenchmarkResult
 from models.config import Config
-from models.benchmark import Benchmark
 from database import get_db
 
 router = APIRouter()
+
+
+def _parse_option_values(raw: str | None) -> dict[str, str]:
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid result option values")
+    if not isinstance(parsed, dict):
+        raise HTTPException(status_code=400, detail="Invalid result option values")
+    return {str(key): str(value).strip() for key, value in parsed.items() if str(value).strip()}
+
+
+def _apply_generated_settings(benchmark_result: BenchmarkResult, db: Session):
+    option_values = _parse_option_values(benchmark_result.option_values)
+    if not option_values:
+        if benchmark_result.settings is not None:
+            benchmark_result.settings = benchmark_result.settings.strip() or None
+        return
+
+    options = db.exec(
+        select(BenchmarkOption)
+        .where(BenchmarkOption.benchmark_id == benchmark_result.benchmark_id)
+        .order_by(BenchmarkOption.sort_order, BenchmarkOption.id)
+    ).all()
+    labels = []
+    for option in options:
+        selected = option_values.get(str(option.id))
+        if selected:
+            labels.append(f"{option.name}: {selected}")
+
+    generated_settings = ", ".join(labels)
+    custom_settings = (benchmark_result.settings or "").strip()
+    if generated_settings and custom_settings == generated_settings:
+        custom_settings = ""
+    elif generated_settings and custom_settings.startswith(f"{generated_settings}, "):
+        custom_settings = custom_settings[len(generated_settings) + 2:].strip()
+
+    if labels:
+        benchmark_result.settings = ", ".join([generated_settings] + ([custom_settings] if custom_settings else []))
+    elif custom_settings:
+        benchmark_result.settings = custom_settings
+    else:
+        benchmark_result.settings = None
+
 
 @router.post("/", response_model=BenchmarkResult)
 def create_benchmark_result(benchmark_result: BenchmarkResult, db: Session = Depends(get_db)):
@@ -22,6 +70,7 @@ def create_benchmark_result(benchmark_result: BenchmarkResult, db: Session = Dep
     if hasattr(benchmark_result, "name"):
         benchmark_result.name = validate_and_normalize_name(benchmark_result.name, db, BenchmarkResult)
 
+    _apply_generated_settings(benchmark_result, db)
     db.add(benchmark_result)
     db.commit()
     db.refresh(benchmark_result)
@@ -48,6 +97,7 @@ def update_benchmark_result(result_id: int, benchmark_result: BenchmarkResult, d
         benchmark_result.name = validate_and_normalize_name(benchmark_result.name, db, BenchmarkResult,
                                                             current_id=result_id)
 
+    _apply_generated_settings(benchmark_result, db)
     for key, value in benchmark_result.dict(exclude_unset=True).items():
         setattr(db_result, key, value)
 
@@ -129,6 +179,10 @@ def calculate_percentage_change(old_value: float, new_value: float) -> float:
     return ((new_value - old_value) / old_value) * 100
 
 
+def normalize_result_settings(value: str | None) -> str:
+    return (value or "").strip()
+
+
 @router.get("/compare/configs", response_model=list)
 def compare_configs(
     config_id_1: int,
@@ -154,7 +208,15 @@ def compare_configs(
         if benchmark_id is not None and result_1.benchmark_id != benchmark_id:
             continue
 
-        result_2 = next((r for r in results_2 if r.benchmark_id == result_1.benchmark_id), None)
+        result_1_settings = normalize_result_settings(result_1.settings)
+        result_2 = next(
+            (
+                r for r in results_2
+                if r.benchmark_id == result_1.benchmark_id
+                and normalize_result_settings(r.settings) == result_1_settings
+            ),
+            None,
+        )
         if result_2:
             benchmark = db.get(Benchmark, result_1.benchmark_id)
             if not benchmark:
@@ -169,6 +231,7 @@ def compare_configs(
             comparison.append({
                 "benchmark_id": result_1.benchmark_id,
                 "benchmark_name": benchmark.name,
+                "settings": result_1_settings,
                 "lower_is_better": benchmark.lower_is_better,
                 "config_1_result": result_1.result,
                 "config_2_result": result_2.result,

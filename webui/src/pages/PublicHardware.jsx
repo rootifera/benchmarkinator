@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Cpu, Monitor, Search, Settings, X } from 'lucide-react';
+import { Cpu, Filter, Monitor, Settings } from 'lucide-react';
 import { usePublicData } from '../utils/publicData';
 
 const getParam = (params, key, fallback = '') => params.get(key) || fallback;
@@ -53,40 +53,52 @@ const PublicHardware = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-950 dark:text-white">Hardware</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Browse CPUs, GPUs, and motherboards by systems tested, result count, and benchmark placements.
+      <div className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="flex items-center text-lg font-semibold text-gray-950 dark:text-white">
+            <Filter className="mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" />
+            Filters
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Filters work together - combine hardware type and search filters
           </p>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {hardwareRecords.length} parts
-        </div>
-      </div>
-
-      <div className="rounded-md border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_180px_auto]">
-          <label className="relative">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px_auto]">
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Search</span>
             <input
               type="search"
               value={q}
               onChange={(event) => setFilter('q', event.target.value)}
               placeholder="Search CPU, GPU, motherboard, system, ID..."
-              className="input-field pl-9"
+              className="input-field h-8 py-1 text-sm"
             />
           </label>
-          <select value={type} onChange={(event) => setFilter('type', event.target.value)} className="input-field">
-            <option value="">All hardware</option>
-            <option value="cpu">CPUs</option>
-            <option value="gpu">GPUs</option>
-            <option value="motherboard">Motherboards</option>
-          </select>
-          <button type="button" onClick={() => setSearchParams({})} className="btn-secondary inline-flex items-center justify-center">
-            <X className="mr-2 h-4 w-4" />
-            Clear
-          </button>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Hardware Type</span>
+            <select value={type} onChange={(event) => setFilter('type', event.target.value)} className="input-field h-8 py-1 text-sm">
+              <option value="">All hardware</option>
+              <option value="cpu">CPUs</option>
+              <option value="gpu">GPUs</option>
+              <option value="motherboard">Motherboards</option>
+            </select>
+          </label>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => setSearchParams({})}
+              className="inline-flex h-8 items-center justify-center rounded-md bg-gray-600 px-3 text-xs font-medium text-white transition-colors hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-semibold text-gray-950 dark:text-white">Hardware</h1>
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          {hardwareRecords.length} parts
         </div>
       </div>
 

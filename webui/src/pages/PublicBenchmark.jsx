@@ -43,9 +43,14 @@ const PublicBenchmark = () => {
     );
   }
 
-  const leaderboard = benchmarkLeaderboards.find((item) => item.benchmark.id === numericBenchmarkId);
-  const benchmark = leaderboard?.benchmark;
-  const records = leaderboard?.records || [];
+  const leaderboards = benchmarkLeaderboards.filter((item) => item.benchmark.id === numericBenchmarkId);
+  const benchmark = leaderboards[0]?.benchmark;
+  const records = leaderboards.flatMap((leaderboard) => (
+    leaderboard.records.map((record) => ({
+      ...record,
+      settingsLabel: leaderboard.settingsLabel,
+    }))
+  ));
 
   if (!benchmark) {
     return (
@@ -91,9 +96,9 @@ const PublicBenchmark = () => {
           <p className="mt-2 text-3xl font-bold text-gray-950 dark:text-white">{testedSystems}</p>
         </div>
         <div className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Best Score</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Setting Groups</p>
           <p className="mt-2 text-3xl font-bold text-primary-700 dark:text-primary-300">
-            {records[0] ? formatScore(records[0].result.result) : 'N/A'}
+            {leaderboards.length}
           </p>
         </div>
       </section>
@@ -117,6 +122,7 @@ const PublicBenchmark = () => {
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Rank</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">System</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Score</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Settings</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Hardware</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Notes</th>
@@ -134,6 +140,9 @@ const PublicBenchmark = () => {
                     </td>
                     <td className="px-5 py-4 text-sm">
                       <ScorePill id={record.id} value={record.result.result} />
+                    </td>
+                    <td className="max-w-xs px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
+                      <span className="line-clamp-2">{record.settingsLabel}</span>
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                       <p>{formatComponentSummary(record.system?.cpuDetails, 'Unknown CPU')}</p>

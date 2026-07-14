@@ -21,12 +21,15 @@ import {
   formatGpuId,
   formatMotherboardId,
   formatResultId,
+  formatResultSettings,
   formatSystemId,
+  normalizeResultSettings,
 } from '../utils/publicData';
 
 const compact = (items) => items.filter(Boolean).join(' ').trim();
 const compactDescription = (items) => items.filter(Boolean).join(' | ').trim();
 const displaySerial = (item, fallback) => item?.serial || fallback;
+const resultGroupSeparator = '\u0000';
 
 const parseComponentIds = (raw, fallbackId, fallbackQuantity = 1) => {
   if (raw) {
@@ -149,9 +152,20 @@ const PublicSystem = () => {
   const rankByResultId = useMemo(() => {
     const ranks = new Map();
 
-    data.benchmarks.forEach((benchmark) => {
+    const groupKeys = new Set(data.results.map((result) => `${result.benchmark_id}${resultGroupSeparator}${normalizeResultSettings(result.settings)}`));
+
+    groupKeys.forEach((groupKey) => {
+      const [benchmarkIdRaw, settings] = groupKey.split(resultGroupSeparator);
+      const benchmarkId = parseInt(benchmarkIdRaw, 10);
+      const benchmark = data.benchmarks.find((item) => item.id === benchmarkId);
+      if (!benchmark) return;
+
       const sortedResults = data.results
-        .filter((result) => result.benchmark_id === benchmark.id && Number.isFinite(Number(result.result)))
+        .filter((result) => (
+          result.benchmark_id === benchmark.id
+          && normalizeResultSettings(result.settings) === settings
+          && Number.isFinite(Number(result.result))
+        ))
         .map((result) => ({ ...result, result: Number(result.result) }))
         .sort((a, b) => compareScores(a, b, benchmark.lower_is_better));
 
@@ -214,14 +228,33 @@ const PublicSystem = () => {
   const comparisonRows = useMemo(() => {
     if (!targetConfigId) return [];
 
-    return data.benchmarks
-      .map((benchmark) => {
+    const primaryGroups = [
+      ...new Map(
+        data.results
+          .filter((result) => result.config_id === numericConfigId)
+          .map((result) => [`${result.benchmark_id}${resultGroupSeparator}${normalizeResultSettings(result.settings)}`, result])
+      ).values(),
+    ];
+
+    return primaryGroups
+      .map((result) => {
+        const benchmark = data.benchmarks.find((item) => item.id === result.benchmark_id);
+        if (!benchmark) return null;
+        const settings = normalizeResultSettings(result.settings);
         const primaryResult = getBestResult(
-          data.results.filter((result) => result.config_id === numericConfigId && result.benchmark_id === benchmark.id),
+          data.results.filter((candidate) => (
+            candidate.config_id === numericConfigId
+            && candidate.benchmark_id === benchmark.id
+            && normalizeResultSettings(candidate.settings) === settings
+          )),
           benchmark
         );
         const targetResult = getBestResult(
-          data.results.filter((result) => result.config_id === targetConfigId && result.benchmark_id === benchmark.id),
+          data.results.filter((candidate) => (
+            candidate.config_id === targetConfigId
+            && candidate.benchmark_id === benchmark.id
+            && normalizeResultSettings(candidate.settings) === settings
+          )),
           benchmark
         );
 
@@ -235,6 +268,8 @@ const PublicSystem = () => {
 
         return {
           benchmark,
+          settings,
+          settingsLabel: formatResultSettings(settings),
           primaryResult,
           targetResult,
           primaryRank: rankByResultId.get(primaryResult.id),
@@ -243,7 +278,7 @@ const PublicSystem = () => {
         };
       })
       .filter(Boolean)
-      .sort((a, b) => a.benchmark.name.localeCompare(b.benchmark.name));
+      .sort((a, b) => a.benchmark.name.localeCompare(b.benchmark.name) || a.settingsLabel.localeCompare(b.settingsLabel));
   }, [data.benchmarks, data.results, numericConfigId, rankByResultId, targetConfigId]);
 
   const getCPUDetail = (cpuId) => {
@@ -455,7 +490,9 @@ const PublicSystem = () => {
                       >
                         {benchmark?.name || 'Unknown benchmark'}
                       </h3>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatDate(result.timestamp)}</p>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {formatResultSettings(result.settings)} · {formatDate(result.timestamp)}
+                      </p>
                       {result.notes && <p className="mt-2 break-words text-sm text-gray-700 dark:text-gray-300">{result.notes}</p>}
                     </div>
                     <div className="flex shrink-0 gap-3">
@@ -532,6 +569,7 @@ const PublicSystem = () => {
                 <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Benchmark</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Settings</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       <span title={`${formatSystemId(config.id)} ${config.name}`}>{config.name}</span>
                     </th>
@@ -567,6 +605,9 @@ const PublicSystem = () => {
                               lower is better
                             </span>
                           )}
+                        </td>
+                        <td className="max-w-xs px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                          <span className="line-clamp-2">{row.settingsLabel}</span>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm">
                           <div className="space-y-1">

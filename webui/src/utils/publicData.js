@@ -27,6 +27,7 @@ import {
 export const emptyPublicData = {
   results: [],
   benchmarks: [],
+  benchmarkOptions: [],
   benchmarkTargets: [],
   configurations: [],
   cpus: [],
@@ -89,16 +90,25 @@ export const formatRank = (rank, total) => {
   return `#${rank} of ${total}`;
 };
 
+export const normalizeResultSettings = (value) => (value || '').trim();
+const dedupeSettingParts = (value) => {
+  const parts = normalizeResultSettings(value).split(',').map((part) => part.trim()).filter(Boolean);
+  return [...new Set(parts)].join(', ');
+};
+export const formatResultSettings = (value) => dedupeSettingParts(value) || 'Default settings';
+
 const byId = (items) => new Map(items.map((item) => [item.id, item]));
 const compact = (items) => items.filter(Boolean).join(' ').trim();
 const compactDescription = (items) => items.filter(Boolean).join(' | ').trim();
 const displaySerial = (item, fallback) => item?.serial || fallback;
+const resultGroupSeparator = '\u0000';
 const uniqueSorted = (items) => [...new Set(items.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 const uniqueNumbers = (items) => [...new Set(items.filter((value) => Number.isFinite(Number(value))).map((value) => Number(value)))];
 
 export const buildPublicModel = (data) => {
   const lookups = {
     benchmarkTargets: byId(data.benchmarkTargets || []),
+    benchmarkOptions: data.benchmarkOptions || [],
     configs: byId(data.configurations),
     cpus: byId(data.cpus),
     gpus: byId(data.gpus),
@@ -287,10 +297,13 @@ export const buildPublicModel = (data) => {
       system,
       score: Number(result.result),
       date: result.timestamp,
+      settings: normalizeResultSettings(result.settings),
+      settingsLabel: formatResultSettings(result.settings),
       searchText: compact([
         formatResultId(result.id),
         formatBenchmarkId(benchmark?.id),
         benchmark?.name,
+        result.settings,
         system?.name,
         system?.cpuText,
         system?.gpuText,
@@ -302,17 +315,22 @@ export const buildPublicModel = (data) => {
   });
 
   const validResults = resultRecords.filter((record) => Number.isFinite(record.score));
-  const resultsByBenchmark = new Map();
+  const resultsByBenchmarkSettings = new Map();
   validResults.forEach((record) => {
     if (!record.benchmark) return;
-    if (!resultsByBenchmark.has(record.benchmark.id)) {
-      resultsByBenchmark.set(record.benchmark.id, []);
+    const key = `${record.benchmark.id}${resultGroupSeparator}${record.settings}`;
+    if (!resultsByBenchmarkSettings.has(key)) {
+      resultsByBenchmarkSettings.set(key, {
+        benchmarkId: record.benchmark.id,
+        settings: record.settings,
+        records: [],
+      });
     }
-    resultsByBenchmark.get(record.benchmark.id).push(record);
+    resultsByBenchmarkSettings.get(key).records.push(record);
   });
 
-  const benchmarkLeaderboards = [...resultsByBenchmark.entries()]
-    .map(([benchmarkId, records]) => {
+  const benchmarkLeaderboards = [...resultsByBenchmarkSettings.values()]
+    .map(({ benchmarkId, settings, records }) => {
       const benchmark = lookups.benchmarks.get(benchmarkId);
       const sortedRecords = [...records].sort((a, b) => compareScores(a.result, b.result, benchmark?.lower_is_better));
       let previousScore = null;
@@ -334,12 +352,16 @@ export const buildPublicModel = (data) => {
 
       return {
         benchmark,
+        settings,
+        settingsLabel: formatResultSettings(settings),
         records: rankedRecords,
         leader: rankedRecords[0] || null,
       };
     })
     .filter(Boolean)
-    .sort((a, b) => a.benchmark.name.localeCompare(b.benchmark.name));
+    .sort((a, b) => (
+      a.benchmark.name.localeCompare(b.benchmark.name) || a.settingsLabel.localeCompare(b.settingsLabel)
+    ));
 
   const rankByResultId = new Map();
   benchmarkLeaderboards.forEach((leaderboard) => {

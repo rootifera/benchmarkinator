@@ -15,6 +15,11 @@ import ConfirmModal from '../components/ConfirmModal';
 import PublicThemeToggle from '../components/PublicThemeToggle';
 import { formatResultId, formatSystemId, idBadgeClass } from '../utils/displayIds';
 
+const formatResultSettings = (value) => {
+  const parts = (value || '').split(',').map((part) => part.trim()).filter(Boolean);
+  return [...new Set(parts)].join(', ') || 'Default settings';
+};
+
 const notify = (message, type = 'warning', duration) => {
   if (window.showToast) {
     window.showToast(message, type, duration);
@@ -44,6 +49,7 @@ const Results = () => {
   const { apiKey, isAuthenticated } = useAuth();
   const [results, setResults] = useState([]);
   const [benchmarks, setBenchmarks] = useState([]);
+  const [benchmarkOptions, setBenchmarkOptions] = useState([]);
   const [configurations, setConfigurations] = useState([]);
   const [cpus, setCpus] = useState([]);
   const [gpus, setGpus] = useState([]);
@@ -75,6 +81,7 @@ const Results = () => {
         const response = await axios.get(buildApiUrl('/api/public/results-data'));
         setResults(response.data.results);
         setBenchmarks(response.data.benchmarks);
+        setBenchmarkOptions(response.data.benchmarkOptions || []);
         setConfigurations(response.data.configurations);
         setCpus(response.data.cpus);
         setGpus(response.data.gpus);
@@ -89,7 +96,8 @@ const Results = () => {
       const headers = { 'X-API-Key': apiKey };
       const [
         resultsRes, benchmarksRes, configsRes, cpusRes, gpusRes,
-        cpuBrandsRes, cpuFamiliesRes, gpuManufacturersRes, gpuBrandsRes, gpuModelsRes
+        cpuBrandsRes, cpuFamiliesRes, gpuManufacturersRes, gpuBrandsRes, gpuModelsRes,
+        benchmarkOptionsRes
       ] = await Promise.all([
         axios.get(buildApiUrl('/api/benchmark_results/'), { headers }),
         axios.get(buildApiUrl('/api/benchmark/'), { headers }),
@@ -100,7 +108,8 @@ const Results = () => {
         axios.get(buildApiUrl('/api/cpu/family/'), { headers }),
         axios.get(buildApiUrl('/api/gpu/manufacturer/'), { headers }),
         axios.get(buildApiUrl('/api/gpu/brand/'), { headers }),
-        axios.get(buildApiUrl('/api/gpu/model/'), { headers })
+        axios.get(buildApiUrl('/api/gpu/model/'), { headers }),
+        axios.get(buildApiUrl('/api/benchmark/options/'), { headers })
       ]);
 
       setResults(resultsRes.data);
@@ -113,6 +122,7 @@ const Results = () => {
       setGpuManufacturers(gpuManufacturersRes.data);
       setGpuBrands(gpuBrandsRes.data);
       setGpuModels(gpuModelsRes.data);
+      setBenchmarkOptions(benchmarkOptionsRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Could not load benchmark results.');
@@ -477,6 +487,9 @@ const Results = () => {
                   <h3 className="mt-2 break-words text-lg font-semibold text-gray-950 dark:text-white">
                     {benchmark?.name || 'Unknown benchmark'}
                   </h3>
+                  <p className="mt-1 break-words text-sm text-gray-500 dark:text-gray-400">
+                    {formatResultSettings(result.settings)}
+                  </p>
                 </div>
                 <div className="flex shrink-0 items-start gap-3">
                   <div className="flex h-[60px] w-24 flex-col items-center justify-center rounded-md bg-primary-700 px-3 py-2 text-center text-white shadow-sm dark:bg-primary-400 dark:text-primary-950">
@@ -505,7 +518,7 @@ const Results = () => {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-1 gap-5 p-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-5 p-4 md:grid-cols-4">
                 <div className="min-w-0">
                   <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Test System</p>
                   {config ? (
@@ -525,6 +538,10 @@ const Results = () => {
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Date</p>
                   <p className="mt-1 text-sm font-medium text-gray-950 dark:text-white">{formatDate(result.timestamp)}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Settings</p>
+                  <p className="mt-1 break-words text-sm font-medium text-gray-950 dark:text-white">{formatResultSettings(result.settings)}</p>
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Notes</p>
@@ -611,6 +628,7 @@ const Results = () => {
         <ResultForm
           result={editingItem}
           benchmarks={benchmarks}
+          benchmarkOptions={benchmarkOptions}
           configurations={configurations}
           onClose={() => {
             setShowForm(false);
@@ -648,33 +666,67 @@ const Results = () => {
 };
 
 // Result Form Component
-const ResultForm = ({ result, onClose, onSave, benchmarks, configurations }) => {
+const decodeOptionValues = (value) => {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const decodeOptionChoices = (value) => {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    // Fall back to comma/newline text.
+  }
+  return String(value).split(/[\n,]/).map(item => item.trim()).filter(Boolean);
+};
+
+const ResultForm = ({ result, onClose, onSave, benchmarks, benchmarkOptions, configurations }) => {
   const [formData, setFormData] = useState({
     benchmark_id: '',
     config_id: '',
     result: '',
+    settings: '',
+    option_values: '',
     timestamp: new Date().toISOString(),
     notes: ''
   });
+  const [optionSelections, setOptionSelections] = useState({});
   const { apiKey } = useAuth();
+  const selectedBenchmarkOptions = benchmarkOptions
+    .filter(option => option.benchmark_id === parseInt(formData.benchmark_id))
+    .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
 
   useEffect(() => {
     if (result) {
+      const parsedOptionValues = decodeOptionValues(result.option_values);
       setFormData({
         benchmark_id: result.benchmark_id,
         config_id: result.config_id,
         result: result.result,
+        settings: Object.keys(parsedOptionValues).length ? '' : result.settings || '',
+        option_values: result.option_values || '',
         timestamp: result.timestamp || new Date().toISOString(),
         notes: result.notes || ''
       });
+      setOptionSelections(parsedOptionValues);
     } else {
       setFormData({
         benchmark_id: '',
         config_id: '',
         result: '',
+        settings: '',
+        option_values: '',
         timestamp: new Date().toISOString(),
         notes: ''
       });
+      setOptionSelections({});
     }
   }, [result]);
 
@@ -682,8 +734,15 @@ const ResultForm = ({ result, onClose, onSave, benchmarks, configurations }) => 
     e.preventDefault();
     try {
       const headers = { 'X-API-Key': apiKey };
+      const selectedOptions = selectedBenchmarkOptions.reduce((acc, option) => {
+        const selected = (optionSelections[String(option.id)] || '').trim();
+        if (selected) acc[String(option.id)] = selected;
+        return acc;
+      }, {});
       const dataToSend = {
         ...formData,
+        option_values: Object.keys(selectedOptions).length ? JSON.stringify(selectedOptions) : null,
+        settings: (formData.settings || '').trim() || null,
         timestamp: formData.timestamp || new Date().toISOString()
       };
       if (result) {
@@ -713,7 +772,10 @@ const ResultForm = ({ result, onClose, onSave, benchmarks, configurations }) => 
               </label>
               <select
                 value={formData.benchmark_id}
-                onChange={(e) => setFormData({ ...formData, benchmark_id: parseInt(e.target.value) })}
+                onChange={(e) => {
+                  setFormData({ ...formData, benchmark_id: e.target.value ? parseInt(e.target.value) : '', settings: '' });
+                  setOptionSelections({});
+                }}
                 className="input-field"
                 required
               >
@@ -759,6 +821,52 @@ const ResultForm = ({ result, onClose, onSave, benchmarks, configurations }) => 
               placeholder="Enter benchmark result score"
               required
             />
+          </div>
+
+          {selectedBenchmarkOptions.length > 0 && (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {selectedBenchmarkOptions.map((option) => {
+                const choices = decodeOptionChoices(option.values);
+                return (
+                  <div key={option.id}>
+                    <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {option.name}
+                    </label>
+                    <select
+                      value={optionSelections[String(option.id)] || ''}
+                      onChange={(e) => setOptionSelections(current => ({
+                        ...current,
+                        [String(option.id)]: e.target.value,
+                      }))}
+                      className="input-field"
+                    >
+                      <option value="">Select {option.name}</option>
+                      {choices.map((choice) => (
+                        <option key={choice} value={choice}>{choice}</option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Custom Settings
+            </label>
+            <input
+              type="text"
+              value={formData.settings}
+              onChange={(e) => setFormData({ ...formData, settings: e.target.value })}
+              className="input-field"
+              placeholder={selectedBenchmarkOptions.length ? 'Optional extra settings' : 'e.g., 1024x768, 32-bit color, default settings'}
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {selectedBenchmarkOptions.length
+                ? 'Dropdown selections will generate the main settings text. Use this only for extra run notes.'
+                : 'Use this when the benchmark has no predefined dropdown options.'}
+            </p>
           </div>
           
           <div>
@@ -1025,6 +1133,9 @@ const CompareForm = ({ configurations, benchmarks, onClose }) => {
                       Benchmark
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Settings
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       {getConfigName(formData.config_id_1)}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -1043,6 +1154,9 @@ const CompareForm = ({ configurations, benchmarks, onClose }) => {
                     <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {getBenchmarkName(result.benchmark_id)}
+                      </td>
+                      <td className="max-w-xs px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                        <span className="line-clamp-2">{formatResultSettings(result.settings)}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">

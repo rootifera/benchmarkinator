@@ -6,7 +6,9 @@ import {
   Target,
   BarChart3,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Plus,
+  X
 } from 'lucide-react';
 import axios from 'axios';
 import { buildApiUrl } from '../config/api';
@@ -22,6 +24,7 @@ const notify = (message, type = 'warning', duration) => {
 const Benchmarks = () => {
   const { apiKey } = useAuth();
   const [benchmarks, setBenchmarks] = useState([]);
+  const [benchmarkOptions, setBenchmarkOptions] = useState([]);
   const [benchmarkTargets, setBenchmarkTargets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,12 +43,14 @@ const Benchmarks = () => {
     setError(null);
     try {
       const headers = { 'X-API-Key': apiKey };
-      const [benchmarksRes, targetsRes] = await Promise.all([
+      const [benchmarksRes, targetsRes, optionsRes] = await Promise.all([
         axios.get(buildApiUrl('/api/benchmark/'), { headers }),
-        axios.get(buildApiUrl('/api/benchmark/target/'), { headers })
+        axios.get(buildApiUrl('/api/benchmark/target/'), { headers }),
+        axios.get(buildApiUrl('/api/benchmark/options/'), { headers })
       ]);
       setBenchmarks(benchmarksRes.data);
       setBenchmarkTargets(targetsRes.data);
+      setBenchmarkOptions(optionsRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Could not load benchmarks.');
@@ -137,6 +142,9 @@ const Benchmarks = () => {
       <div className="space-y-4">
         {benchmarks.map((benchmark) => {
           const target = benchmarkTargets.find(t => t.id === benchmark.benchmark_target_id);
+          const options = benchmarkOptions
+            .filter(option => option.benchmark_id === benchmark.id)
+            .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
           return (
             <article
               key={benchmark.id}
@@ -160,6 +168,15 @@ const Benchmarks = () => {
                     {target?.name || 'No target'}
                     {target && <span className="ml-2 text-xs text-gray-500 dark:text-gray-500">{formatTargetId(target.id)}</span>}
                   </p>
+                  {options.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {options.map((option) => (
+                        <span key={option.id} className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                          {option.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <button
@@ -353,6 +370,7 @@ const Benchmarks = () => {
         <BenchmarkForm
           benchmark={editingItem}
           benchmarkTargets={benchmarkTargets}
+          benchmarkOptions={benchmarkOptions}
           onClose={() => {
             setShowForm(false);
             setEditingItem(null);
@@ -400,12 +418,31 @@ const Benchmarks = () => {
 };
 
 // Benchmark Form Component
-const BenchmarkForm = ({ benchmark, benchmarkTargets, onClose, onSave }) => {
+const parseOptionValues = (value) => (
+  (value || '')
+    .split(/[\n,]/)
+    .map(item => item.trim())
+    .filter(Boolean)
+);
+
+const decodeOptionValues = (value) => {
+  if (!value) return '';
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.join('\n');
+  } catch {
+    // Old/manual values can still be edited as plain text.
+  }
+  return value;
+};
+
+const BenchmarkForm = ({ benchmark, benchmarkTargets, benchmarkOptions, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: '',
     benchmark_target_id: '',
     lower_is_better: false,
   });
+  const [options, setOptions] = useState([]);
   const { apiKey } = useAuth();
 
   useEffect(() => {
@@ -415,14 +452,71 @@ const BenchmarkForm = ({ benchmark, benchmarkTargets, onClose, onSave }) => {
         benchmark_target_id: benchmark.benchmark_target_id ?? '',
         lower_is_better: !!benchmark.lower_is_better,
       });
+      setOptions(
+        benchmarkOptions
+          .filter(option => option.benchmark_id === benchmark.id)
+          .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id)
+          .map(option => ({
+            id: option.id,
+            name: option.name,
+            valuesText: decodeOptionValues(option.values),
+          }))
+      );
     } else {
       setFormData({
         name: '',
         benchmark_target_id: '',
         lower_is_better: false,
       });
+      setOptions([]);
     }
-  }, [benchmark]);
+  }, [benchmark, benchmarkOptions]);
+
+  const addOption = () => {
+    setOptions(current => [...current, { id: null, name: '', valuesText: '' }]);
+  };
+
+  const updateOption = (index, updates) => {
+    setOptions(current => current.map((option, optionIndex) => (
+      optionIndex === index ? { ...option, ...updates } : option
+    )));
+  };
+
+  const removeOption = (index) => {
+    setOptions(current => current.filter((_, optionIndex) => optionIndex !== index));
+  };
+
+  const syncBenchmarkOptions = async (benchmarkId, headers) => {
+    const existingOptions = benchmarkOptions.filter(option => option.benchmark_id === benchmarkId);
+    const keptIds = new Set(options.map(option => option.id).filter(Boolean));
+
+    await Promise.all(
+      existingOptions
+        .filter(option => !keptIds.has(option.id))
+        .map(option => axios.delete(buildApiUrl(`/api/benchmark/options/${option.id}`), { headers }))
+    );
+
+    for (const [index, option] of options.entries()) {
+      const values = parseOptionValues(option.valuesText);
+      const payload = {
+        benchmark_id: benchmarkId,
+        name: option.name.trim(),
+        values: JSON.stringify(values),
+        sort_order: index,
+      };
+
+      if (!payload.name && values.length === 0) continue;
+      if (!payload.name || values.length === 0) {
+        throw new Error('Each benchmark option needs a name and at least one value.');
+      }
+
+      if (option.id) {
+        await axios.put(buildApiUrl(`/api/benchmark/options/${option.id}`), payload, { headers });
+      } else {
+        await axios.post(buildApiUrl('/api/benchmark/options/'), payload, { headers });
+      }
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -436,14 +530,19 @@ const BenchmarkForm = ({ benchmark, benchmarkTargets, onClose, onSave }) => {
         lower_is_better: !!formData.lower_is_better,
       };
 
+      let savedBenchmark;
       if (benchmark) {
-        await axios.put(buildApiUrl(`/api/benchmark/${benchmark.id}`), payload, { headers });
+        const response = await axios.put(buildApiUrl(`/api/benchmark/${benchmark.id}`), payload, { headers });
+        savedBenchmark = response.data;
       } else {
-        await axios.post(buildApiUrl('/api/benchmark/'), payload, { headers });
+        const response = await axios.post(buildApiUrl('/api/benchmark/'), payload, { headers });
+        savedBenchmark = response.data;
       }
+      await syncBenchmarkOptions(savedBenchmark.id, headers);
       onSave();
     } catch (error) {
       console.error('Error saving benchmark:', error);
+      notify(error.message || 'Failed to save benchmark', 'error');
     }
   };
 
@@ -515,6 +614,78 @@ const BenchmarkForm = ({ benchmark, benchmarkTargets, onClose, onSave }) => {
                 Lower is better (e.g., latency, compression time)
               </label>
             </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-700">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Result Options</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Optional dropdowns shown when adding results for this benchmark.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addOption}
+                className="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Option
+              </button>
+            </div>
+
+            {options.length === 0 ? (
+              <div className="rounded-md border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                No options defined. Results for this benchmark will not ask for extra settings.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {options.map((option, index) => (
+                  <div key={option.id || `new-${index}`} className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-2">
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Option Name
+                          </label>
+                          <input
+                            type="text"
+                            value={option.name}
+                            onChange={(e) => updateOption(index, { name: e.target.value })}
+                            className="input-field"
+                            placeholder="e.g., Resolution"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Values
+                          </label>
+                          <textarea
+                            value={option.valuesText}
+                            onChange={(e) => updateOption(index, { valuesText: e.target.value })}
+                            className="input-field"
+                            rows="3"
+                            placeholder="800 x 600&#10;1024 x 768"
+                          />
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Enter one per line, or comma-separated.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeOption(index)}
+                        className="mt-7 inline-flex h-9 w-9 items-center justify-center rounded-md text-red-600 transition-colors hover:bg-red-50 hover:text-red-900 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+                        title="Remove option"
+                        aria-label="Remove option"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           
           <div className="flex space-x-3">

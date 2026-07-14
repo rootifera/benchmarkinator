@@ -1,4 +1,5 @@
 from typing import List, Optional, TYPE_CHECKING
+from sqlalchemy import Column, Text
 from sqlmodel import Field, SQLModel, Relationship
 
 if TYPE_CHECKING:
@@ -22,3 +23,14 @@ class Benchmark(SQLModel, table=True):
     target: Optional[BenchmarkTarget] = Relationship(back_populates="benchmarks")
 
     benchmark_results: List["BenchmarkResult"] = Relationship(back_populates="benchmark")
+    options: List["BenchmarkOption"] = Relationship(back_populates="benchmark")
+
+
+class BenchmarkOption(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    benchmark_id: int = Field(foreign_key="benchmark.id")
+    name: str
+    values: str = Field(sa_column=Column(Text, nullable=False))
+    sort_order: int = Field(default=0, nullable=False)
+
+    benchmark: Optional[Benchmark] = Relationship(back_populates="options")
