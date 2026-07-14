@@ -18,7 +18,13 @@ import axios from 'axios';
 import SearchableSelect from '../components/SearchableSelect';
 import { buildApiUrl } from '../config/api';
 import ConfirmModal from '../components/ConfirmModal';
-import { formatSystemId, idBadgeClass } from '../utils/displayIds';
+import {
+  formatCpuId,
+  formatGpuId,
+  formatMotherboardId,
+  formatSystemId,
+  idBadgeClass,
+} from '../utils/displayIds';
 
 const notify = (message, type = 'warning', duration) => {
   if (window.showToast) {
@@ -927,89 +933,67 @@ const ConfigurationForm = ({
     }
   };
 
+  const compact = (items) => items.filter(Boolean).join(' ').trim();
+  const compactDescription = (items) => items.filter(Boolean).join(' | ').trim();
+  const displaySerial = (item, fallback) => item.serial || fallback;
+
   // Helper function to get CPU display name for dropdown
-  // Format: Brand Family Model [Speed - N Cores][Serial if exists]
   const getCPUOptionText = (cpu) => {
     const brand = cpuBrands.find(b => b.id === cpu.cpu_brand_id);
     const family = cpuFamilies.find(f => f.id === cpu.cpu_family_id);
-    
-    let displayText = '';
-    
-    // Brand Family Model
-    if (brand) displayText += `${brand.name} `;
-    if (family) displayText += `${family.name} `;
-    displayText += cpu.model;
-    
-    // [Speed - N Cores]
+    return compact([brand?.name, family?.name, cpu.model]) || `CPU ${cpu.id}`;
+  };
+
+  const getCPUOptionDetails = (cpu) => {
+    return compact([
+      getCPUOptionText(cpu),
+      getCPUOptionDescription(cpu),
+    ]);
+  };
+
+  const getCPUOptionDescription = (cpu) => {
     const speedAndCores = [];
     if (cpu.speed) speedAndCores.push(cpu.speed);
     if (cpu.core_count) speedAndCores.push(`${cpu.core_count} Cores`);
-    if (speedAndCores.length > 0) {
-      displayText += ` [${speedAndCores.join(' - ')}]`;
-    }
-    
-    // [Serial if exists]
-    if (cpu.serial) {
-      displayText += ` [${cpu.serial}]`;
-    }
-    
-    return displayText.trim();
+    return compactDescription([speedAndCores.join(', '), displaySerial(cpu, formatCpuId(cpu.id))]);
   };
 
   // Helper function to get GPU display name for dropdown
-  // Format: Manufacturer Brand Model [VRAM Size VRAM TYPE][Serial if exists]
   const getGPUOptionText = (gpu) => {
     const manufacturer = gpuManufacturers.find(m => m.id === gpu.gpu_manufacturer_id);
     const brand = gpuBrands.find(b => b.id === gpu.gpu_brand_id);
     const model = gpuModels.find(m => m.id === gpu.gpu_model_id);
+    return compact([manufacturer?.name, brand?.name, model?.name]) || `GPU ${gpu.id}`;
+  };
+
+  const getGPUOptionDetails = (gpu) => {
+    return compact([
+      getGPUOptionText(gpu),
+      getGPUOptionDescription(gpu),
+    ]);
+  };
+
+  const getGPUOptionDescription = (gpu) => {
     const vramType = gpuVRAMTypes.find(v => v.id === gpu.gpu_vram_type_id);
-    
-    let displayText = '';
-    
-    // Manufacturer Brand Model
-    if (manufacturer) displayText += `${manufacturer.name} `;
-    if (brand) displayText += `${brand.name} `;
-    if (model) displayText += `${model.name}`;
-    
-    // [VRAM Size VRAM TYPE]
-    const vramInfo = [];
-    if (gpu.vram_size) vramInfo.push(gpu.vram_size);
-    if (vramType) vramInfo.push(vramType.name);
-    if (vramInfo.length > 0) {
-      displayText += ` [${vramInfo.join(' ')}]`;
-    }
-    
-    // [Serial if exists]
-    if (gpu.serial) {
-      displayText += ` [${gpu.serial}]`;
-    }
-    
-    return displayText.trim();
+    return compactDescription([compact([gpu.vram_size, vramType?.name]), displaySerial(gpu, formatGpuId(gpu.id))]);
   };
 
   // Helper function to get Motherboard display name for dropdown
-  // Format: Manufacturer Model [Chipset][Serial if exists]
   const getMotherboardOptionText = (motherboard) => {
     const manufacturer = motherboardManufacturers.find(m => m.id === motherboard.manufacturer_id);
+    return compact([manufacturer?.name, motherboard.model]) || `Motherboard ${motherboard.id}`;
+  };
+
+  const getMotherboardOptionDetails = (motherboard) => {
+    return compact([
+      getMotherboardOptionText(motherboard),
+      getMotherboardOptionDescription(motherboard),
+    ]);
+  };
+
+  const getMotherboardOptionDescription = (motherboard) => {
     const chipset = motherboardChipsets.find(c => c.id === motherboard.chipset_id);
-    
-    let displayText = '';
-    
-    // Manufacturer Model
-    if (manufacturer) displayText += `${manufacturer.name} `;
-    if (motherboard.model) displayText += motherboard.model;
-    
-    // [Chipset] if exists
-    if (chipset) {
-      displayText += ` [${chipset.name}]`;
-    }
-    
-    // [Serial if exists]
-    if (motherboard.serial) {
-      displayText += ` [${motherboard.serial}]`;
-    }
-    
-    return displayText.trim() || `Motherboard ${motherboard.id}`;
+    return compactDescription([chipset?.name, displaySerial(motherboard, formatMotherboardId(motherboard.id))]);
   };
 
   return (
@@ -1071,7 +1055,10 @@ const ConfigurationForm = ({
                         }}
                         options={cpus.map(cpu => ({
                           id: cpu.id,
-                          name: getCPUOptionText(cpu)
+                          name: getCPUOptionText(cpu),
+                          description: getCPUOptionDescription(cpu),
+                          title: getCPUOptionDetails(cpu),
+                          searchText: getCPUOptionDetails(cpu)
                         }))}
                         placeholder={`Select CPU ${index + 1}`}
                         searchPlaceholder="Search CPUs..."
@@ -1119,7 +1106,10 @@ const ConfigurationForm = ({
                         }}
                         options={gpus.map(gpu => ({
                           id: gpu.id,
-                          name: getGPUOptionText(gpu)
+                          name: getGPUOptionText(gpu),
+                          description: getGPUOptionDescription(gpu),
+                          title: getGPUOptionDetails(gpu),
+                          searchText: getGPUOptionDetails(gpu)
                         }))}
                         placeholder={`Select GPU ${index + 1}`}
                         searchPlaceholder="Search GPUs..."
@@ -1159,7 +1149,10 @@ const ConfigurationForm = ({
                   onChange={(value) => setFormData({ ...formData, motherboard_id: value })}
                   options={motherboards.map(mobo => ({
                     id: mobo.id,
-                    name: getMotherboardOptionText(mobo)
+                    name: getMotherboardOptionText(mobo),
+                    description: getMotherboardOptionDescription(mobo),
+                    title: getMotherboardOptionDetails(mobo),
+                    searchText: getMotherboardOptionDetails(mobo)
                   }))}
                   placeholder="Select Motherboard"
                   searchPlaceholder="Search Motherboards..."

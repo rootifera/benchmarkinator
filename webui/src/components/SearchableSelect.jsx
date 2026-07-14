@@ -41,12 +41,15 @@ const SearchableSelect = ({
   // Filter options based on search term
   const filteredOptions = options.filter(option => {
     const displayValue = option[displayField] || option.name || option.label || '';
-    return displayValue.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchableValue = option.searchText || option.title || displayValue;
+    return searchableValue.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   // Find selected option for display
   const selectedOption = options.find(option => option[valueField] === value);
   const displayValue = selectedOption ? (selectedOption[displayField] || selectedOption.name || selectedOption.label) : '';
+  const descriptionValue = selectedOption?.description || '';
+  const titleValue = selectedOption ? (selectedOption.title || selectedOption.searchText || displayValue) : '';
 
   const handleSelect = (option) => {
     onChange(option[valueField]);
@@ -65,8 +68,8 @@ const SearchableSelect = ({
       <button
         type="button"
         className={`
-          w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-          focus:ring-2 focus:ring-primary-500 focus:border-transparent 
+          w-full min-h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+          focus:ring-2 focus:ring-primary-500 focus:border-transparent
           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
           text-left flex items-center justify-between
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-400 dark:hover:border-gray-500'}
@@ -74,13 +77,21 @@ const SearchableSelect = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
       >
-        <span className={displayValue ? '' : 'text-gray-500 dark:text-gray-400'}>
-          {displayValue || placeholder}
+        <span
+          className={`min-w-0 flex-1 ${displayValue ? '' : 'text-gray-500 dark:text-gray-400'}`}
+          title={titleValue}
+        >
+          <span className="block truncate">{displayValue || placeholder}</span>
+          {descriptionValue && (
+            <span className="mt-0.5 block whitespace-normal break-words text-xs leading-4 text-gray-500 dark:text-gray-400">
+              {descriptionValue}
+            </span>
+          )}
         </span>
-        <div className="flex items-center gap-1">
+        <div className="ml-2 flex shrink-0 items-center gap-1">
           {value && !disabled && (
             <X 
-              className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" 
+              className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               onClick={clearSelection}
             />
           )}
@@ -112,8 +123,10 @@ const SearchableSelect = ({
               filteredOptions.map((option) => {
                 const optionValue = option[valueField];
                 const optionDisplay = option[displayField] || option.name || option.label || '';
+                const optionDescription = option.description || '';
+                const optionTitle = option.title || option.searchText || optionDisplay;
                 const isSelected = optionValue === value;
-                
+
                 return (
                   <button
                     key={optionValue}
@@ -123,8 +136,14 @@ const SearchableSelect = ({
                       ${isSelected ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300' : 'text-gray-900 dark:text-white'}
                     `}
                     onClick={() => handleSelect(option)}
+                    title={optionTitle}
                   >
-                    {optionDisplay}
+                    <span className="block truncate">{optionDisplay}</span>
+                    {optionDescription && (
+                      <span className={`mt-0.5 block whitespace-normal break-words text-xs leading-4 ${isSelected ? 'text-primary-600 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {optionDescription}
+                      </span>
+                    )}
                   </button>
                 );
               })
