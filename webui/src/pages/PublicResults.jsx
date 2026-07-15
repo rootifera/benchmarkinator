@@ -192,10 +192,10 @@ const PublicResults = () => {
               <thead className="bg-gray-50 dark:bg-gray-950">
                 <tr>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Benchmark</th>
-                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Score</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Settings</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">System</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Hardware</th>
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Score</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Date</th>
                   <th className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Notes</th>
                 </tr>
@@ -214,9 +214,6 @@ const PublicResults = () => {
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-4 text-sm">
-                      <ScorePill id={record.id} value={record.result.result} />
-                    </td>
                     <td className="max-w-xs px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                       <span className="line-clamp-2">{record.settingsLabel}</span>
                     </td>
@@ -233,6 +230,9 @@ const PublicResults = () => {
                     <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                       <p>{formatComponentSummary(record.system?.cpuDetails, 'Unknown CPU')}</p>
                       <p className="mt-1">{formatComponentSummary(record.system?.gpuDetails, 'Unknown GPU')}</p>
+                    </td>
+                    <td className="px-5 py-4 text-sm">
+                      <ScorePill id={record.id} value={record.result.result} />
                     </td>
                     <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{formatDate(record.date)}</td>
                     <td className="max-w-xs px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
