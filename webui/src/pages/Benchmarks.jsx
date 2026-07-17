@@ -13,6 +13,7 @@ import {
 import axios from 'axios';
 import { buildApiUrl } from '../config/api';
 import ConfirmModal from '../components/ConfirmModal';
+import SearchableSelect from '../components/SearchableSelect';
 import { formatBenchmarkId, formatTargetId, idBadgeClass } from '../utils/displayIds';
 
 const notify = (message, type = 'warning', duration) => {
@@ -586,18 +587,13 @@ const BenchmarkForm = ({ benchmark, benchmarkTargets, benchmarkOptions, onClose,
                     <Target className="w-4 h-4 inline mr-2" />
                     Benchmark Target
                   </label>
-                  <select
+                  <SearchableSelect
                     value={formData.benchmark_target_id || ''}
-                    onChange={(e) => setFormData({ ...formData, benchmark_target_id: e.target.value ? parseInt(e.target.value) : '' })}
-                    className="input-field"
-                  >
-                    <option value="">Select a target (optional)</option>
-                    {benchmarkTargets.map((target) => (
-                      <option key={target.id} value={target.id}>
-                        {target.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setFormData({ ...formData, benchmark_target_id: value ? parseInt(value) : '' })}
+                    options={benchmarkTargets}
+                    placeholder="Select a target (optional)"
+                    searchPlaceholder="Search targets..."
+                  />
                 </div>
               </div>
 

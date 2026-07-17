@@ -9,6 +9,7 @@ import {
   formatScore,
   usePublicData,
 } from '../utils/publicData';
+import SearchableSelect from '../components/SearchableSelect';
 
 const getParam = (params, key, fallback = '') => params.get(key) || fallback;
 
@@ -55,6 +56,7 @@ const PublicResults = () => {
   const clearFilters = () => setSearchParams({});
 
   const selectedBenchmark = filterOptions.benchmarks.find((benchmark) => String(benchmark.id) === filters.benchmark);
+  const textOptions = (items) => items.map((item) => ({ id: item, name: item }));
 
   const filteredResults = useMemo(() => {
     const q = filters.q.trim().toLowerCase();
@@ -129,31 +131,47 @@ const PublicResults = () => {
           </label>
           <label>
             <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Benchmark</span>
-            <select value={filters.benchmark} onChange={(event) => setFilter('benchmark', event.target.value)} className="input-field h-8 py-1 text-sm">
-              <option value="">All</option>
-              {filterOptions.benchmarks.map((benchmark) => <option key={benchmark.id} value={benchmark.id}>{benchmark.name}</option>)}
-            </select>
+            <SearchableSelect
+              value={filters.benchmark}
+              onChange={(value) => setFilter('benchmark', value ? String(value) : '')}
+              options={filterOptions.benchmarks}
+              placeholder="All"
+              searchPlaceholder="Search benchmarks..."
+              size="sm"
+            />
           </label>
           <label>
             <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Test System</span>
-            <select value={filters.system} onChange={(event) => setFilter('system', event.target.value)} className="input-field h-8 py-1 text-sm">
-              <option value="">All</option>
-              {filterOptions.systems.map((system) => <option key={system.id} value={system.id}>{system.name}</option>)}
-            </select>
+            <SearchableSelect
+              value={filters.system}
+              onChange={(value) => setFilter('system', value ? String(value) : '')}
+              options={filterOptions.systems}
+              placeholder="All"
+              searchPlaceholder="Search test systems..."
+              size="sm"
+            />
           </label>
           <label>
             <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">CPU</span>
-            <select value={filters.cpu} onChange={(event) => setFilter('cpu', event.target.value)} className="input-field h-8 py-1 text-sm">
-              <option value="">All</option>
-              {filterOptions.cpus.map((cpu) => <option key={cpu} value={cpu}>{cpu}</option>)}
-            </select>
+            <SearchableSelect
+              value={filters.cpu}
+              onChange={(value) => setFilter('cpu', value)}
+              options={textOptions(filterOptions.cpus)}
+              placeholder="All"
+              searchPlaceholder="Search CPUs..."
+              size="sm"
+            />
           </label>
           <label>
             <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">GPU</span>
-            <select value={filters.gpu} onChange={(event) => setFilter('gpu', event.target.value)} className="input-field h-8 py-1 text-sm">
-              <option value="">All</option>
-              {filterOptions.gpus.map((gpu) => <option key={gpu} value={gpu}>{gpu}</option>)}
-            </select>
+            <SearchableSelect
+              value={filters.gpu}
+              onChange={(value) => setFilter('gpu', value)}
+              options={textOptions(filterOptions.gpus)}
+              placeholder="All"
+              searchPlaceholder="Search GPUs..."
+              size="sm"
+            />
           </label>
           <label>
             <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Sort</span>

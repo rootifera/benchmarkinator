@@ -4,6 +4,8 @@ import axios from 'axios';
 import {
   ArrowLeft,
   ArrowRight,
+  ChevronDown,
+  ChevronRight,
   Cpu,
   Database,
   HardDrive,
@@ -25,6 +27,7 @@ import {
   formatSystemId,
   normalizeResultSettings,
 } from '../utils/publicData';
+import SearchableSelect from '../components/SearchableSelect';
 
 const compact = (items) => items.filter(Boolean).join(' ').trim();
 const compactDescription = (items) => items.filter(Boolean).join(' | ').trim();
@@ -100,6 +103,8 @@ const PublicSystem = () => {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [compareConfigId, setCompareConfigId] = useState('');
+  const [isCompareExpanded, setIsCompareExpanded] = useState(false);
+  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -442,84 +447,66 @@ const PublicSystem = () => {
       </div>
 
       {(config.cpu_driver_version || config.gpu_driver_version || config.mb_chipset_driver_version || config.notes) && (
-        <div className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">System Notes</h2>
-          <div className="grid grid-cols-1 gap-3 text-sm text-gray-700 dark:text-gray-300 md:grid-cols-3">
-            {config.cpu_driver_version && <p><span className="font-medium">CPU driver:</span> {config.cpu_driver_version}</p>}
-            {config.gpu_driver_version && <p><span className="font-medium">GPU driver:</span> {config.gpu_driver_version}</p>}
-            {config.mb_chipset_driver_version && <p><span className="font-medium">Chipset driver:</span> {config.mb_chipset_driver_version}</p>}
+        <div className="rounded-md border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+          <div className={`flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between ${isNotesExpanded ? 'border-b border-gray-200 dark:border-gray-800' : ''}`}>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-gray-900 dark:text-white">System Notes</h2>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                Driver versions and notes for this test system.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsNotesExpanded((current) => !current)}
+              className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white px-3 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+              aria-expanded={isNotesExpanded}
+            >
+              {isNotesExpanded ? (
+                <ChevronDown className="mr-2 h-4 w-4" />
+              ) : (
+                <ChevronRight className="mr-2 h-4 w-4" />
+              )}
+              {isNotesExpanded ? 'Hide Notes' : 'Show Notes'}
+            </button>
           </div>
-          {config.notes && <p className="mt-4 whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">{config.notes}</p>}
+          {isNotesExpanded && (
+            <div className="p-5">
+              <div className="grid grid-cols-1 gap-3 text-sm text-gray-700 dark:text-gray-300 md:grid-cols-3">
+                {config.cpu_driver_version && <p><span className="font-medium">CPU driver:</span> {config.cpu_driver_version}</p>}
+                {config.gpu_driver_version && <p><span className="font-medium">GPU driver:</span> {config.gpu_driver_version}</p>}
+                {config.mb_chipset_driver_version && <p><span className="font-medium">Chipset driver:</span> {config.mb_chipset_driver_version}</p>}
+              </div>
+              {config.notes && <p className="mt-4 whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">{config.notes}</p>}
+            </div>
+          )}
         </div>
       )}
 
       <div className="rounded-md border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Benchmark Results</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{systemResults.length} result{systemResults.length === 1 ? '' : 's'}</p>
+        <div className={`flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between ${isCompareExpanded ? 'border-b border-gray-200 dark:border-gray-800' : ''}`}>
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white">Compare This System</h2>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              {targetConfig
+                ? `Comparing against ${targetConfig.name}`
+                : 'Open to compare matching benchmark results against another test system.'}
+            </p>
           </div>
-          <TrendingUp className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+          <button
+            type="button"
+            onClick={() => setIsCompareExpanded((current) => !current)}
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white px-3 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+            aria-expanded={isCompareExpanded}
+          >
+            {isCompareExpanded ? (
+              <ChevronDown className="mr-2 h-4 w-4" />
+            ) : (
+              <ChevronRight className="mr-2 h-4 w-4" />
+            )}
+            {isCompareExpanded ? 'Hide Compare' : 'Show Compare'}
+          </button>
         </div>
-        {systemResults.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
-            No benchmark results have been published for this test system yet.
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200 dark:divide-gray-800">
-            {systemResults.map((result) => {
-              const benchmark = lookups.benchmarks.get(result.benchmark_id);
-              const rank = rankByResultId.get(result.id);
-              return (
-                <article key={result.id} className="p-5">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 dark:bg-gray-950 dark:text-gray-400">
-                          {formatResultId(result.id)}
-                        </span>
-                        {benchmark?.lower_is_better && (
-                          <span className="rounded-full border border-gray-300 px-2 py-0.5 text-[10px] text-gray-700 dark:border-gray-700 dark:text-gray-300">
-                            lower is better
-                          </span>
-                        )}
-                      </div>
-                      <h3
-                        className="mt-2 break-words text-base font-semibold text-gray-950 dark:text-white"
-                        title={`${formatBenchmarkId(benchmark?.id)} ${benchmark?.name || 'Unknown'}`}
-                      >
-                        {benchmark?.name || 'Unknown benchmark'}
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {formatResultSettings(result.settings)} · {formatDate(result.timestamp)}
-                      </p>
-                      {result.notes && <p className="mt-2 break-words text-sm text-gray-700 dark:text-gray-300">{result.notes}</p>}
-                    </div>
-                    <div className="flex shrink-0 gap-3">
-                      <div className="flex h-[60px] w-24 flex-col items-center justify-center rounded-md bg-primary-700 px-3 py-2 text-center text-white shadow-sm dark:bg-primary-400 dark:text-primary-950">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-primary-100 dark:text-primary-950/70">Score</p>
-                        <p className="mt-0.5 text-lg font-semibold tabular-nums">{formatScore(result.result)}</p>
-                      </div>
-                      <div className="flex h-[60px] w-20 flex-col items-center justify-center rounded-md bg-gray-100 px-3 py-2 text-center dark:bg-gray-800">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Rank</p>
-                        <p className="mt-0.5 text-sm font-semibold tabular-nums text-gray-950 dark:text-white">{rank?.label || 'Unranked'}</p>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="rounded-md border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <div className="border-b border-gray-200 px-5 py-4 dark:border-gray-800">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Compare This System</h2>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            {config.name} is locked as the primary system. Select another test system to compare matching benchmark results.
-          </p>
-        </div>
+        {isCompareExpanded && (
         <div className="space-y-5 p-5">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-end">
             <div>
@@ -537,21 +524,20 @@ const PublicSystem = () => {
               <label htmlFor="compare-target" className="mb-2 block text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 Compare Against
               </label>
-              <select
+              <SearchableSelect
                 id="compare-target"
                 value={compareConfigId}
-                onChange={(event) => setCompareConfigId(event.target.value)}
-                className="input-field"
-              >
-                <option value="">Select a test system</option>
-                {data.configurations
+                onChange={(value) => setCompareConfigId(value ? String(value) : '')}
+                options={data.configurations
                   .filter((item) => item.id !== numericConfigId)
-                  .map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-              </select>
+                  .map((item) => ({
+                    id: item.id,
+                    name: item.name,
+                    searchText: `${formatSystemId(item.id)} ${item.name}`,
+                  }))}
+                placeholder="Select a test system"
+                searchPlaceholder="Search test systems..."
+              />
             </div>
           </div>
 
@@ -647,6 +633,67 @@ const PublicSystem = () => {
             </div>
           )}
         </div>
+        )}
+      </div>
+
+      <div className="rounded-md border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Benchmark Results</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{systemResults.length} result{systemResults.length === 1 ? '' : 's'}</p>
+          </div>
+          <TrendingUp className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+        </div>
+        {systemResults.length === 0 ? (
+          <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+            No benchmark results have been published for this test system yet.
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200 dark:divide-gray-800">
+            {systemResults.map((result) => {
+              const benchmark = lookups.benchmarks.get(result.benchmark_id);
+              const rank = rankByResultId.get(result.id);
+              return (
+                <article key={result.id} className="p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 dark:bg-gray-950 dark:text-gray-400">
+                          {formatResultId(result.id)}
+                        </span>
+                        {benchmark?.lower_is_better && (
+                          <span className="rounded-full border border-gray-300 px-2 py-0.5 text-[10px] text-gray-700 dark:border-gray-700 dark:text-gray-300">
+                            lower is better
+                          </span>
+                        )}
+                      </div>
+                      <h3
+                        className="mt-2 break-words text-base font-semibold text-gray-950 dark:text-white"
+                        title={`${formatBenchmarkId(benchmark?.id)} ${benchmark?.name || 'Unknown'}`}
+                      >
+                        {benchmark?.name || 'Unknown benchmark'}
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {formatResultSettings(result.settings)} · {formatDate(result.timestamp)}
+                      </p>
+                      {result.notes && <p className="mt-2 break-words text-sm text-gray-700 dark:text-gray-300">{result.notes}</p>}
+                    </div>
+                    <div className="flex shrink-0 gap-3">
+                      <div className="flex h-[60px] w-24 flex-col items-center justify-center rounded-md bg-primary-700 px-3 py-2 text-center text-white shadow-sm dark:bg-primary-400 dark:text-primary-950">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-primary-100 dark:text-primary-950/70">Score</p>
+                        <p className="mt-0.5 text-lg font-semibold tabular-nums">{formatScore(result.result)}</p>
+                      </div>
+                      <div className="flex h-[60px] w-20 flex-col items-center justify-center rounded-md bg-gray-100 px-3 py-2 text-center dark:bg-gray-800">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Rank</p>
+                        <p className="mt-0.5 text-sm font-semibold tabular-nums text-gray-950 dark:text-white">{rank?.label || 'Unranked'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Cpu, Database, Filter, Monitor, Server, Settings } from 'lucide-react';
 import { formatDate, usePublicData } from '../utils/publicData';
+import SearchableSelect from '../components/SearchableSelect';
 
 const getParam = (params, key, fallback = '') => params.get(key) || fallback;
 
@@ -49,6 +50,7 @@ const PublicSystems = () => {
   };
 
   const clearFilters = () => setSearchParams({});
+  const textOptions = (items) => items.map((item) => ({ id: item, name: item }));
 
   const filteredSystems = useMemo(() => {
     const q = filters.q.trim().toLowerCase();
@@ -114,24 +116,36 @@ const PublicSystems = () => {
           </label>
           <label>
             <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">CPU</span>
-            <select value={filters.cpu} onChange={(event) => setFilter('cpu', event.target.value)} className="input-field h-8 py-1 text-sm">
-              <option value="">All CPUs</option>
-              {filterOptions.cpus.map((cpu) => <option key={cpu} value={cpu}>{cpu}</option>)}
-            </select>
+            <SearchableSelect
+              value={filters.cpu}
+              onChange={(value) => setFilter('cpu', value)}
+              options={textOptions(filterOptions.cpus)}
+              placeholder="All CPUs"
+              searchPlaceholder="Search CPUs..."
+              size="sm"
+            />
           </label>
           <label>
             <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">GPU</span>
-            <select value={filters.gpu} onChange={(event) => setFilter('gpu', event.target.value)} className="input-field h-8 py-1 text-sm">
-              <option value="">All GPUs</option>
-              {filterOptions.gpus.map((gpu) => <option key={gpu} value={gpu}>{gpu}</option>)}
-            </select>
+            <SearchableSelect
+              value={filters.gpu}
+              onChange={(value) => setFilter('gpu', value)}
+              options={textOptions(filterOptions.gpus)}
+              placeholder="All GPUs"
+              searchPlaceholder="Search GPUs..."
+              size="sm"
+            />
           </label>
           <label>
             <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">OS</span>
-            <select value={filters.os} onChange={(event) => setFilter('os', event.target.value)} className="input-field h-8 py-1 text-sm">
-              <option value="">All OSes</option>
-              {filterOptions.oses.map((os) => <option key={os} value={os}>{os}</option>)}
-            </select>
+            <SearchableSelect
+              value={filters.os}
+              onChange={(value) => setFilter('os', value)}
+              options={textOptions(filterOptions.oses)}
+              placeholder="All OSes"
+              searchPlaceholder="Search OSes..."
+              size="sm"
+            />
           </label>
           <label>
             <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Sort</span>

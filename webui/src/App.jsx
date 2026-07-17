@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
+import AdminFooter from './components/AdminFooter';
 import Routes from './Routes';
 import ToastContainer from './components/ToastContainer';
 
@@ -24,9 +25,12 @@ const AppContent = () => {
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar />
-      <main className="flex-1 overflow-auto [scrollbar-gutter:stable]">
-        <Routes />
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <main className="min-h-0 flex-1 overflow-auto [scrollbar-gutter:stable]">
+          <Routes />
+        </main>
+        <AdminFooter />
+      </div>
       <ToastContainer />
     </div>
   );

@@ -13,6 +13,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { buildApiUrl } from '../config/api';
 import ConfirmModal from '../components/ConfirmModal';
 import PublicThemeToggle from '../components/PublicThemeToggle';
+import SearchableSelect from '../components/SearchableSelect';
 import { formatResultId, formatSystemId, idBadgeClass } from '../utils/displayIds';
 
 const formatResultSettings = (value) => {
@@ -71,6 +72,44 @@ const Results = () => {
     gpu: '',
     dateFrom: '',
     dateTo: ''
+  });
+
+  const configurationOptions = configurations.map((config) => ({
+    id: config.id,
+    name: config.name,
+    searchText: `${formatSystemId(config.id)} ${config.name}`,
+  }));
+
+  const benchmarkOptionsForSelect = benchmarks.map((benchmark) => ({
+    id: benchmark.id,
+    name: benchmark.name,
+  }));
+
+  const cpuOptions = cpus.map((cpu) => {
+    const brand = cpuBrands.find(b => b.id === cpu.cpu_brand_id);
+    const family = cpuFamilies.find(f => f.id === cpu.cpu_family_id);
+    const name = `${brand?.name || 'Unknown'} ${family?.name || 'Unknown'} ${cpu.model}`;
+    const description = `${cpu.speed} - ${cpu.core_count} Cores${cpu.serial ? ` - ${cpu.serial}` : ''}`;
+    return {
+      id: cpu.id,
+      name,
+      description,
+      searchText: `${name} ${description}`,
+    };
+  });
+
+  const gpuOptions = gpus.map((gpu) => {
+    const manufacturer = gpuManufacturers.find(m => m.id === gpu.gpu_manufacturer_id);
+    const brand = gpuBrands.find(b => b.id === gpu.gpu_brand_id);
+    const model = gpuModels.find(m => m.id === gpu.gpu_model_id);
+    const name = `${manufacturer?.name || 'Unknown'} ${brand?.name || 'Unknown'} ${model?.name || 'Unknown'}`;
+    const description = `${gpu.vram_size}${gpu.serial ? ` - ${gpu.serial}` : ''}`;
+    return {
+      id: gpu.id,
+      name,
+      description,
+      searchText: `${name} ${description}`,
+    };
   });
 
   const fetchData = useCallback(async () => {
@@ -318,86 +357,61 @@ const Results = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[repeat(5,minmax(0,1fr))_auto]">
         <div>
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
             Test System
           </label>
-          <select
+          <SearchableSelect
             value={filters.configuration}
-            onChange={(e) => setFilters({ ...filters, configuration: e.target.value })}
-            className="input-field text-sm py-1"
-          >
-            <option value="">All</option>
-            {configurations.map(config => (
-              <option key={config.id} value={config.id}>
-                {config.name}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setFilters({ ...filters, configuration: value ? String(value) : '' })}
+            options={configurationOptions}
+            placeholder="All"
+            searchPlaceholder="Search test systems..."
+            size="sm"
+          />
         </div>
         
         <div>
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
             Benchmark
           </label>
-          <select
+          <SearchableSelect
             value={filters.benchmark}
-            onChange={(e) => setFilters({ ...filters, benchmark: e.target.value })}
-            className="input-field text-sm py-1"
-          >
-            <option value="">All</option>
-            {benchmarks.map(benchmark => (
-              <option key={benchmark.id} value={benchmark.id}>
-                {benchmark.name}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setFilters({ ...filters, benchmark: value ? String(value) : '' })}
+            options={benchmarkOptionsForSelect}
+            placeholder="All"
+            searchPlaceholder="Search benchmarks..."
+            size="sm"
+          />
         </div>
         
         <div>
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
             CPU
           </label>
-          <select
+          <SearchableSelect
             value={filters.cpu}
-            onChange={(e) => setFilters({ ...filters, cpu: e.target.value })}
-            className="input-field text-sm py-1"
-          >
-            <option value="">All</option>
-            {cpus.map(cpu => {
-              const brand = cpuBrands.find(b => b.id === cpu.cpu_brand_id);
-              const family = cpuFamilies.find(f => f.id === cpu.cpu_family_id);
-              return (
-                <option key={cpu.id} value={cpu.id}>
-                  {brand?.name || 'Unknown'} {family?.name || 'Unknown'} {cpu.model} [{cpu.speed} - {cpu.core_count} Cores]{cpu.serial ? ` [${cpu.serial}]` : ''}
-                </option>
-              );
-            })}
-          </select>
+            onChange={(value) => setFilters({ ...filters, cpu: value ? String(value) : '' })}
+            options={cpuOptions}
+            placeholder="All"
+            searchPlaceholder="Search CPUs..."
+            size="sm"
+          />
         </div>
         
         <div>
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
             GPU
           </label>
-          <select
+          <SearchableSelect
             value={filters.gpu}
-            onChange={(e) => setFilters({ ...filters, gpu: e.target.value })}
-            className="input-field text-sm py-1"
-          >
-            <option value="">All</option>
-            {gpus.map(gpu => {
-              const manufacturer = gpuManufacturers.find(m => m.id === gpu.gpu_manufacturer_id);
-              const brand = gpuBrands.find(b => b.id === gpu.gpu_brand_id);
-              const model = gpuModels.find(m => m.id === gpu.gpu_model_id);
-              return (
-                <option key={gpu.id} value={gpu.id}>
-                  {manufacturer?.name || 'Unknown'} {brand?.name || 'Unknown'} {model?.name || 'Unknown'} {gpu.vram_size}{gpu.serial ? ` [${gpu.serial}]` : ''}
-                </option>
-              );
-            })}
-          </select>
+            onChange={(value) => setFilters({ ...filters, gpu: value ? String(value) : '' })}
+            options={gpuOptions}
+            placeholder="All"
+            searchPlaceholder="Search GPUs..."
+            size="sm"
+          />
         </div>
         
         <div>
@@ -408,11 +422,11 @@ const Results = () => {
             type="date"
             value={filters.dateFrom}
             onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-            className="input-field text-sm py-1"
+            className="input-field h-8 py-1 text-sm"
           />
         </div>
         
-        <div className="flex items-end">
+        <div className="flex items-end xl:justify-end">
           <button
             onClick={() => setFilters({
               benchmark: '',
@@ -422,7 +436,7 @@ const Results = () => {
               dateFrom: '',
               dateTo: ''
             })}
-            className="bg-gray-600 hover:bg-gray-700 text-white text-xs font-medium px-3 py-1 rounded transition-colors"
+            className="inline-flex h-8 items-center rounded bg-gray-600 px-3 text-xs font-medium text-white transition-colors hover:bg-gray-700"
           >
             Clear
           </button>
@@ -702,6 +716,15 @@ const ResultForm = ({ result, onClose, onSave, benchmarks, benchmarkOptions, con
   const selectedBenchmarkOptions = benchmarkOptions
     .filter(option => option.benchmark_id === parseInt(formData.benchmark_id))
     .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
+  const benchmarkSelectOptions = benchmarks.map((benchmark) => ({
+    id: benchmark.id,
+    name: benchmark.name,
+  }));
+  const configurationSelectOptions = configurations.map((config) => ({
+    id: config.id,
+    name: config.name,
+    searchText: `${formatSystemId(config.id)} ${config.name}`,
+  }));
 
   useEffect(() => {
     if (result) {
@@ -770,41 +793,31 @@ const ResultForm = ({ result, onClose, onSave, benchmarks, benchmarkOptions, con
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Benchmark
               </label>
-              <select
+              <SearchableSelect
                 value={formData.benchmark_id}
-                onChange={(e) => {
-                  setFormData({ ...formData, benchmark_id: e.target.value ? parseInt(e.target.value) : '', settings: '' });
+                onChange={(value) => {
+                  setFormData({ ...formData, benchmark_id: value ? parseInt(value) : '', settings: '' });
                   setOptionSelections({});
                 }}
-                className="input-field"
+                options={benchmarkSelectOptions}
+                placeholder="Select a benchmark"
+                searchPlaceholder="Search benchmarks..."
                 required
-              >
-                <option value="">Select a benchmark</option>
-                {benchmarks.map((benchmark) => (
-                  <option key={benchmark.id} value={benchmark.id}>
-                    {benchmark.name}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Test System
               </label>
-              <select
+              <SearchableSelect
                 value={formData.config_id}
-                onChange={(e) => setFormData({ ...formData, config_id: parseInt(e.target.value) })}
-                className="input-field"
+                onChange={(value) => setFormData({ ...formData, config_id: value ? parseInt(value) : '' })}
+                options={configurationSelectOptions}
+                placeholder="Select Test System"
+                searchPlaceholder="Search test systems..."
                 required
-              >
-                <option value="">Select Test System</option>
-                {configurations.map((config) => (
-                  <option key={config.id} value={config.id}>
-                    {config.name}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
           </div>
           
@@ -832,19 +845,16 @@ const ResultForm = ({ result, onClose, onSave, benchmarks, benchmarkOptions, con
                     <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                       {option.name}
                     </label>
-                    <select
+                    <SearchableSelect
                       value={optionSelections[String(option.id)] || ''}
-                      onChange={(e) => setOptionSelections(current => ({
+                      onChange={(value) => setOptionSelections(current => ({
                         ...current,
-                        [String(option.id)]: e.target.value,
+                        [String(option.id)]: value,
                       }))}
-                      className="input-field"
-                    >
-                      <option value="">Select {option.name}</option>
-                      {choices.map((choice) => (
-                        <option key={choice} value={choice}>{choice}</option>
-                      ))}
-                    </select>
+                      options={choices.map((choice) => ({ id: choice, name: choice }))}
+                      placeholder={`Select ${option.name}`}
+                      searchPlaceholder={`Search ${option.name}...`}
+                    />
                   </div>
                 );
               })}
@@ -925,6 +935,15 @@ const CompareForm = ({ configurations, benchmarks, onClose }) => {
   const [comparisonResults, setComparisonResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const { apiKey } = useAuth();
+  const configurationSelectOptions = configurations.map((config) => ({
+    id: config.id,
+    name: config.name,
+    searchText: `${formatSystemId(config.id)} ${config.name}`,
+  }));
+  const benchmarkSelectOptions = benchmarks.map((benchmark) => ({
+    id: benchmark.id,
+    name: benchmark.name,
+  }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -982,56 +1001,41 @@ const CompareForm = ({ configurations, benchmarks, onClose }) => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Test System 1
               </label>
-              <select
+              <SearchableSelect
                 value={formData.config_id_1}
-                onChange={(e) => setFormData({ ...formData, config_id_1: e.target.value })}
-                className="input-field"
+                onChange={(value) => setFormData({ ...formData, config_id_1: value ? String(value) : '' })}
+                options={configurationSelectOptions}
+                placeholder="Select first test system"
+                searchPlaceholder="Search test systems..."
                 required
-              >
-                <option value="">Select first test system</option>
-                {configurations.map((config) => (
-                  <option key={config.id} value={config.id}>
-                    {config.name}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Test System 2
               </label>
-              <select
+              <SearchableSelect
                 value={formData.config_id_2}
-                onChange={(e) => setFormData({ ...formData, config_id_2: e.target.value })}
-                className="input-field"
+                onChange={(value) => setFormData({ ...formData, config_id_2: value ? String(value) : '' })}
+                options={configurationSelectOptions}
+                placeholder="Select second test system"
+                searchPlaceholder="Search test systems..."
                 required
-              >
-                <option value="">Select second test system</option>
-                {configurations.map((config) => (
-                  <option key={config.id} value={config.id}>
-                    {config.name}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div className="md:col-span-3">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Benchmark
               </label>
-              <select
+              <SearchableSelect
                 value={formData.benchmark_id}
-                onChange={(e) => setFormData({ ...formData, benchmark_id: e.target.value })}
-                className="input-field"
-              >
-                <option value="">All shared benchmarks</option>
-                {benchmarks.map((benchmark) => (
-                  <option key={benchmark.id} value={benchmark.id}>
-                    {benchmark.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setFormData({ ...formData, benchmark_id: value ? String(value) : '' })}
+                options={benchmarkSelectOptions}
+                placeholder="All shared benchmarks"
+                searchPlaceholder="Search benchmarks..."
+              />
             </div>
           </div>
           

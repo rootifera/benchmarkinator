@@ -10,6 +10,7 @@ const SearchableSelect = ({
   displayField = "name",
   valueField = "id",
   className = "",
+  size = "md",
   required = false,
   disabled = false 
 }) => {
@@ -46,7 +47,7 @@ const SearchableSelect = ({
   });
 
   // Find selected option for display
-  const selectedOption = options.find(option => option[valueField] === value);
+  const selectedOption = options.find(option => String(option[valueField]) === String(value));
   const displayValue = selectedOption ? (selectedOption[displayField] || selectedOption.name || selectedOption.label) : '';
   const descriptionValue = selectedOption?.description || '';
   const titleValue = selectedOption ? (selectedOption.title || selectedOption.searchText || displayValue) : '';
@@ -62,16 +63,19 @@ const SearchableSelect = ({
     onChange('');
   };
 
+  const isSmall = size === 'sm';
+
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       {/* Main Select Button */}
       <button
         type="button"
         className={`
-          w-full min-h-10 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md
+          w-full border border-gray-300 dark:border-gray-700 rounded-md
           focus:ring-2 focus:ring-primary-500 focus:border-transparent
           bg-white dark:bg-gray-800 text-gray-900 dark:text-white
           text-left flex items-center justify-between
+          ${isSmall ? 'h-8 px-3 py-1 text-sm' : 'min-h-10 px-3 py-2'}
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-gray-400 dark:hover:border-gray-500'}
         `}
         onClick={() => !disabled && setIsOpen(!isOpen)}
@@ -125,7 +129,7 @@ const SearchableSelect = ({
                 const optionDisplay = option[displayField] || option.name || option.label || '';
                 const optionDescription = option.description || '';
                 const optionTitle = option.title || option.searchText || optionDisplay;
-                const isSelected = optionValue === value;
+                const isSelected = String(optionValue) === String(value);
 
                 return (
                   <button

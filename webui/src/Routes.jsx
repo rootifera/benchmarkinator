@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { Navigate, Routes as RouterRoutes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicNav from './components/PublicNav';
+import PublicFooter from './components/PublicFooter';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Hardware = lazy(() => import('./pages/Hardware'));
@@ -31,7 +32,7 @@ const Routes = () => {
     return (
       <>
         <PublicNav />
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <main className="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8">
           <Suspense fallback={<PageFallback />}>
             <RouterRoutes>
               <Route path="/" element={<PublicDashboard />} />
@@ -46,6 +47,7 @@ const Routes = () => {
             </RouterRoutes>
           </Suspense>
         </main>
+        <PublicFooter />
       </>
     );
   }

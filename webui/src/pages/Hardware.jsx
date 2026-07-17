@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
+import SearchableSelect from '../components/SearchableSelect';
 import { 
   Cpu, 
   Monitor, 
@@ -1569,19 +1570,14 @@ const LookupForm = ({ type, item, onClose, onSave, activeTab, lookupData }) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Brand
                 </label>
-                <select
+                <SearchableSelect
                   value={formData.cpu_brand_id || ''}
-                  onChange={(e) => setFormData({ ...formData, cpu_brand_id: parseInt(e.target.value) })}
-                  className="input-field"
+                  onChange={(value) => setFormData({ ...formData, cpu_brand_id: value ? parseInt(value) : '' })}
+                  options={lookupData?.brands || []}
+                  placeholder="Select CPU Brand"
+                  searchPlaceholder="Search CPU brands..."
                   required
-                >
-                  <option value="">Select CPU Brand</option>
-                  {lookupData?.brands?.map(brand => (
-                    <option key={brand.id} value={brand.id}>
-                      {brand.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               
               <div>
@@ -1607,19 +1603,14 @@ const LookupForm = ({ type, item, onClose, onSave, activeTab, lookupData }) => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Brand
                 </label>
-                <select
+                <SearchableSelect
                   value={formData.gpu_brand_id || ''}
-                  onChange={(e) => setFormData({ ...formData, gpu_brand_id: parseInt(e.target.value) })}
-                  className="input-field"
+                  onChange={(value) => setFormData({ ...formData, gpu_brand_id: value ? parseInt(value) : '' })}
+                  options={lookupData?.brands || []}
+                  placeholder="Select GPU Brand"
+                  searchPlaceholder="Search GPU brands..."
                   required
-                >
-                  <option value="">Select GPU Brand</option>
-                  {lookupData?.brands?.map(brand => (
-                    <option key={brand.id} value={brand.id}>
-                      {brand.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               
               <div>
@@ -1708,45 +1699,33 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Brand
         </label>
-        <select
+        <SearchableSelect
           value={formData.cpu_brand_id || ''}
-          onChange={(e) => setFormData({ 
+          onChange={(value) => setFormData({ 
             ...formData, 
-            cpu_brand_id: parseInt(e.target.value),
+            cpu_brand_id: value ? parseInt(value) : '',
             cpu_family_id: '' // Reset family when brand changes
           })}
-          className="input-field"
+          options={lookupData?.brands || []}
+          placeholder="Select Brand"
+          searchPlaceholder="Search CPU brands..."
           required
-        >
-          <option value="">Select Brand</option>
-          {lookupData?.brands?.map(brand => (
-            <option key={brand.id} value={brand.id}>
-              {brand.name}
-            </option>
-          ))}
-        </select>
+        />
       </div>
       
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Family
         </label>
-        <select
+        <SearchableSelect
           value={formData.cpu_family_id || ''}
-          onChange={(e) => setFormData({ ...formData, cpu_family_id: parseInt(e.target.value) })}
-          className="input-field"
+          onChange={(value) => setFormData({ ...formData, cpu_family_id: value ? parseInt(value) : '' })}
+          options={(lookupData?.families || []).filter(family => !formData.cpu_brand_id || family.cpu_brand_id === formData.cpu_brand_id)}
+          placeholder="Select Family"
+          searchPlaceholder="Search CPU families..."
           required
           disabled={!formData.cpu_brand_id}
-        >
-          <option value="">Select Family</option>
-          {lookupData?.families
-            ?.filter(family => !formData.cpu_brand_id || family.cpu_brand_id === formData.cpu_brand_id)
-            ?.map(family => (
-              <option key={family.id} value={family.id}>
-                {family.name}
-              </option>
-            ))}
-        </select>
+        />
         {!formData.cpu_brand_id && (
           <p className="text-xs text-gray-500 mt-1">Please select a brand first</p>
         )}
@@ -1817,64 +1796,47 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Manufacturer
         </label>
-        <select
+        <SearchableSelect
           value={formData.gpu_manufacturer_id || ''}
-          onChange={(e) => setFormData({ ...formData, gpu_manufacturer_id: parseInt(e.target.value) || null })}
-          className="input-field"
+          onChange={(value) => setFormData({ ...formData, gpu_manufacturer_id: value ? parseInt(value) : null })}
+          options={lookupData?.manufacturers || []}
+          placeholder="Select Manufacturer"
+          searchPlaceholder="Search manufacturers..."
           required
-        >
-          <option value="">Select Manufacturer</option>
-          {lookupData?.manufacturers?.map(manufacturer => (
-            <option key={manufacturer.id} value={manufacturer.id}>
-              {manufacturer.name}
-            </option>
-          ))}
-        </select>
+        />
       </div>
       
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Brand
         </label>
-        <select
+        <SearchableSelect
           value={formData.gpu_brand_id || ''}
-          onChange={(e) => setFormData({ 
+          onChange={(value) => setFormData({ 
             ...formData, 
-            gpu_brand_id: parseInt(e.target.value),
+            gpu_brand_id: value ? parseInt(value) : '',
             gpu_model_id: '' // Reset model when brand changes
           })}
-          className="input-field"
+          options={lookupData?.brands || []}
+          placeholder="Select Brand"
+          searchPlaceholder="Search GPU brands..."
           required
-        >
-          <option value="">Select Brand</option>
-          {lookupData?.brands?.map(brand => (
-            <option key={brand.id} value={brand.id}>
-              {brand.name}
-            </option>
-          ))}
-        </select>
+        />
       </div>
       
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Model
         </label>
-        <select
+        <SearchableSelect
           value={formData.gpu_model_id || ''}
-          onChange={(e) => setFormData({ ...formData, gpu_model_id: parseInt(e.target.value) })}
-          className="input-field"
+          onChange={(value) => setFormData({ ...formData, gpu_model_id: value ? parseInt(value) : '' })}
+          options={(lookupData?.models || []).filter(model => !formData.gpu_brand_id || model.gpu_brand_id === formData.gpu_brand_id)}
+          placeholder="Select Model"
+          searchPlaceholder="Search GPU models..."
           required
           disabled={!formData.gpu_brand_id}
-        >
-          <option value="">Select Model</option>
-          {lookupData?.models
-            ?.filter(model => !formData.gpu_brand_id || model.gpu_brand_id === formData.gpu_brand_id)
-            ?.map(model => (
-              <option key={model.id} value={model.id}>
-                {model.name}
-              </option>
-            ))}
-        </select>
+        />
         {!formData.gpu_brand_id && (
           <p className="text-xs text-gray-500 mt-1">Please select a brand first</p>
         )}
@@ -1884,19 +1846,14 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           VRAM Type
         </label>
-        <select
+        <SearchableSelect
           value={formData.gpu_vram_type_id || ''}
-          onChange={(e) => setFormData({ ...formData, gpu_vram_type_id: parseInt(e.target.value) })}
-          className="input-field"
+          onChange={(value) => setFormData({ ...formData, gpu_vram_type_id: value ? parseInt(value) : '' })}
+          options={lookupData?.vramTypes || []}
+          placeholder="Select VRAM Type"
+          searchPlaceholder="Search VRAM types..."
           required
-        >
-          <option value="">Select VRAM Type</option>
-          {lookupData?.vramTypes?.map(vramType => (
-            <option key={vramType.id} value={vramType.id}>
-              {vramType.name}
-            </option>
-          ))}
-        </select>
+        />
       </div>
       
       <div>
@@ -1934,19 +1891,14 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Manufacturer
         </label>
-        <select
+        <SearchableSelect
           value={formData.manufacturer_id || ''}
-          onChange={(e) => setFormData({ ...formData, manufacturer_id: parseInt(e.target.value) })}
-          className="input-field"
+          onChange={(value) => setFormData({ ...formData, manufacturer_id: value ? parseInt(value) : '' })}
+          options={lookupData?.manufacturers || []}
+          placeholder="Select Manufacturer"
+          searchPlaceholder="Search manufacturers..."
           required
-        >
-          <option value="">Select Manufacturer</option>
-          {lookupData?.manufacturers?.map(manufacturer => (
-            <option key={manufacturer.id} value={manufacturer.id}>
-              {manufacturer.name}
-            </option>
-          ))}
-        </select>
+        />
       </div>
       
       <div>
@@ -1967,19 +1919,14 @@ const HardwareForm = ({ type, item, onClose, onSave, lookupData }) => {
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Chipset
         </label>
-        <select
+        <SearchableSelect
           value={formData.chipset_id || ''}
-          onChange={(e) => setFormData({ ...formData, chipset_id: parseInt(e.target.value) })}
-          className="input-field"
+          onChange={(value) => setFormData({ ...formData, chipset_id: value ? parseInt(value) : '' })}
+          options={lookupData?.chipsets || []}
+          placeholder="Select Chipset"
+          searchPlaceholder="Search chipsets..."
           required
-        >
-          <option value="">Select Chipset</option>
-          {lookupData?.chipsets?.map(chipset => (
-            <option key={chipset.id} value={chipset.id}>
-              {chipset.name}
-            </option>
-          ))}
-        </select>
+        />
       </div>
       
       <div>

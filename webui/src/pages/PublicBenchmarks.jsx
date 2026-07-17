@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Filter, Trophy } from 'lucide-react';
 import { formatBenchmarkId, usePublicData } from '../utils/publicData';
+import SearchableSelect from '../components/SearchableSelect';
 
 const getParam = (params, key, fallback = '') => params.get(key) || fallback;
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
@@ -119,14 +120,14 @@ const PublicBenchmarks = () => {
           </label>
           <label>
             <span className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Target</span>
-            <select value={target} onChange={(event) => setFilter('target', event.target.value)} className="input-field h-8 py-1 text-sm">
-              <option value="">All targets</option>
-              {targets.map((targetOption) => (
-                <option key={targetOption.id} value={targetOption.id}>
-                  {targetOption.name}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={target}
+              onChange={(value) => setFilter('target', value ? String(value) : '')}
+              options={targets}
+              placeholder="All targets"
+              searchPlaceholder="Search targets..."
+              size="sm"
+            />
           </label>
           <div className="flex items-end">
             <button
